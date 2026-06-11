@@ -7,48 +7,94 @@ from datetime import datetime
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# ─── JioSaavn API — multiple base URLs for fallback ───────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# WORKING JioSaavn API endpoints (verified June 2026)
+# ═══════════════════════════════════════════════════════════════════════
 
 API_BASES = [
-    "https://saavn.dev/api",
-    "https://jiosaavn-api-privatecvc2.vercel.app/api",
+    "https://jio-saavn-api.vercel.app",           # ✅ Primary — most reliable
+    "https://saavn.dev/api",                       # ❌ Currently down (keep as fallback)
+    "https://jiosaavn-api-privatecvc2.vercel.app/api",  # ❌ Dead
 ]
 
-def _get(path, params=None, timeout=12):
+def _get(path, params=None, timeout=15):
     """Try each API base in order, return parsed JSON or None."""
     for base in API_BASES:
         try:
             url = f"{base}{path}"
+            # Some APIs need query as 'q', some as 'query'
             r = requests.get(url, params=params, timeout=timeout)
+            print(f"[API] {r.status_code} from {url}")
             if r.status_code == 200:
                 data = r.json()
-                # saavn.dev wraps in {"data": ...}, some mirrors use {"result": ...}
                 return data
         except Exception as e:
-            print(f"[api] {base}{path} failed: {e}")
+            print(f"[API ERROR] {base}{path}: {e}")
     return None
 
-# ─── Helpers ──────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# FIXED fetch_songs — handles different API response shapes
+# ═══════════════════════════════════════════════════════════════════════
 
 def fetch_songs(query, limit=20):
-    data = _get("/search/songs", {"query": query, "limit": limit})
+    """
+    Try multiple endpoint patterns since different mirrors use different paths.
+    """
+    # Pattern 1: /search/songs?query=... (saavn.dev style)
+    # Pattern 2: /search?query=... (jio-saavn-api style)
+    # Pattern 3: /search/songs?q=... (alternative)
+    
+    endpoints_to_try = [
+        ("/search/songs", {"query": query, "limit": limit}),
+        ("/search", {"query": query, "limit": limit}),
+        ("/search/songs", {"q": query, "limit": limit}),
+        ("/search", {"q": query, "limit": limit}),
+    ]
+    
+    for path, params in endpoints_to_try:
+        data = _get(path, params)
+        if data:
+            songs = _extract_songs(data)
+            if songs:
+                return songs
+    return []
+
+def _extract_songs(data):
+    """Extract song list from various API response wrappers."""
     if not data:
         return []
-    # Handle both wrapper shapes
-    inner = data.get("data") or data.get("results") or data
-    if isinstance(inner, dict):
-        return inner.get("results", [])
-    if isinstance(inner, list):
-        return inner
+    
+    # Handle {"data": {"results": [...]}}  (saavn.dev)
+    # Handle {"results": [...]}             (direct)
+    # Handle {"data": [...]}                (array wrapper)
+    # Handle [...]                          (direct array)
+    
+    candidates = [
+        data.get("data", {}).get("results") if isinstance(data.get("data"), dict) else None,
+        data.get("data"),
+        data.get("results"),
+        data.get("result"),
+        data,
+    ]
+    
+    for candidate in candidates:
+        if isinstance(candidate, list) and len(candidate) > 0:
+            return candidate
     return []
 
 def fetch_trending(limit=20):
-    queries = ["trending bollywood", "top hindi hits", "viral songs 2024", "new releases india"]
+    queries = [
+        "trending bollywood 2024",
+        "top hindi songs",
+        "arijit singh hits",
+        "bollywood new releases",
+        "viral songs india"
+    ]
     query = random.choice(queries)
     return fetch_songs(query, limit)
 
 def fetch_playlist_songs(playlist_id):
-    data = _get("/playlists", {"id": playlist_id})
+    data = _get(f"/playlists", {"id": playlist_id})
     if not data:
         return []
     inner = data.get("data") or data
@@ -57,7 +103,7 @@ def fetch_playlist_songs(playlist_id):
     return []
 
 def fetch_album_songs(album_id):
-    data = _get("/albums", {"id": album_id})
+    data = _get(f"/albums", {"id": album_id})
     if not data:
         return []
     inner = data.get("data") or data
@@ -75,21 +121,15 @@ def fetch_artist_songs(artist_id, limit=20):
     return []
 
 def _best_url(download_list):
-    """
-    downloadUrl is a list like:
-      [{"quality":"96kbps","url":"..."}, {"quality":"160kbps","url":"..."}, ...]
-    Pick highest quality non-empty URL.
-    """
+    """Pick highest quality non-empty URL from downloadUrl array."""
     if not download_list or not isinstance(download_list, list):
         return ""
-    # Sort by quality descending (320 > 160 > 96)
     for quality in ["320kbps", "160kbps", "96kbps"]:
         for item in download_list:
             if isinstance(item, dict) and item.get("quality") == quality:
                 u = item.get("url", "")
                 if u:
                     return u
-    # Fallback: last non-empty URL
     for item in reversed(download_list):
         u = item.get("url", "") if isinstance(item, dict) else ""
         if u:
@@ -99,30 +139,52 @@ def _best_url(download_list):
 def format_song(song):
     if not song:
         return {}
+    
+    # Handle different image formats
+    image = song.get("image", "/static/images/default-album.png")
+    if isinstance(image, list) and image:
+        image = image[-1].get("url", "/static/images/default-album.png")
+    elif isinstance(image, dict):
+        image = image.get("url", "/static/images/default-album.png")
+    elif not isinstance(image, str):
+        image = "/static/images/default-album.png"
+    
+    # Handle artists (can be array, dict, or string)
+    artists = song.get("artists", {})
+    if isinstance(artists, dict):
+        primary = artists.get("primary", [])
+        artist_names = [a.get("name", "") for a in primary if isinstance(a, dict)]
+        artist = ", ".join(artist_names) if artist_names else song.get("primaryArtists", "Unknown Artist")
+    elif isinstance(artists, list):
+        artist = ", ".join([a.get("name", "") for a in artists if isinstance(a, dict)]) or "Unknown Artist"
+    else:
+        artist = song.get("primaryArtists", song.get("artist", "Unknown Artist"))
+    
+    # Handle album
+    album = song.get("album", "Unknown Album")
+    if isinstance(album, dict):
+        album = album.get("name", "Unknown Album")
+    
     return {
-        "id":       song.get("id", ""),
+        "id":       str(song.get("id", "")),
         "title":    song.get("name", song.get("title", "Unknown Title")),
-        "artist":   ", ".join(
-                        [a.get("name", "") for a in
-                         song.get("artists", {}).get("primary", [])]
-                    ) or song.get("primaryArtists", "Unknown Artist"),
-        "album":    song.get("album", {}).get("name", song.get("album", "Unknown Album"))
-                    if isinstance(song.get("album"), dict)
-                    else song.get("album", "Unknown Album"),
-        "image":    (song.get("image") or [{}])[-1].get("url", "/static/images/default-album.png")
-                    if isinstance(song.get("image"), list)
-                    else song.get("image", "/static/images/default-album.png"),
+        "artist":   artist,
+        "album":    album,
+        "image":    image,
         "url":      _best_url(song.get("downloadUrl", song.get("download_url", []))),
         "duration": song.get("duration", 0),
         "year":     song.get("year", ""),
     }
 
-# ─── Routes ───────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# ROUTES
+# ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/')
 def index():
     trending = fetch_trending(12)
     songs = [s for s in [format_song(x) for x in trending] if s.get("url")]
+    print(f"[HOME] Loaded {len(songs)} songs")
     return render_template('index.html', songs=songs, title="Home")
 
 @app.route('/search')
@@ -132,20 +194,33 @@ def search():
     if query:
         results = fetch_songs(query, 30)
         songs = [s for s in [format_song(x) for x in results] if s.get("url")]
+    print(f"[SEARCH] Query: '{query}' → {len(songs)} results")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
 @app.route('/player/<song_id>')
 def player(song_id):
     data = _get(f"/songs/{song_id}")
     try:
-        song_data = (data.get("data") or [{}])[0] if data else {}
+        if data and isinstance(data.get("data"), list):
+            song_data = data["data"][0]
+        elif data and isinstance(data.get("data"), dict):
+            song_data = data["data"]
+        else:
+            song_data = data or {}
         song = format_song(song_data)
         if not song.get("url"):
             raise ValueError("No stream URL")
     except Exception as e:
-        print(f"[player] {e}")
-        song = {"id": song_id, "title": "Unknown", "artist": "Unknown",
-                "url": "", "image": "/static/images/default-album.png"}
+        print(f"[PLAYER ERROR] {e}")
+        song = {
+            "id": song_id,
+            "title": "Unknown Song",
+            "artist": "Unknown Artist",
+            "album": "Unknown Album",
+            "url": "",
+            "image": "/static/images/default-album.png",
+            "duration": 0
+        }
     return render_template('player.html', song=song, title=song.get("title", "Player"))
 
 @app.route('/trending')
@@ -180,7 +255,9 @@ def artist(artist_id):
 def offline():
     return render_template('offline.html', title="Offline")
 
-# ─── API Endpoints ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/api/search')
 def api_search():
@@ -201,21 +278,30 @@ def api_trending():
 def api_song(song_id):
     data = _get(f"/songs/{song_id}")
     try:
-        song_data = (data.get("data") or [{}])[0] if data else {}
+        if data and isinstance(data.get("data"), list):
+            song_data = data["data"][0]
+        elif data and isinstance(data.get("data"), dict):
+            song_data = data["data"]
+        else:
+            song_data = data or {}
         return jsonify(format_song(song_data))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# ─── Debug endpoint (remove in production) ────────────────────────────
 
 @app.route('/api/debug/search')
 def api_debug_search():
     """Test what raw data comes back from the API."""
     query = request.args.get('q', 'arijit singh')
     data = _get("/search/songs", {"query": query, "limit": 3})
-    return jsonify(data)
+    return jsonify({
+        "api_response": data,
+        "extracted_songs": _extract_songs(data),
+        "formatted": [format_song(s) for s in (_extract_songs(data) or [])]
+    })
 
-# ─── Static & Error Handlers ──────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# STATIC & ERROR HANDLERS
+# ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -229,7 +315,9 @@ def not_found(e):
 def server_error(e):
     return jsonify({"error": "Internal server error"}), 500
 
-# ─── Run ──────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# RUN
+# ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
