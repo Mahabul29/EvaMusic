@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-heart"></i> Your Library</h1>
+    <p>Songs you've saved</p>
+</div>
+
+<div class="library-tabs">
+    <button class="tab-btn active" onclick="showTab('liked')">Liked Songs</button>
+    <button class="tab-btn" onclick="showTab('playlists')">Playlists</button>
+    <button class="tab-btn" onclick="showTab('recent')">Recently Played</button>
+</div>
+
+<div class="library-content" id="libraryContent">
+    <div class="empty-state">
+        <i class="fas fa-music"></i>
+        <p>Your library is empty</p>
+        <a href="/" class="btn-primary">Discover Music</a>
+    </div>
+</div>
+{% endblock %}
