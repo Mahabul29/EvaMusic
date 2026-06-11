@@ -1,30 +1,35 @@
-// Main App Logic
-const App = {
-    init() {
-        this.setupServiceWorker();
-        this.setupTheme();
-    },
-    
-    setupServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/js/service-worker.js')
-                .then(reg => console.log('SW registered'))
-                .catch(err => console.log('SW error:', err));
-        }
-    },
-    
-    setupTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-        }
-    },
-    
-    toggleTheme() {
-        document.body.classList.toggle('light-mode');
-        const theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
-        localStorage.setItem('theme', theme);
-    }
-};
+// Main app logic
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[EvaMusic] App loaded');
+    
+    // Initialize any global handlers
+    initProgressBar();
+});
+
+function initProgressBar() {
+    const progressBar = document.getElementById('progressBar');
+    const scrubberBar = document.getElementById('scrubberBar');
+    
+    if (progressBar) {
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            const audio = document.getElementById('audioPlayer');
+            if (audio.duration) {
+                audio.currentTime = percent * audio.duration;
+            }
+        });
+    }
+    
+    if (scrubberBar) {
+        scrubberBar.addEventListener('click', (e) => {
+            const rect = scrubberBar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            const audio = document.getElementById('audioPlayer');
+            if (audio.duration) {
+                audio.currentTime = percent * audio.duration;
+            }
+        });
+    }
+}
