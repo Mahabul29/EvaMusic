@@ -1,19 +1,14 @@
 {
-    "name": "JioSaavn Music",
-    "short_name": "JioSaavn",
+    "name": "EvaMusic - JioSaavn Player",
+    "short_name": "EvaMusic",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0f0f0f",
-    "theme_color": "#2bb673",
+    "background_color": "#121212",
+    "theme_color": "#1db954",
     "icons": [
         {
             "src": "/static/images/logo.png",
             "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "/static/images/logo.png",
-            "sizes": "512x512",
             "type": "image/png"
         }
     ]
