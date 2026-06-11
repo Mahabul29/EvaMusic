@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="offline-page">
+    <i class="fas fa-wifi-slash"></i>
+    <h1>You're Offline</h1>
+    <p>Check your internet connection and try again.</p>
+    <button onclick="location.reload()" class="btn-primary">Retry</button>
+</div>
+{% endblock %}
