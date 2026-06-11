@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>Discover Your Music</h1>
+        <p>Millions of songs. Free forever.</p>
+        <a href="/trending" class="btn-primary">Explore Trending</a>
+    </div>
+</div>
+
+<section class="songs-section">
+    <h2><i class="fas fa-fire"></i> Trending Now</h2>
+    <div class="songs-grid" id="songsGrid">
+        {% for song in songs %}
+        <div class="song-card" data-id="{{ song.id }}" onclick="playSong('{{ song.id }}')">
+            <div class="song-image">
+                <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy">
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="song-info">
+                <h3 class="song-title">{{ song.title }}</h3>
+                <p class="song-artist">{{ song.artist }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="categories-section">
+    <h2><i class="fas fa-compact-disc"></i> Browse Categories</h2>
+    <div class="categories-grid">
+        <a href="/search?q=bollywood" class="category-card">
+            <i class="fas fa-film"></i>
+            <span>Bollywood</span>
+        </a>
+        <a href="/search?q=punjabi" class="category-card">
+            <i class="fas fa-drum"></i>
+            <span>Punjabi</span>
+        </a>
+        <a href="/search?q=romantic" class="category-card">
+            <i class="fas fa-heart"></i>
+            <span>Romantic</span>
+        </a>
+        <a href="/search?q=party" class="category-card">
+            <i class="fas fa-glass-cheers"></i>
+            <span>Party</span>
+        </a>
+        <a href="/search?q=devotional" class="category-card">
+            <i class="fas fa-pray"></i>
+            <span>Devotional</span>
+        </a>
+        <a href="/search?q=hip+hop" class="category-card">
+            <i class="fas fa-microphone"></i>
+            <span>Hip Hop</span>
+        </a>
+    </div>
+</section>
+{% endblock %}
+          
