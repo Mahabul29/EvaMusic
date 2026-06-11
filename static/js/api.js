@@ -1,37 +1,55 @@
-const API = {
-    async search(query, limit = 20) {
-        try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        } catch(e) {
-            console.error('API.search error:', e);
-            return [];
-        }
-    },
+// API helper functions
 
-    async getTrending(limit = 20) {
-        try {
-            const res = await fetch(`/api/trending?limit=${limit}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        } catch(e) {
-            console.error('API.getTrending error:', e);
-            return [];
-        }
-    },
-
-    async getSong(id) {
-        try {
-            const res = await fetch(`/api/song/${id}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const song = await res.json();
-            if (song.error) throw new Error(song.error);
-            return song;
-        } catch(e) {
-            console.error('API.getSong error:', e);
-            return null;
-        }
+async function fetchTrending(limit = 20) {
+    try {
+        const res = await fetch(`/api/trending?limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to fetch trending');
+        return await res.json();
+    } catch (e) {
+        console.error('[API] fetchTrending:', e);
+        return [];
     }
-};
-        
+}
+
+async function fetchSearch(query, limit = 30) {
+    try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to search');
+        return await res.json();
+    } catch (e) {
+        console.error('[API] fetchSearch:', e);
+        return [];
+    }
+}
+
+async function fetchSong(songId) {
+    try {
+        const res = await fetch(`/api/song/${songId}`);
+        if (!res.ok) throw new Error('Failed to fetch song');
+        return await res.json();
+    } catch (e) {
+        console.error('[API] fetchSong:', e);
+        return null;
+    }
+}
+
+function addToLibrary(songId) {
+    console.log('[Library] Add:', songId);
+    // TODO: Implement with localStorage or backend API
+    alert('Added to library!');
+}
+
+function shareSong(songId) {
+    const url = `${window.location.origin}/player/${songId}`;
+    if (navigator.share) {
+        navigator.share({ title: 'Check out this song!', url });
+    } else {
+        navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+    }
+}
+
+function downloadSong(songId) {
+    console.log('[Download]', songId);
+    alert('Download started!');
+}
