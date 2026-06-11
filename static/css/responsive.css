@@ -1,0 +1,124 @@
+@media (max-width: 1024px) {
+    .navbar {
+        padding: 0 20px;
+    }
+    
+    .nav-search form {
+        width: 250px;
+    }
+    
+    .main-content {
+        padding: 20px;
+    }
+    
+    .hero-section {
+        padding: 40px;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        height: auto;
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .nav-search form {
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    .nav-links {
+        gap: 20px;
+    }
+    
+    .main-content {
+        margin-top: 140px;
+        padding: 15px;
+    }
+    
+    .songs-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+    }
+    
+    .player-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 15px;
+        gap: 10px;
+    }
+    
+    .player-info {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+    
+    .player-progress {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+    
+    .player-volume {
+        display: none;
+    }
+    
+    .player-album-art {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .player-song-title {
+        font-size: 1.3rem;
+    }
+    
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-section {
+        padding: 30px 20px;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .songs-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .song-row {
+        padding: 10px;
+    }
+    
+    .song-number {
+        display: none;
+    }
+    
+    .song-thumb {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .song-details h4 {
+        font-size: 0.9rem;
+    }
+    
+    .player-main-controls {
+        gap: 15px;
+    }
+    
+    .player-main-controls .play-btn {
+        width: 55px;
+        height: 55px;
+    }
+      }
+  
