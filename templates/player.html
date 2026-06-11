@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="full-player">
+    <div class="player-background" style="background-image: url('{{ song.image }}')"></div>
+    
+    <div class="player-container">
+        <div class="player-album-art">
+            <img src="{{ song.image }}" alt="{{ song.title }}" id="fullAlbumArt">
+        </div>
+        
+        <div class="player-details">
+            <h1 class="player-song-title">{{ song.title }}</h1>
+            <p class="player-song-artist">{{ song.artist }}</p>
+            <p class="player-song-album">{{ song.album }}</p>
+        </div>
+        
+        <div class="player-scrubber">
+            <span id="fullCurrentTime">0:00</span>
+            <div class="scrubber-bar" id="scrubberBar">
+                <div class="scrubber-fill" id="scrubberFill"></div>
+                <div class="scrubber-thumb" id="scrubberThumb"></div>
+            </div>
+            <span id="fullDuration">0:00</span>
+        </div>
+        
+        <div class="player-main-controls">
+            <button id="shuffleBtn" class="control-btn"><i class="fas fa-random"></i></button>
+            <button id="prevBtnMain" class="control-btn"><i class="fas fa-step-backward"></i></button>
+            <button id="playPauseBtnMain" class="control-btn play-btn"><i class="fas fa-play"></i></button>
+            <button id="nextBtnMain" class="control-btn"><i class="fas fa-step-forward"></i></button>
+            <button id="repeatBtn" class="control-btn"><i class="fas fa-redo"></i></button>
+        </div>
+        
+        <div class="player-extra-controls">
+            <button class="control-btn" onclick="addToLibrary('{{ song.id }}')">
+                <i class="far fa-heart"></i>
+            </button>
+            <button class="control-btn" onclick="shareSong('{{ song.id }}')">
+                <i class="fas fa-share-alt"></i>
+            </button>
+            <button class="control-btn" onclick="downloadSong('{{ song.id }}')">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-play on load
+    window.addEventListener('load', () => {
+        playSong('{{ song.id }}', {
+            title: '{{ song.title|replace("'", "\\'") }}',
+            artist: '{{ song.artist|replace("'", "\\'") }}',
+            image: '{{ song.image }}',
+            url: '{{ song.url }}'
+        });
+    });
+</script>
+{% endblock %}
+      
