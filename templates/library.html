@@ -2,22 +2,57 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="fas fa-heart"></i> Your Library</h1>
-    <p>Songs you've saved</p>
-</div>
-
-<div class="library-tabs">
-    <button class="tab-btn active" onclick="showTab('liked')">Liked Songs</button>
-    <button class="tab-btn" onclick="showTab('playlists')">Playlists</button>
-    <button class="tab-btn" onclick="showTab('recent')">Recently Played</button>
-</div>
-
-<div class="library-content" id="libraryContent">
-    <div class="empty-state">
-        <i class="fas fa-music"></i>
-        <p>Your library is empty</p>
-        <a href="/" class="btn-primary">Discover Music</a>
+<div class="full-player">
+    <div class="player-background" style="background-image: url('{{ song.image }}')"></div>
+    
+    <div class="player-container">
+        <div class="player-album-art">
+            <img src="{{ song.image }}" alt="{{ song.title }}" id="fullAlbumArt" onerror="this.src='/static/images/default-album.png'">
+        </div>
+        
+        <div class="player-details">
+            <h1 class="player-song-title">{{ song.title }}</h1>
+            <p class="player-song-artist">{{ song.artist }}</p>
+            <p class="player-song-album">{{ song.album }}</p>
+        </div>
+        
+        <div class="player-scrubber">
+            <span id="fullCurrentTime">0:00</span>
+            <div class="scrubber-bar" id="scrubberBar">
+                <div class="scrubber-fill" id="scrubberFill"></div>
+                <div class="scrubber-thumb" id="scrubberThumb"></div>
+            </div>
+            <span id="fullDuration">0:00</span>
+        </div>
+        
+        <div class="player-main-controls">
+            <button id="shuffleBtn" class="control-btn"><i class="fas fa-random"></i></button>
+            <button id="prevBtnMain" class="control-btn"><i class="fas fa-step-backward"></i></button>
+            <button id="playPauseBtnMain" class="control-btn play-btn"><i class="fas fa-play"></i></button>
+            <button id="nextBtnMain" class="control-btn"><i class="fas fa-step-forward"></i></button>
+            <button id="repeatBtn" class="control-btn"><i class="fas fa-redo"></i></button>
+        </div>
+        
+        <div class="player-extra-controls">
+            <button class="control-btn" onclick="addToLibrary('{{ song.id }}')">
+                <i class="far fa-heart"></i>
+            </button>
+            <button class="control-btn" onclick="shareSong('{{ song.id }}')">
+                <i class="fas fa-share-alt"></i>
+            </button>
+            <button class="control-btn" onclick="downloadSong('{{ song.id }}')">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
     </div>
 </div>
+
+<script>
+    window.addEventListener('load', () => {
+        const songData = {{ song|tojson }};
+        if (songData.url) {
+            playSong('{{ song.id }}', songData);
+        }
+    });
+</script>
 {% endblock %}
