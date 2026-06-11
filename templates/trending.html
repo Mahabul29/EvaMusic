@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-fire"></i> Trending Songs</h1>
+    <p>What's hot right now</p>
+</div>
+
+<div class="songs-grid">
+    {% for song in songs %}
+    <div class="song-card" data-id="{{ song.id }}" onclick="playSong('{{ song.id }}')">
+        <div class="song-image">
+            <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy">
+            <div class="rank-badge">{{ loop.index }}</div>
+            <div class="play-overlay"><i class="fas fa-play"></i></div>
+        </div>
+        <div class="song-info">
+            <h3>{{ song.title }}</h3>
+            <p>{{ song.artist }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
