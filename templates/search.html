@@ -9,7 +9,9 @@
 
 <div class="songs-list" id="searchResults">
     {% for song in songs %}
-    <div class="song-row" data-id="{{ song.id }}" onclick="playSong('{{ song.id }}')">
+    <div class="song-row {% if not song.url %}song-unavailable{% endif %}"
+         data-id="{{ song.id }}"
+         {% if song.url %}onclick="playSong('{{ song.id }}')"{% endif %}>
         <div class="song-number">{{ loop.index }}</div>
         <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb">
         <div class="song-details">
@@ -17,9 +19,15 @@
             <p>{{ song.artist }} • {{ song.album }}</p>
         </div>
         <div class="song-actions">
+            {% if song.url %}
             <button class="btn-icon" onclick="event.stopPropagation(); addToLibrary('{{ song.id }}')">
                 <i class="far fa-heart"></i>
             </button>
+            {% else %}
+            <span class="unavailable-label" title="Stream not available">
+                <i class="fas fa-lock"></i>
+            </span>
+            {% endif %}
             <span class="song-duration">{{ song.duration // 60 }}:{{ '%02d' % (song.duration % 60) }}</span>
         </div>
     </div>
