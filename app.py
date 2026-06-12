@@ -6,47 +6,6 @@ from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# ─── Hardcoded fallback tracks (used only when API is unreachable) ─────────────
-
-FALLBACK_SONGS = [
-    {
-        "id": "fallback-1", "title": "SoundHelix Song 1", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        "duration": 300, "year": "",
-    },
-    {
-        "id": "fallback-2", "title": "SoundHelix Song 2", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        "duration": 300, "year": "",
-    },
-    {
-        "id": "fallback-3", "title": "SoundHelix Song 3", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        "duration": 300, "year": "",
-    },
-    {
-        "id": "fallback-4", "title": "SoundHelix Song 4", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-        "duration": 300, "year": "",
-    },
-    {
-        "id": "fallback-5", "title": "SoundHelix Song 5", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-        "duration": 300, "year": "",
-    },
-    {
-        "id": "fallback-6", "title": "SoundHelix Song 6", "artist": "SoundHelix",
-        "album": "Demo Tracks", "image": "/static/images/default-album.png",
-        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-        "duration": 300, "year": "",
-    },
-]
-
 _LAST_GOOD_TRENDING = []
 
 HEADERS = {
@@ -57,7 +16,7 @@ HEADERS = {
     "Accept": "application/json",
 }
 
-# ─── API helpers (all calls go to your Koyeb API app) ─────────────────────────
+# ─── API helpers (calls your separate Koyeb API app) ─────────────────────────
 
 def _call(url, timeout=20):
     """GET a URL from the Koyeb API app; return parsed JSON or None."""
@@ -93,7 +52,7 @@ def fetch_trending(limit=20):
     if _LAST_GOOD_TRENDING:
         print("[TRENDING] API failed, serving cached results")
         return _LAST_GOOD_TRENDING
-    print("[TRENDING] API failed and no cache, using fallback")
+    print("[TRENDING] API failed and no cache")
     return []
 
 
@@ -125,15 +84,6 @@ def fetch_artist_songs(artist_id, limit=20):
         return data
     return []
 
-
-def _with_fallback(songs, limit=None):
-    """Top up with hardcoded fallbacks so UI is never completely empty."""
-    if not songs:
-        songs = list(FALLBACK_SONGS)
-    if limit:
-        songs = songs[:limit]
-    return songs
-
 # ═══════════════════════════════════════════════════════════════════════
 # ROUTES
 # ═══════════════════════════════════════════════════════════════════════
@@ -141,7 +91,6 @@ def _with_fallback(songs, limit=None):
 @app.route('/')
 def index():
     songs = fetch_trending(12)
-    songs = _with_fallback(songs, 12)
     print(f"[HOME] {len(songs)} songs")
     return render_template('index.html', songs=songs, title="Home")
 
@@ -158,11 +107,6 @@ def search():
 
 @app.route('/player/<song_id>')
 def player(song_id):
-    # Serve fallback songs directly without hitting API
-    for fb in FALLBACK_SONGS:
-        if fb["id"] == song_id:
-            return render_template('player.html', song=fb, title=fb["title"])
-
     song = fetch_song(song_id)
     if not song:
         song = {
@@ -176,7 +120,6 @@ def player(song_id):
 @app.route('/trending')
 def trending():
     songs = fetch_trending(24)
-    songs = _with_fallback(songs, 24)
     print(f"[TRENDING] {len(songs)} songs")
     return render_template('trending.html', songs=songs, title="Trending")
 
@@ -217,7 +160,6 @@ def settings():
 @app.route('/home')
 def home():
     songs = fetch_trending(20)
-    songs = _with_fallback(songs, 20)
     return render_template('home.html', songs=songs, title="Your Daily Mix")
 
 
@@ -269,7 +211,7 @@ def edit_profile():
     return render_template('edit_profile.html', title="Edit Profile", profile=profile_data)
 
 # ═══════════════════════════════════════════════════════════════════════
-# API ENDPOINTS (proxies to Koyeb API app)
+# API ENDPOINTS (proxies to your Koyeb API app)
 # ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/api/search')
@@ -284,15 +226,11 @@ def api_search():
 def api_trending():
     limit = request.args.get('limit', 20, type=int)
     songs = fetch_trending(limit)
-    songs = _with_fallback(songs, limit)
     return jsonify(songs)
 
 
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
-    for fb in FALLBACK_SONGS:
-        if fb["id"] == song_id:
-            return jsonify(fb)
     song = fetch_song(song_id)
     if song:
         return jsonify(song)
@@ -323,10 +261,10 @@ def static_files(filename):
 
 @app.errorhandler(404)
 def not_found(e):
-    # FIX: Don't render index.html for missing static files - just return plain 404
+    # Don't render templates for missing static files
     if request.path.startswith('/static/'):
         return jsonify({"error": "Not found"}), 404
-    return render_template('index.html', songs=FALLBACK_SONGS[:6], title="Not Found"), 404
+    return render_template('index.html', songs=[], title="Not Found"), 404
 
 
 @app.errorhandler(500)
