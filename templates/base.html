@@ -67,6 +67,8 @@
 
     <!-- Bottom Nav CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
+    <!-- Pull-Up Player CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pullup-player.css') }}">
 
     {% block extra_css %}{% endblock %}
 
@@ -85,6 +87,99 @@
     <!-- Main Content -->
     <div class="main-content">
         {% block content %}{% endblock %}
+    </div>
+
+    <!-- Mini Player Bar -->
+    <div class="mini-player" id="miniPlayer">
+        <img src="/static/images/default-album.png" alt="" class="mini-player-thumb" id="miniThumb">
+        <div class="mini-player-info">
+            <div class="mini-player-title" id="miniTitle">Select a song</div>
+            <div class="mini-player-artist" id="miniArtist">-</div>
+        </div>
+        <div class="mini-player-controls">
+            <button class="mini-player-btn" onclick="event.stopPropagation(); previousSong()">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="mini-player-btn play-btn" onclick="event.stopPropagation(); togglePlay()">
+                <i class="fas fa-play play-icon"></i>
+            </button>
+            <button class="mini-player-btn" onclick="event.stopPropagation(); nextSong()">
+                <i class="fas fa-step-forward"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Full Player Overlay -->
+    <div class="full-player" id="fullPlayer">
+        <div class="swipe-indicator"></div>
+
+        <div class="full-player-header">
+            <button class="down-btn" onclick="collapsePlayer()">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <h3>Now Playing</h3>
+            <button class="queue-btn" onclick="showToast('Queue coming soon!', 'info')">
+                <i class="fas fa-list-ul"></i>
+            </button>
+        </div>
+
+        <div class="full-player-content">
+            <div class="full-player-artwork" id="fullArtwork">
+                <img src="/static/images/default-album.png" alt="" id="fullThumb">
+                <div class="vinyl-disc"></div>
+            </div>
+            <div class="full-player-details">
+                <div class="full-player-title" id="fullTitle">Select a song</div>
+                <div class="full-player-artist" id="fullArtist">-</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-time">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+        </div>
+
+        <div class="full-player-controls">
+            <button class="control-btn shuffle-btn" onclick="toggleShuffle()">
+                <i class="fas fa-random"></i>
+            </button>
+            <button class="control-btn prev-btn" onclick="previousSong()">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="control-btn play-pause-btn" onclick="togglePlay()">
+                <i class="fas fa-play play-icon"></i>
+            </button>
+            <button class="control-btn next-btn" onclick="nextSong()">
+                <i class="fas fa-step-forward"></i>
+            </button>
+            <button class="control-btn repeat-btn" onclick="toggleRepeat()">
+                <i class="fas fa-repeat"></i>
+            </button>
+        </div>
+
+        <div class="full-player-extras">
+            <button class="extra-btn" onclick="toggleFavorite()">
+                <i class="far fa-heart"></i>
+                <span>Like</span>
+            </button>
+            <button class="extra-btn" onclick="shareSong()">
+                <i class="fas fa-share-alt"></i>
+                <span>Share</span>
+            </button>
+            <button class="extra-btn" onclick="showToast('Download coming soon!', 'info')">
+                <i class="fas fa-download"></i>
+                <span>Download</span>
+            </button>
+            <button class="extra-btn" onclick="showToast('Lyrics coming soon!', 'info')">
+                <i class="fas fa-align-center"></i>
+                <span>Lyrics</span>
+            </button>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -108,6 +203,7 @@
     </nav>
 
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+                </html>
