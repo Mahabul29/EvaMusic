@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+
+<div class="edit-profile-page">
+    <div class="edit-header">
+        <a href="/profile" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h1>Edit Profile</h1>
+    </div>
+
+    <form id="editProfileForm" class="edit-form" onsubmit="saveProfile(event)">
+
+        <!-- Avatar Selection -->
+        <div class="form-section">
+            <label class="form-label">Choose Avatar</label>
+            <div class="avatar-grid">
+                {% for avatar in avatars %}
+                <div class="avatar-option {% if profile.avatar_url == avatar %}selected{% endif %}" 
+                     data-avatar="{{ avatar }}"
+                     onclick="selectAvatar(this)">
+                    <img src="{{ avatar }}" alt="Avatar {{ loop.index }}"
+                         onerror="this.src='/static/images/avatars/default.png'">
+                </div>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="avatar_url" id="avatarInput" value="{{ profile.avatar_url }}">
+        </div>
+
+        <!-- Basic Info -->
+        <div class="form-section">
+            <label class="form-label">Display Name</label>
+            <input type="text" name="display_name" class="form-input" 
+                   value="{{ profile.display_name or profile.username }}" 
+                   placeholder="Your display name" maxlength="30">
+
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-input" 
+                   value="{{ profile.username }}" 
+                   placeholder="Username" maxlength="20" readonly>
+            <small class="form-hint">Username cannot be changed</small>
+
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-input" 
+                   value="{{ profile.email or '' }}" 
+                   placeholder="your@email.com">
+
+            <label class="form-label">Bio</label>
+            <textarea name="bio" class="form-input form-textarea" 
+                      placeholder="Tell us about yourself..." maxlength="150">{{ profile.bio or '' }}</textarea>
+            <small class="form-hint" id="bioCounter">0/150</small>
+        </div>
+
+        <!-- Social Links -->
+        <div class="form-section">
+            <label class="form-label">Social Links</label>
+
+            <div class="social-input-group">
+                <i class="fab fa-instagram social-icon"></i>
+                <input type="text" name="instagram" class="form-input social-input" 
+                       value="{{ profile.social_links.instagram or '' }}" 
+                       placeholder="Instagram username">
+            </div>
+
+            <div class="social-input-group">
+                <i class="fab fa-twitter social-icon"></i>
+                <input type="text" name="twitter" class="form-input social-input" 
+                       value="{{ profile.social_links.twitter or '' }}" 
+                       placeholder="Twitter username">
+            </div>
+
+            <div class="social-input-group">
+                <i class="fab fa-youtube social-icon"></i>
+                <input type="text" name="youtube" class="form-input social-input" 
+                       value="{{ profile.social_links.youtube or '' }}" 
+                       placeholder="YouTube channel">
+            </div>
+
+            <div class="social-input-group">
+                <i class="fab fa-spotify social-icon"></i>
+                <input type="text" name="spotify" class="form-input social-input" 
+                       value="{{ profile.social_links.spotify or '' }}" 
+                       placeholder="Spotify username">
+            </div>
+        </div>
+
+        <!-- Theme Settings -->
+        <div class="form-section">
+            <label class="form-label">Theme</label>
+            <div class="theme-grid">
+                {% for key, theme in themes.items() %}
+                <div class="theme-option {% if profile.preferences.theme == key %}selected{% endif %}" 
+                     data-theme="{{ key }}"
+                     onclick="selectTheme(this)">
+                    <div class="theme-preview" style="background: {{ theme.bg }}; color: {{ theme.text }}">
+                        <span>Aa</span>
+                    </div>
+                    <span class="theme-name">{{ theme.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="theme" id="themeInput" value="{{ profile.preferences.theme }}">
+        </div>
+
+        <!-- Accent Color -->
+        <div class="form-section">
+            <label class="form-label">Accent Color</label>
+            <div class="color-grid">
+                {% for color in accent_colors %}
+                <div class="color-option {% if profile.preferences.accent_color == color %}selected{% endif %}" 
+                     data-color="{{ color }}"
+                     style="background-color: {{ color }}"
+                     onclick="selectColor(this)">
+                    {% if profile.preferences.accent_color == color %}
+                    <i class="fas fa-check"></i>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="accent_color" id="accentInput" value="{{ profile.preferences.accent_color }}">
+        </div>
+
+        <!-- Preferences -->
+        <div class="form-section">
+            <label class="form-label">Preferences</label>
+
+            <div class="toggle-row">
+                <span>Notifications</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="notifications" 
+                           {% if profile.preferences.notifications %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <span>Auto Play</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="auto_play" 
+                           {% if profile.preferences.auto_play %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label>Text Size</label>
+                <select name="text_size" class="form-select">
+                    <option value="small" {% if profile.preferences.text_size == 'small' %}selected{% endif %}>Small</option>
+                    <option value="medium" {% if profile.preferences.text_size == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="large" {% if profile.preferences.text_size == 'large' %}selected{% endif %}>Large</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label>Download Quality</label>
+                <select name="download_quality" class="form-select">
+                    <option value="low" {% if profile.preferences.download_quality == 'low' %}selected{% endif %}>Low (96kbps)</option>
+                    <option value="medium" {% if profile.preferences.download_quality == 'medium' %}selected{% endif %}>Medium (160kbps)</option>
+                    <option value="high" {% if profile.preferences.download_quality == 'high' %}selected{% endif %}>High (320kbps)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="/profile" class="btn btn-secondary btn-large">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone">
+        <h3>Danger Zone</h3>
+        <button class="btn btn-danger" onclick="confirmDelete()">
+            <i class="fas fa-trash"></i> Delete Account
+        </button>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}
+          
