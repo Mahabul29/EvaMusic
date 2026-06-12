@@ -1,23 +1,159 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.hero-section {
+    padding: 40px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(29,185,84,0.1) 0%, transparent 100%);
+}
+.hero-section h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #1DB954, #1ed760);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.hero-section p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+.btn-primary:active { transform: scale(0.95); }
+
+.songs-section { padding: 20px; }
+.songs-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.songs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+.song-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.song-card:active { transform: scale(0.97); }
+.song-image {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+.song-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.play-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.play-overlay i {
+    font-size: 36px;
+    color: white;
+}
+.song-card:hover .play-overlay { opacity: 1; }
+.song-info { padding: 10px; }
+.song-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.categories-section { padding: 20px; }
+.categories-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 10px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
+.category-card:active { transform: scale(0.95); }
+.category-card i {
+    font-size: 24px;
+    color: var(--accent-color);
+}
+.category-card span {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+@media (min-width: 768px) {
+    .songs-grid { grid-template-columns: repeat(4, 1fr); }
+    .categories-grid { grid-template-columns: repeat(6, 1fr); }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="hero-section">
-    <div class="hero-content">
-        <h1>Discover Your Music</h1>
-        <p>Millions of songs. Free forever.</p>
-        <a href="/trending" class="btn-primary">Explore Trending</a>
-    </div>
+    <h1>EvaMusic</h1>
+    <p>Millions of songs. Free forever.</p>
+    <a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
 </div>
 
 <section class="songs-section">
-    <h2><i class="fas fa-fire"></i> Trending Now</h2>
+    <h2><i class="fas fa-fire" style="color: var(--accent-color)"></i> Trending Now</h2>
     <div class="songs-grid" id="songsGrid">
-        {% for song in songs %}
-        <div class="song-card"
-             data-id="{{ song.id }}"
-             data-url="{{ song.url }}"
-             onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+        {% for song in songs[:6] %}
+        <div class="song-card" data-id="{{ song.id }}" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
             <div class="song-image">
                 <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy"
                      onerror="this.src='/static/images/default-album.png'">
@@ -33,32 +169,14 @@
 </section>
 
 <section class="categories-section">
-    <h2><i class="fas fa-compact-disc"></i> Browse Categories</h2>
+    <h2><i class="fas fa-compact-disc" style="color: var(--accent-color)"></i> Browse</h2>
     <div class="categories-grid">
-        <a href="/search?q=bollywood" class="category-card">
-            <i class="fas fa-film"></i>
-            <span>Bollywood</span>
-        </a>
-        <a href="/search?q=punjabi" class="category-card">
-            <i class="fas fa-drum"></i>
-            <span>Punjabi</span>
-        </a>
-        <a href="/search?q=romantic" class="category-card">
-            <i class="fas fa-heart"></i>
-            <span>Romantic</span>
-        </a>
-        <a href="/search?q=party" class="category-card">
-            <i class="fas fa-glass-cheers"></i>
-            <span>Party</span>
-        </a>
-        <a href="/search?q=devotional" class="category-card">
-            <i class="fas fa-pray"></i>
-            <span>Devotional</span>
-        </a>
-        <a href="/search?q=hip+hop" class="category-card">
-            <i class="fas fa-microphone"></i>
-            <span>Hip Hop</span>
-        </a>
+        <a href="/search?q=bollywood" class="category-card"><i class="fas fa-film"></i><span>Bollywood</span></a>
+        <a href="/search?q=punjabi" class="category-card"><i class="fas fa-drum"></i><span>Punjabi</span></a>
+        <a href="/search?q=romantic" class="category-card"><i class="fas fa-heart"></i><span>Romantic</span></a>
+        <a href="/search?q=party" class="category-card"><i class="fas fa-glass-cheers"></i><span>Party</span></a>
+        <a href="/search?q=devotional" class="category-card"><i class="fas fa-pray"></i><span>Devotional</span></a>
+        <a href="/search?q=hip+hop" class="category-card"><i class="fas fa-microphone"></i><span>Hip Hop</span></a>
     </div>
 </section>
 {% endblock %}
