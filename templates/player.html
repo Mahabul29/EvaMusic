@@ -28,12 +28,12 @@
     z-index: -1;
 }
 .player-page-album {
-    width: 280px;
-    height: 280px;
+    width: 260px;
+    height: 260px;
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    margin-bottom: 32px;
+    margin-bottom: 28px;
 }
 .player-page-album img {
     width: 100%;
@@ -41,7 +41,7 @@
     object-fit: cover;
 }
 .player-page-title {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     margin-bottom: 8px;
     max-width: 90vw;
@@ -50,14 +50,14 @@
     text-overflow: ellipsis;
 }
 .player-page-artist {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--text-secondary);
     margin-bottom: 4px;
 }
 .player-page-album-name {
-    font-size: 14px;
+    font-size: 13px;
     color: rgba(255,255,255,0.4);
-    margin-bottom: 32px;
+    margin-bottom: 28px;
 }
 .player-page-btn {
     display: inline-flex;
@@ -111,14 +111,11 @@
     function startPlaying() {
         if (SONG_DATA && SONG_DATA.id) {
             playSong(SONG_DATA.id, SONG_DATA);
-            // Auto-expand to full player
-            setTimeout(() => expandPlayer(), 300);
         } else {
             showToast('Song not available', 'error');
         }
     }
 
-    // Auto-play on load if URL has stream
     window.addEventListener('load', () => {
         if (SONG_DATA.url || SONG_DATA.audio_url) {
             startPlaying();
