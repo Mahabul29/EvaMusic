@@ -53,10 +53,10 @@ class MusicPlayer {
         this.elements.shuffleBtn?.addEventListener('click', () => this.toggleShuffle());
         this.elements.repeatBtn?.addEventListener('click', () => this.toggleRepeat());
 
-        this.audio.addEventListener('timeupdate',    () => this.updateProgress());
-        this.audio.addEventListener('loadedmetadata',() => this.updateDuration());
-        this.audio.addEventListener('ended',         () => this.onEnded());
-        this.audio.addEventListener('error',         (e) => this.onError(e));
+        this.audio.addEventListener('timeupdate',     () => this.updateProgress());
+        this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
+        this.audio.addEventListener('ended',          () => this.onEnded());
+        this.audio.addEventListener('error',          (e) => this.onError(e));
 
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
@@ -71,11 +71,14 @@ class MusicPlayer {
     async loadSong(song) {
         if (!song || !song.url) {
             showToast('No stream URL — trying to fetch...');
-            // Try fetching fresh from API
             try {
                 const fresh = await API.getSong(song.id);
                 if (fresh && fresh.url) {
                     song = fresh;
+                    // Update queue entry with fresh URL so next time it works instantly
+                    if (this.queue[this.currentIndex]) {
+                        this.queue[this.currentIndex] = { ...this.queue[this.currentIndex], ...fresh };
+                    }
                 } else {
                     showToast('Song unavailable, skipping...');
                     setTimeout(() => this.next(), 1500);
@@ -91,7 +94,7 @@ class MusicPlayer {
         this.audio.src = song.url;
         this.audio.load();
 
-        if (this.elements.playerTitle) this.elements.playerTitle.textContent = song.title;
+        if (this.elements.playerTitle)  this.elements.playerTitle.textContent  = song.title;
         if (this.elements.playerArtist) this.elements.playerArtist.textContent = song.artist;
         if (this.elements.playerThumb)  this.elements.playerThumb.src = song.image || '/static/images/default-album.png';
 
@@ -161,13 +164,13 @@ class MusicPlayer {
         if (this.elements.scrubberThumb) this.elements.scrubberThumb.style.left = `${percent}%`;
 
         const time = this.formatTime(this.audio.currentTime);
-        if (this.elements.currentTime) this.elements.currentTime.textContent = time;
+        if (this.elements.currentTime)     this.elements.currentTime.textContent     = time;
         if (this.elements.fullCurrentTime) this.elements.fullCurrentTime.textContent = time;
     }
 
     updateDuration() {
         const time = this.formatTime(this.audio.duration || 0);
-        if (this.elements.duration) this.elements.duration.textContent = time;
+        if (this.elements.duration)     this.elements.duration.textContent     = time;
         if (this.elements.fullDuration) this.elements.fullDuration.textContent = time;
     }
 
@@ -234,47 +237,56 @@ class MusicPlayer {
     }
 }
 
-// ─── Global instance ──────────────────────────────────────────────────
+// ─── Global instance ───────────────────────────────────────────────────────────
 let player;
 
 document.addEventListener('DOMContentLoaded', () => {
     player = new MusicPlayer();
 
-    // Build queue from all song cards on the page
+    // ── Build queue from all song cards on the page ──
+    // Reads data-id, data-url, and the visible text so every queue entry
+    // already has a stream URL — no extra API call needed for next/prev.
     const cards = document.querySelectorAll('[data-id]');
     if (cards.length > 0) {
         const queueSongs = Array.from(cards).map(card => ({
             id:     card.dataset.id,
-            title:  card.querySelector('.song-title, h4')?.textContent || 'Unknown',
-            artist: card.querySelector('.song-artist, p')?.textContent || 'Unknown',
+            title:  card.querySelector('.song-title, h4')?.textContent?.trim() || 'Unknown',
+            artist: card.querySelector('.song-artist, p')?.textContent?.trim()  || 'Unknown',
             image:  card.querySelector('img')?.src || '/static/images/default-album.png',
-            url:    card.dataset.url || ''  // populated below if available
+            url:    card.dataset.url || ''   // ← populated via data-url="{{ song.url }}"
         }));
         player.setQueue(queueSongs, 0);
     }
 });
 
-// ─── Global helpers ───────────────────────────────────────────────────
+// ─── Global helpers ────────────────────────────────────────────────────────────
 
 async function playSong(songId, songData = null) {
     // Find index in queue
-    const idx = player.queue.findIndex(s => s.id == songId);
+    let idx = player.queue.findIndex(s => s.id == songId);
 
     if (songData && songData.url) {
-        // Full data passed in (from player.html auto-play)
-        if (idx !== -1) player.currentIndex = idx;
-        player.loadSong(songData);
+        // Full data passed in — update/add to queue so next/prev works
+        if (idx !== -1) {
+            player.queue[idx] = { ...player.queue[idx], ...songData };
+        } else {
+            // Song not in queue yet (e.g. search result) — push it
+            player.queue.push(songData);
+            idx = player.queue.length - 1;
+        }
+        player.currentIndex = idx;
+        player.loadSong(player.queue[idx]);
         return;
     }
 
-    // If we have it in the queue with a URL, use it
+    // If we have it in the queue with a URL, use it directly
     if (idx !== -1 && player.queue[idx].url) {
         player.currentIndex = idx;
         player.loadSong(player.queue[idx]);
         return;
     }
 
-    // Otherwise fetch from API
+    // Last resort — fetch from API
     showToast('Loading...');
     try {
         const song = await API.getSong(songId);
@@ -282,12 +294,14 @@ async function playSong(songId, songData = null) {
             showToast('Song not available');
             return;
         }
-        // Update queue entry with real URL
         if (idx !== -1) {
             player.queue[idx] = { ...player.queue[idx], ...song };
             player.currentIndex = idx;
+        } else {
+            player.queue.push(song);
+            player.currentIndex = player.queue.length - 1;
         }
-        player.loadSong(song);
+        player.loadSong(player.queue[player.currentIndex]);
     } catch(e) {
         showToast('Failed to load song');
         console.error(e);
@@ -322,7 +336,6 @@ function downloadSong(songId) {
 }
 
 function showToast(message) {
-    // Remove any existing toast
     document.querySelectorAll('.toast').forEach(t => t.remove());
     const toast = document.createElement('div');
     toast.className = 'toast';
@@ -343,5 +356,5 @@ function showToast(message) {
     `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
-    }
-            
+        }
+                         
