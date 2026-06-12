@@ -3,247 +3,125 @@
 
 {% block extra_css %}
 <style>
-.full-player {
-    position: fixed;
-    inset: 0;
+.player-page {
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: #000;
-    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
 }
-.player-background {
-    position: absolute;
+.player-page-bg {
+    position: fixed;
     inset: -50px;
     background-size: cover;
     background-position: center;
     filter: blur(60px) brightness(0.3);
     transform: scale(1.1);
-    z-index: 0;
+    z-index: -2;
 }
-.player-bg-overlay {
-    position: absolute;
+.player-page-overlay {
+    position: fixed;
     inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.95) 100%);
-    z-index: 1;
+    z-index: -1;
 }
-.player-top-nav {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    padding-top: env(safe-area-inset-top, 16px);
-}
-.player-nav-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    border: none;
-    color: white;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.player-container {
-    position: relative;
-    z-index: 10;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0 24px 24px;
-    overflow-y: auto;
-}
-.player-album-art {
+.player-page-album {
     width: 280px;
     height: 280px;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     margin-bottom: 32px;
 }
-.player-album-art img {
+.player-page-album img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.player-details {
-    text-align: center;
-    margin-bottom: 24px;
-    width: 100%;
-}
-.player-song-title {
+.player-page-title {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 8px;
+    max-width: 90vw;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.player-song-artist {
+.player-page-artist {
     font-size: 16px;
     color: var(--text-secondary);
     margin-bottom: 4px;
 }
-.player-song-album {
+.player-page-album-name {
     font-size: 14px;
     color: rgba(255,255,255,0.4);
+    margin-bottom: 32px;
 }
-.player-scrubber {
-    display: flex;
+.player-page-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    max-width: 400px;
-    margin-bottom: 24px;
-}
-.player-scrubber span {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-width: 36px;
-}
-.scrubber-bar {
-    flex: 1;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    position: relative;
-    cursor: pointer;
-}
-.scrubber-fill {
-    height: 100%;
-    width: 0%;
+    gap: 10px;
+    padding: 14px 40px;
     background: var(--accent-color);
-    border-radius: 2px;
-    transition: width 0.1s linear;
-}
-.scrubber-thumb {
-    position: absolute;
-    top: 50%;
-    left: 0%;
-    transform: translate(-50%, -50%);
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    opacity: 0;
-    transition: opacity 0.2s, left 0.1s linear;
-}
-.scrubber-bar:hover .scrubber-thumb { opacity: 1; }
-.player-main-controls {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 24px;
-}
-.control-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: transparent;
-    border: none;
     color: white;
-    font-size: 20px;
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 16px;
+}
+.player-page-btn:active { transform: scale(0.97); }
+.player-page-back {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.control-btn:active { transform: scale(0.9); }
-.control-btn.play-btn {
-    width: 64px;
-    height: 64px;
-    background: white;
-    color: #000;
-    font-size: 24px;
-}
-.control-btn.play-btn:active { transform: scale(0.95); }
-.player-extra-controls {
-    display: flex;
-    gap: 24px;
-}
-.player-extra-controls .control-btn {
-    color: rgba(255,255,255,0.7);
-    font-size: 22px;
-}
-.player-extra-controls .control-btn:hover { color: white; }
-.player-extra-controls .control-btn.favorited { color: #ef4444; }
-.player-extra-controls .control-btn.favorited i { font-weight: 900; }
-@media (max-height: 700px) {
-    .player-album-art { width: 220px; height: 220px; }
-    .player-song-title { font-size: 20px; }
+    gap: 6px;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="full-player">
-    <div class="player-background" style="background-image: url('{{ song.image }}')"></div>
-    <div class="player-bg-overlay"></div>
+<div class="player-page-bg" style="background-image: url('{{ song.image }}')"></div>
+<div class="player-page-overlay"></div>
 
-    <div class="player-top-nav">
-        <button class="player-nav-btn" onclick="history.back()"><i class="fas fa-chevron-down"></i></button>
-        <span style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8);">Now Playing</span>
-        <button class="player-nav-btn" onclick="showMoreMenu()"><i class="fas fa-ellipsis-h"></i></button>
+<div class="player-page">
+    <div class="player-page-album">
+        <img src="{{ song.image }}" alt="{{ song.title }}" onerror="this.src='/static/images/default-album.png'">
     </div>
+    <h1 class="player-page-title">{{ song.title }}</h1>
+    <p class="player-page-artist">{{ song.artist }}</p>
+    <p class="player-page-album-name">{{ song.album }}</p>
 
-    <div class="player-container">
-        <div class="player-album-art">
-            <img src="{{ song.image }}" alt="{{ song.title }}" id="fullAlbumArt" onerror="this.src='/static/images/default-album.png'">
-        </div>
-
-        <div class="player-details">
-            <h1 class="player-song-title" id="fullSongTitle">{{ song.title }}</h1>
-            <p class="player-song-artist" id="fullSongArtist">{{ song.artist }}</p>
-            <p class="player-song-album" id="fullSongAlbum">{{ song.album }}</p>
-        </div>
-
-        <div class="player-scrubber">
-            <span id="fullCurrentTime">0:00</span>
-            <div class="scrubber-bar" id="scrubberBar">
-                <div class="scrubber-fill" id="scrubberFill"></div>
-                <div class="scrubber-thumb" id="scrubberThumb"></div>
-            </div>
-            <span id="fullDuration">0:00</span>
-        </div>
-
-        <div class="player-main-controls">
-            <button id="shuffleBtn" class="control-btn" title="Shuffle"><i class="fas fa-random"></i></button>
-            <button id="prevBtnMain" class="control-btn" title="Previous"><i class="fas fa-step-backward"></i></button>
-            <button id="playPauseBtnMain" class="control-btn play-btn" title="Play/Pause"><i class="fas fa-play"></i></button>
-            <button id="nextBtnMain" class="control-btn" title="Next"><i class="fas fa-step-forward"></i></button>
-            <button id="repeatBtn" class="control-btn" title="Repeat"><i class="fas fa-redo"></i></button>
-        </div>
-
-        <div class="player-extra-controls">
-            <button id="playerHeartBtn" class="control-btn favorite-btn" data-song-id="{{ song.id }}"
-                    onclick="toggleFavorite('{{ song.id }}')" title="Favorite">
-                <i class="far fa-heart"></i>
-            </button>
-            <button class="control-btn" onclick="shareSong('{{ song.id }}')" title="Share">
-                <i class="fas fa-share-alt"></i>
-            </button>
-            <button class="control-btn" onclick="downloadSong('{{ song.id }}')" title="Download">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
+    <button class="player-page-btn" onclick="startPlaying()">
+        <i class="fas fa-play"></i> Play Now
+    </button>
+    <a href="/home" class="player-page-back">
+        <i class="fas fa-chevron-left"></i> Back to Home
+    </a>
 </div>
 
-<script src="{{ url_for('static', filename='js/media-session.js') }}"></script>
 <script>
+    const SONG_DATA = {{ song|tojson }};
+
+    function startPlaying() {
+        if (SONG_DATA && SONG_DATA.id) {
+            playSong(SONG_DATA.id, SONG_DATA);
+            // Auto-expand to full player
+            setTimeout(() => expandPlayer(), 300);
+        } else {
+            showToast('Song not available', 'error');
+        }
+    }
+
+    // Auto-play on load if URL has stream
     window.addEventListener('load', () => {
-        const songData = {{ song|tojson }};
-        if (songData.url || songData.audio_url) {
-            playSong('{{ song.id }}', songData);
+        if (SONG_DATA.url || SONG_DATA.audio_url) {
+            startPlaying();
         }
     });
 </script>
