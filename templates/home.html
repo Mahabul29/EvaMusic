@@ -4,10 +4,8 @@
 {% block extra_css %}
 <style>
 .home-page { padding-bottom: 20px; }
-
-/* Top Section */
 .home-top {
-    padding: 20px;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -33,7 +31,7 @@
 }
 .home-top-btns {
     display: flex;
-    gap: 12px;
+    gap: 10px;
 }
 .home-top-btn {
     width: 40px; height: 40px;
@@ -47,11 +45,9 @@
     justify-content: center;
     cursor: pointer;
 }
-
-/* Tabs */
 .home-tabs {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     padding: 0 20px 16px;
 }
 .home-tab {
@@ -69,15 +65,11 @@
     background: white;
     color: #000;
 }
-
-/* Section Title */
 .section-title {
     font-size: 22px;
     font-weight: 700;
     padding: 16px 20px 12px;
 }
-
-/* Grid - Your Usuals style */
 .grid-row {
     display: flex;
     gap: 14px;
@@ -87,11 +79,12 @@
     padding-bottom: 8px;
 }
 .grid-row::-webkit-scrollbar { display: none; }
-
 .grid-item {
     flex: 0 0 auto;
     width: 140px;
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
 }
 .grid-item-thumb {
     width: 140px;
@@ -109,7 +102,7 @@
 .grid-item-play {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -121,8 +114,8 @@
     color: white;
     filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
 }
-.grid-item-thumb:hover .grid-item-play,
-.grid-item-thumb:active .grid-item-play { opacity: 1; }
+.grid-item:hover .grid-item-play,
+.grid-item:active .grid-item-play { opacity: 1; }
 .grid-item-title {
     font-size: 14px;
     font-weight: 600;
@@ -138,90 +131,31 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-/* Bottom Player Bar (like JioSaavn) */
-.bottom-play-bar {
-    position: fixed;
-    bottom: 60px;
-    left: 0; right: 0;
-    height: 64px;
-    background: #282828;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 12px;
-    z-index: 100;
-    border-radius: 8px 8px 0 0;
-    margin: 0 8px;
-    width: calc(100% - 16px);
-}
-.bottom-play-bar.hidden { display: none; }
-.bottom-play-thumb {
-    width: 48px; height: 48px;
-    border-radius: 6px;
-    object-fit: cover;
-}
-.bottom-play-info {
-    flex: 1;
-    min-width: 0;
-}
-.bottom-play-title {
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.bottom-play-artist {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-.bottom-play-btn {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.bottom-play-btn.play-btn {
-    width: 44px; height: 44px;
-    background: white;
-    color: #000;
-    font-size: 18px;
-}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="home-page">
-    <!-- Top Header -->
     <div class="home-top">
         <div class="home-logo">
             <div class="home-logo-icon"><i class="fas fa-music"></i></div>
             <span class="home-logo-text">EvaMusic</span>
         </div>
         <div class="home-top-btns">
-            <button class="home-top-btn" onclick="showToast('Search coming soon', 'info')"><i class="fas fa-search"></i></button>
+            <button class="home-top-btn" onclick="window.location.href='/search'"><i class="fas fa-search"></i></button>
             <button class="home-top-btn" onclick="window.location.href='/settings'"><i class="fas fa-cog"></i></button>
         </div>
     </div>
 
-    <!-- Tabs -->
     <div class="home-tabs">
         <button class="home-tab active">Music</button>
         <button class="home-tab" onclick="showToast('Podcasts coming soon', 'info')">Podcasts</button>
     </div>
 
-    <!-- Your Usuals / Trending -->
     <h2 class="section-title">Your Usuals</h2>
     <div class="grid-row">
         {% for song in songs[:8] %}
-        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+        <div class="grid-item" data-song-id="{{ song.id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image }}" data-song-url="{{ song.url if song.url else '' }}">
             <div class="grid-item-thumb">
                 <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
                 <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
@@ -232,11 +166,10 @@
         {% endfor %}
     </div>
 
-    <!-- Trending Now -->
     <h2 class="section-title">Trending Now</h2>
     <div class="grid-row">
         {% for song in songs[8:16] %}
-        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+        <div class="grid-item" data-song-id="{{ song.id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image }}" data-song-url="{{ song.url if song.url else '' }}">
             <div class="grid-item-thumb">
                 <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
                 <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
@@ -247,11 +180,10 @@
         {% endfor %}
     </div>
 
-    <!-- New Releases -->
     <h2 class="section-title">New Releases</h2>
     <div class="grid-row">
         {% for song in songs[16:24] %}
-        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+        <div class="grid-item" data-song-id="{{ song.id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image }}" data-song-url="{{ song.url if song.url else '' }}">
             <div class="grid-item-thumb">
                 <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
                 <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
@@ -262,4 +194,29 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+// Attach click handlers after DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.grid-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const songData = {
+                id: this.dataset.songId,
+                title: this.dataset.songTitle,
+                artist: this.dataset.songArtist,
+                image: this.dataset.songImage,
+                url: this.dataset.songUrl
+            };
+            console.log('[Home] Clicked song:', songData.id, songData.title);
+            if (typeof playSong === 'function') {
+                playSong(songData.id, songData);
+            } else {
+                console.error('[Home] playSong function not found!');
+                showToast('Player not ready', 'error');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
