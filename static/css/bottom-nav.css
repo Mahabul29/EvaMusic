@@ -1,0 +1,76 @@
+/* static/css/bottom-nav.css */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--nav-bg, #1a1a1a);
+    border-top: 1px solid var(--border-color, #333);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--nav-inactive, #888);
+    flex: 1;
+    height: 100%;
+    transition: color 0.2s ease;
+    gap: 3px;
+}
+
+.nav-item:hover,
+.nav-item:active {
+    color: var(--nav-active, #1DB954);
+}
+
+.nav-item.active {
+    color: var(--nav-active, #1DB954);
+}
+
+.nav-icon {
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+}
+
+.nav-icon i {
+    font-size: 22px;
+}
+
+.nav-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Active state styling */
+.nav-item.active .nav-icon {
+    color: var(--nav-active, #1DB954);
+}
+
+.nav-item.active .nav-label {
+    color: var(--nav-active, #1DB954);
+}
+
+/* Hide on larger screens if needed */
+@media (min-width: 1024px) {
+    .bottom-nav {
+        display: none;
+    }
+    body {
+        padding-bottom: 0;
+    }
+  }
+      
