@@ -32,6 +32,43 @@
 .search-form input::placeholder { color: var(--text-secondary); }
 .search-form input:focus { border-color: var(--accent-color); }
 
+/* Browse Section */
+.browse-section { padding: 0 20px 20px; }
+.browse-section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.browse-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 10px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
+.category-card:active { transform: scale(0.95); }
+.category-card i {
+    font-size: 22px;
+    color: var(--accent-color);
+}
+.category-card span {
+    font-size: 12px;
+    font-weight: 500;
+}
+
 .songs-list {
     padding: 0 16px 80px;
 }
@@ -105,6 +142,10 @@
     color: var(--text-secondary);
 }
 .empty-state i { font-size: 48px; margin-bottom: 16px; }
+
+@media (min-width: 768px) {
+    .browse-grid { grid-template-columns: repeat(6, 1fr); }
+}
 </style>
 {% endblock %}
 
@@ -119,6 +160,19 @@
 <form class="search-form" action="/search" method="GET">
     <input type="text" name="q" placeholder="Search songs, artists, albums..." value="{{ query }}" autofocus>
 </form>
+
+<!-- Browse Categories (shown when no search or always) -->
+<section class="browse-section">
+    <h2><i class="fas fa-compact-disc" style="color: var(--accent-color)"></i> Browse</h2>
+    <div class="browse-grid">
+        <a href="/search?q=bollywood" class="category-card"><i class="fas fa-film"></i><span>Bollywood</span></a>
+        <a href="/search?q=punjabi" class="category-card"><i class="fas fa-drum"></i><span>Punjabi</span></a>
+        <a href="/search?q=romantic" class="category-card"><i class="fas fa-heart"></i><span>Romantic</span></a>
+        <a href="/search?q=party" class="category-card"><i class="fas fa-glass-cheers"></i><span>Party</span></a>
+        <a href="/search?q=devotional" class="category-card"><i class="fas fa-pray"></i><span>Devotional</span></a>
+        <a href="/search?q=hip+hop" class="category-card"><i class="fas fa-microphone"></i><span>Hip Hop</span></a>
+    </div>
+</section>
 
 <div class="songs-list" id="searchResults">
     {% for song in songs %}
@@ -152,4 +206,3 @@
     {% endfor %}
 </div>
 {% endblock %}
-    
