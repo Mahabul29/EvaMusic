@@ -8,69 +8,62 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # ═══════════════════════════════════════════════════════════════════════
-# WORKING JioSaavn API endpoints (verified June 2026)
+# API configs — (base, search_path, param_key)
 # ═══════════════════════════════════════════════════════════════════════
 
-API_BASES = [
-    "https://saavn.dev/api",                            # ✅ Primary — standard REST API
-    "https://jio-saavn-api.vercel.app",                 # ✅ Fallback
-    "https://jiosaavn-api-privatecvc2.vercel.app/api",  # Fallback
+SEARCH_CONFIGS = [
+    ("https://jiosaavn-api-2.vercel.app",    "/api/search/songs", "query"),
+    ("https://jiosaavn-api-ts.vercel.app",   "/api/search/songs", "query"),
+    ("https://jiosaavn-api-sigma.vercel.app","/api/search/songs", "query"),
+    ("https://jio-saavn-api.vercel.app",     "/search/songs",     "query"),
+    ("https://jio-saavn-api.vercel.app",     "/search",           "query"),
 ]
 
-def _get(path, params=None, timeout=15):
-    """Try each API base in order; only return data that is non-empty."""
+# For song detail lookups (non-search)
+API_BASES = [
+    "https://jiosaavn-api-2.vercel.app/api",
+    "https://jiosaavn-api-ts.vercel.app/api",
+    "https://jio-saavn-api.vercel.app",
+]
+
+def _get(url, params=None, timeout=15):
+    """GET a full URL; return parsed JSON only if non-empty."""
+    try:
+        r = requests.get(url, params=params, timeout=timeout)
+        print(f"[API] {r.status_code} from {url}")
+        if r.status_code == 200:
+            data = r.json()
+            if data and data != {} and data != []:
+                return data
+            print(f"[API] Empty body from {url}")
+    except Exception as e:
+        print(f"[API ERROR] {url}: {e}")
+    return None
+
+def _get_path(path, params=None, timeout=15):
+    """Try path against each base in API_BASES."""
     for base in API_BASES:
-        try:
-            url = f"{base}{path}"
-            r = requests.get(url, params=params, timeout=timeout)
-            print(f"[API] {r.status_code} from {url}")
-            if r.status_code == 200:
-                data = r.json()
-                # Don't return a 200 that carries no usable content
-                if data and data != {} and data != []:
-                    return data
-                print(f"[API] Empty body from {url}, trying next base")
-        except Exception as e:
-            print(f"[API ERROR] {base}{path}: {e}")
+        data = _get(f"{base}{path}", params, timeout)
+        if data:
+            return data
     return None
 
 # ═══════════════════════════════════════════════════════════════════════
-# FIXED fetch_songs — handles different API response shapes
-# ═══════════════════════════════════════════════════════════════════════
 
 def fetch_songs(query, limit=20):
-    """
-    Try multiple endpoint patterns since different mirrors use different paths.
-    saavn.dev uses /search/songs?query=...
-    jio-saavn-api uses /search?query=...
-    """
-    endpoints_to_try = [
-        ("/search/songs", {"query": query, "limit": limit}),
-        ("/search/songs", {"q": query, "limit": limit}),
-        ("/search", {"query": query, "limit": limit}),
-        ("/search", {"q": query, "limit": limit}),
-    ]
-
-    for path, params in endpoints_to_try:
-        data = _get(path, params)
+    for base, path, key in SEARCH_CONFIGS:
+        data = _get(f"{base}{path}", {key: query, "limit": limit})
         if data:
             songs = _extract_songs(data)
             if songs:
-                print(f"[SEARCH] '{query}' → {len(songs)} raw songs via {path}")
+                print(f"[SEARCH] '{query}' → {len(songs)} songs via {base}{path}")
                 return songs
-    print(f"[SEARCH] No results found for '{query}'")
+    print(f"[SEARCH] No results for '{query}'")
     return []
 
 def _extract_songs(data):
-    """Extract song list from various API response wrappers."""
     if not data:
         return []
-    
-    # Handle {"data": {"results": [...]}}  (saavn.dev)
-    # Handle {"results": [...]}             (direct)
-    # Handle {"data": [...]}                (array wrapper)
-    # Handle [...]                          (direct array)
-    
     candidates = [
         data.get("data", {}).get("results") if isinstance(data.get("data"), dict) else None,
         data.get("data"),
@@ -78,7 +71,6 @@ def _extract_songs(data):
         data.get("result"),
         data,
     ]
-    
     for candidate in candidates:
         if isinstance(candidate, list) and len(candidate) > 0:
             return candidate
@@ -92,11 +84,10 @@ def fetch_trending(limit=20):
         "bollywood new releases",
         "viral songs india"
     ]
-    query = random.choice(queries)
-    return fetch_songs(query, limit)
+    return fetch_songs(random.choice(queries), limit)
 
 def fetch_playlist_songs(playlist_id):
-    data = _get(f"/playlists", {"id": playlist_id})
+    data = _get_path(f"/playlists", {"id": playlist_id})
     if not data:
         return []
     inner = data.get("data") or data
@@ -105,7 +96,7 @@ def fetch_playlist_songs(playlist_id):
     return []
 
 def fetch_album_songs(album_id):
-    data = _get(f"/albums", {"id": album_id})
+    data = _get_path(f"/albums", {"id": album_id})
     if not data:
         return []
     inner = data.get("data") or data
@@ -114,7 +105,7 @@ def fetch_album_songs(album_id):
     return []
 
 def fetch_artist_songs(artist_id, limit=20):
-    data = _get(f"/artists/{artist_id}/songs", {"limit": limit})
+    data = _get_path(f"/artists/{artist_id}/songs", {"limit": limit})
     if not data:
         return []
     inner = data.get("data") or data
@@ -123,7 +114,6 @@ def fetch_artist_songs(artist_id, limit=20):
     return []
 
 def _best_url(download_list):
-    """Pick highest quality non-empty URL from downloadUrl array."""
     if not download_list or not isinstance(download_list, list):
         return ""
     for quality in ["320kbps", "160kbps", "96kbps"]:
@@ -141,8 +131,6 @@ def _best_url(download_list):
 def format_song(song):
     if not song:
         return {}
-    
-    # Handle different image formats
     image = song.get("image", "/static/images/default-album.png")
     if isinstance(image, list) and image:
         image = image[-1].get("url", "/static/images/default-album.png")
@@ -150,8 +138,7 @@ def format_song(song):
         image = image.get("url", "/static/images/default-album.png")
     elif not isinstance(image, str):
         image = "/static/images/default-album.png"
-    
-    # Handle artists (can be array, dict, or string)
+
     artists = song.get("artists", {})
     if isinstance(artists, dict):
         primary = artists.get("primary", [])
@@ -161,12 +148,11 @@ def format_song(song):
         artist = ", ".join([a.get("name", "") for a in artists if isinstance(a, dict)]) or "Unknown Artist"
     else:
         artist = song.get("primaryArtists", song.get("artist", "Unknown Artist"))
-    
-    # Handle album
+
     album = song.get("album", "Unknown Album")
     if isinstance(album, dict):
         album = album.get("name", "Unknown Album")
-    
+
     return {
         "id":       str(song.get("id", "")),
         "title":    song.get("name", song.get("title", "Unknown Title")),
@@ -196,15 +182,14 @@ def search():
     songs = []
     if query:
         results = fetch_songs(query, 30)
-        # Keep all songs; mark those without a URL so the UI can grey them out
         songs = [format_song(x) for x in results]
         songs_with_url = [s for s in songs if s.get("url")]
-        print(f"[SEARCH] Query: '{query}' → {len(songs)} total, {len(songs_with_url)} streamable")
+        print(f"[SEARCH] '{query}' → {len(songs)} total, {len(songs_with_url)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
 @app.route('/player/<song_id>')
 def player(song_id):
-    data = _get(f"/songs/{song_id}")
+    data = _get_path(f"/songs/{song_id}")
     try:
         if data and isinstance(data.get("data"), list):
             song_data = data["data"][0]
@@ -218,12 +203,8 @@ def player(song_id):
     except Exception as e:
         print(f"[PLAYER ERROR] {e}")
         song = {
-            "id": song_id,
-            "title": "Unknown Song",
-            "artist": "Unknown Artist",
-            "album": "Unknown Album",
-            "url": "",
-            "image": "/static/images/default-album.png",
+            "id": song_id, "title": "Unknown Song", "artist": "Unknown Artist",
+            "album": "Unknown Album", "url": "", "image": "/static/images/default-album.png",
             "duration": 0
         }
     return render_template('player.html', song=song, title=song.get("title", "Player"))
@@ -282,7 +263,7 @@ def api_trending():
 
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
-    data = _get(f"/songs/{song_id}")
+    data = _get_path(f"/songs/{song_id}")
     try:
         if data and isinstance(data.get("data"), list):
             song_data = data["data"][0]
@@ -296,14 +277,13 @@ def api_song(song_id):
 
 @app.route('/api/debug/search')
 def api_debug_search():
-    """Test what raw data comes back from the API."""
     query = request.args.get('q', 'arijit singh')
-    data = _get("/search/songs", {"query": query, "limit": 3})
-    return jsonify({
-        "api_response": data,
-        "extracted_songs": _extract_songs(data),
-        "formatted": [format_song(s) for s in (_extract_songs(data) or [])]
-    })
+    results = []
+    for base, path, key in SEARCH_CONFIGS:
+        url = f"{base}{path}"
+        data = _get(url, {key: query, "limit": 3})
+        results.append({"url": url, "got_data": bool(data), "songs": len(_extract_songs(data)) if data else 0})
+    return jsonify(results)
 
 # ═══════════════════════════════════════════════════════════════════════
 # STATIC & ERROR HANDLERS
@@ -321,12 +301,6 @@ def not_found(e):
 def server_error(e):
     return jsonify({"error": "Internal server error"}), 500
 
-# ═══════════════════════════════════════════════════════════════════════
-# RUN
-# ═══════════════════════════════════════════════════════════════════════
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-    
