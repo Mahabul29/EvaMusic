@@ -323,7 +323,10 @@ def static_files(filename):
 
 @app.errorhandler(404)
 def not_found(e):
-    return render_template('index.html', title="Not Found"), 404
+    # FIX: Don't render index.html for missing static files - just return plain 404
+    if request.path.startswith('/static/'):
+        return jsonify({"error": "Not found"}), 404
+    return render_template('index.html', songs=FALLBACK_SONGS[:6], title="Not Found"), 404
 
 
 @app.errorhandler(500)
@@ -334,3 +337,10 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
+'''
+
+with open('/mnt/agents/output/app.py', 'w') as f:
+    f.write(app_py)
+
+print("app.py saved successfully")
+print(f"Size: {len(app_py)} characters")
