@@ -62,3 +62,38 @@
 </div>
 </section>
 {% endblock %}
+{% block content %}
+<div class="hero-section">
+<h1>EvaMusic</h1>
+<p>Millions of songs. Free forever.</p>
+<a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
+</div>
+<div class="lang-filters">
+<a href="/home" class="lang-chip active">All</a>
+<a href="/search?q=hindi" class="lang-chip">Hindi</a>
+<a href="/search?q=bengali" class="lang-chip">Bengali</a>
+<a href="/search?q=english" class="lang-chip">English</a>
+<a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
+<a href="/search?q=tamil" class="lang-chip">Tamil</a>
+</div>
+<section class="trending-section">
+<div class="trending-header">
+<i class="fas fa-fire" style="color:#ff6b35;font-size:28px"></i>
+<div><h2>Trending</h2><p>Hot songs right now</p></div>
+</div>
+<div class="trending-grid">
+{% for song in songs[:6] %}
+<a href="javascript:void(0)" class="trending-card" onclick="playSong('{{ song.id }}',{{ song|tojson }});return false;">
+<div class="trending-image">
+<img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+<div class="trending-play"><i class="fas fa-play-circle"></i></div>
+</div>
+<div class="trending-info">
+<h3 class="trending-title">{{ song.title }}</h3>
+<p class="trending-artist">{{ song.artist }}</p>
+</div>
+</a>
+{% endfor %}
+</div>
+</section>
+{% endblock %}
