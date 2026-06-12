@@ -1,41 +1,155 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.search-header {
+    padding: 20px;
+    text-align: center;
+}
+.search-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.search-header p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.search-form {
+    padding: 0 20px 20px;
+}
+.search-form input {
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 28px;
+    color: var(--text-color);
+    font-size: 16px;
+    outline: none;
+}
+.search-form input::placeholder { color: var(--text-secondary); }
+.search-form input:focus { border-color: var(--accent-color); }
+
+.songs-list {
+    padding: 0 16px 80px;
+}
+.song-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+}
+.song-row:hover, .song-row:active { background: var(--hover-bg); }
+.song-row.unavailable { opacity: 0.5; }
+.song-number {
+    width: 28px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.song-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+.song-details { flex: 1; min-width: 0; }
+.song-details h4 {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-details p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-icon:hover { color: var(--accent-color); }
+.song-duration {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+.empty-state i { font-size: 48px; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="search-header">
-    <h1><i class="fas fa-search"></i> Search Results</h1>
+    <h1><i class="fas fa-search" style="color: var(--accent-color)"></i> Search</h1>
+    {% if query %}
     <p>Found {{ songs|length }} songs for "{{ query }}"</p>
+    {% endif %}
 </div>
+
+<form class="search-form" action="/search" method="GET">
+    <input type="text" name="q" placeholder="Search songs, artists, albums..." value="{{ query }}" autofocus>
+</form>
 
 <div class="songs-list" id="searchResults">
     {% for song in songs %}
-    <div class="song-row {% if not song.url %}song-unavailable{% endif %}"
+    <div class="song-row {% if not song.url %}unavailable{% endif %}"
          data-id="{{ song.id }}"
-         {% if song.url %}onclick="playSong('{{ song.id }}')"{% endif %}>
+         {% if song.url %}onclick="playSong('{{ song.id }}', {{ song|tojson }})"{% endif %}>
         <div class="song-number">{{ loop.index }}</div>
-        <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb">
+        <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb" onerror="this.src='/static/images/default-album.png'">
         <div class="song-details">
             <h4>{{ song.title }}</h4>
             <p>{{ song.artist }} • {{ song.album }}</p>
         </div>
         <div class="song-actions">
             {% if song.url %}
-            <button class="btn-icon" onclick="event.stopPropagation(); addToLibrary('{{ song.id }}')">
+            <button class="btn-icon" onclick="event.stopPropagation(); toggleFavorite('{{ song.id }}', {{ song|tojson }})">
                 <i class="far fa-heart"></i>
             </button>
             {% else %}
-            <span class="unavailable-label" title="Stream not available">
-                <i class="fas fa-lock"></i>
-            </span>
+            <span style="color: var(--text-secondary); font-size: 12px;"><i class="fas fa-lock"></i></span>
             {% endif %}
             <span class="song-duration">{{ song.duration // 60 }}:{{ '%02d' % (song.duration % 60) }}</span>
         </div>
     </div>
     {% else %}
+    {% if query %}
     <div class="empty-state">
         <i class="fas fa-music"></i>
         <p>No songs found. Try a different search.</p>
     </div>
+    {% endif %}
     {% endfor %}
 </div>
 {% endblock %}
+    
