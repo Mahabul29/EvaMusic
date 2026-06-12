@@ -12,22 +12,24 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 # ═══════════════════════════════════════════════════════════════════════
 
 API_BASES = [
-    "https://jio-saavn-api.vercel.app",           # ✅ Primary — most reliable
-    "https://saavn.dev/api",                       # ❌ Currently down (keep as fallback)
-    "https://jiosaavn-api-privatecvc2.vercel.app/api",  # ❌ Dead
+    "https://saavn.dev/api",                            # ✅ Primary — standard REST API
+    "https://jio-saavn-api.vercel.app",                 # ✅ Fallback
+    "https://jiosaavn-api-privatecvc2.vercel.app/api",  # Fallback
 ]
 
 def _get(path, params=None, timeout=15):
-    """Try each API base in order, return parsed JSON or None."""
+    """Try each API base in order; only return data that is non-empty."""
     for base in API_BASES:
         try:
             url = f"{base}{path}"
-            # Some APIs need query as 'q', some as 'query'
             r = requests.get(url, params=params, timeout=timeout)
             print(f"[API] {r.status_code} from {url}")
             if r.status_code == 200:
                 data = r.json()
-                return data
+                # Don't return a 200 that carries no usable content
+                if data and data != {} and data != []:
+                    return data
+                print(f"[API] Empty body from {url}, trying next base")
         except Exception as e:
             print(f"[API ERROR] {base}{path}: {e}")
     return None
@@ -39,24 +41,24 @@ def _get(path, params=None, timeout=15):
 def fetch_songs(query, limit=20):
     """
     Try multiple endpoint patterns since different mirrors use different paths.
+    saavn.dev uses /search/songs?query=...
+    jio-saavn-api uses /search?query=...
     """
-    # Pattern 1: /search/songs?query=... (saavn.dev style)
-    # Pattern 2: /search?query=... (jio-saavn-api style)
-    # Pattern 3: /search/songs?q=... (alternative)
-    
     endpoints_to_try = [
         ("/search/songs", {"query": query, "limit": limit}),
-        ("/search", {"query": query, "limit": limit}),
         ("/search/songs", {"q": query, "limit": limit}),
+        ("/search", {"query": query, "limit": limit}),
         ("/search", {"q": query, "limit": limit}),
     ]
-    
+
     for path, params in endpoints_to_try:
         data = _get(path, params)
         if data:
             songs = _extract_songs(data)
             if songs:
+                print(f"[SEARCH] '{query}' → {len(songs)} raw songs via {path}")
                 return songs
+    print(f"[SEARCH] No results found for '{query}'")
     return []
 
 def _extract_songs(data):
@@ -183,9 +185,10 @@ def format_song(song):
 @app.route('/')
 def index():
     trending = fetch_trending(12)
-    songs = [s for s in [format_song(x) for x in trending] if s.get("url")]
-    print(f"[HOME] Loaded {len(songs)} songs")
-    return render_template('index.html', songs=songs, title="Home")
+    songs = [format_song(x) for x in trending]
+    songs_with_url = [s for s in songs if s.get("url")]
+    print(f"[HOME] {len(songs_with_url)}/{len(songs)} songs have stream URLs")
+    return render_template('index.html', songs=songs_with_url, title="Home")
 
 @app.route('/search')
 def search():
@@ -193,8 +196,10 @@ def search():
     songs = []
     if query:
         results = fetch_songs(query, 30)
-        songs = [s for s in [format_song(x) for x in results] if s.get("url")]
-    print(f"[SEARCH] Query: '{query}' → {len(songs)} results")
+        # Keep all songs; mark those without a URL so the UI can grey them out
+        songs = [format_song(x) for x in results]
+        songs_with_url = [s for s in songs if s.get("url")]
+        print(f"[SEARCH] Query: '{query}' → {len(songs)} total, {len(songs_with_url)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
 @app.route('/player/<song_id>')
@@ -227,6 +232,7 @@ def player(song_id):
 def trending():
     songs_raw = fetch_trending(24)
     songs = [s for s in [format_song(x) for x in songs_raw] if s.get("url")]
+    print(f"[TRENDING] {len(songs)} streamable songs")
     return render_template('trending.html', songs=songs, title="Trending")
 
 @app.route('/library')
@@ -322,4 +328,5 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
     
