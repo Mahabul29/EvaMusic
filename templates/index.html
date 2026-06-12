@@ -1,346 +1,64 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
-
 {% block extra_css %}
 <style>
-/* Language Selection Screen */
-.lang-select-screen {
-    position: fixed;
-    inset: 0;
-    background: var(--bg-color);
-    z-index: 300;
-    display: flex;
-    flex-direction: column;
-    padding: 40px 24px;
-    overflow-y: auto;
-}
-.lang-select-screen.hidden {
-    display: none;
-}
-.lang-select-header {
-    text-align: center;
-    margin-bottom: 32px;
-}
-.lang-select-header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    margin-bottom: 8px;
-}
-.lang-select-header p {
-    font-size: 16px;
-    color: var(--text-secondary);
-}
-.lang-select-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.lang-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 16px;
-    background: var(--card-bg);
-    border-radius: 16px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-height: 80px;
-}
-.lang-option.selected {
-    border-color: var(--accent-color);
-    background: rgba(29,185,84,0.1);
-}
-.lang-option:active { transform: scale(0.97); }
-.lang-name {
-    font-size: 16px;
-    font-weight: 600;
-}
-.lang-done-btn {
-    margin-top: auto;
-    padding: 14px 24px;
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 28px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.lang-done-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-.lang-done-btn:active:not(:disabled) { transform: scale(0.97); }
-
-/* Hero Section */
-.hero-section {
-    padding: 30px 20px;
-    text-align: center;
-    background: linear-gradient(180deg, rgba(29,185,84,0.08) 0%, transparent 100%);
-}
-.hero-section h1 {
-    font-size: 32px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #1DB954, #1ed760);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.hero-section p {
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin-bottom: 20px;
-}
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 28px;
-    background: var(--accent-color);
-    color: white;
-    border-radius: 24px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.2s;
-}
-.btn-primary:active { transform: scale(0.95); }
-
-/* Language Filters */
-.lang-filters {
-    display: flex;
-    gap: 10px;
-    padding: 16px 20px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-.lang-filters::-webkit-scrollbar { display: none; }
-.lang-chip {
-    padding: 8px 18px;
-    border-radius: 20px;
-    background: var(--card-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-.lang-chip.active, .lang-chip:hover {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
-    color: white;
-}
-
-/* Trending Section - Large Cards */
-.trending-section { padding: 20px; }
-.trending-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-.trending-header i {
-    font-size: 28px;
-    color: #ff6b35;
-}
-.trending-header h2 {
-    font-size: 28px;
-    font-weight: 800;
-}
-.trending-header p {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-left: auto;
-}
-.trending-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-}
-.trending-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-.trending-card:active { transform: scale(0.97); }
-.trending-image {
-    position: relative;
-    aspect-ratio: 1;
-    overflow: hidden;
-}
-.trending-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.trending-play {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-.trending-play i {
-    font-size: 48px;
-    color: white;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
-}
-.trending-card:hover .trending-play,
-.trending-card:active .trending-play { opacity: 1; }
-.trending-info { padding: 12px; }
-.trending-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.trending-artist {
-    font-size: 13px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-@media (min-width: 768px) {
-    .lang-select-grid { grid-template-columns: repeat(4, 1fr); }
-    .trending-grid { grid-template-columns: repeat(4, 1fr); }
-}
+.hero-section{padding:30px 20px;text-align:center;background:linear-gradient(180deg,rgba(29,185,84,0.08)0%,transparent 100%)}
+.hero-section h1{font-size:32px;font-weight:800;background:linear-gradient(135deg,#1DB954,#1ed760);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-section p{color:var(--text-secondary);margin-bottom:20px}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--accent-color);color:white;border-radius:24px;text-decoration:none;font-weight:600}
+.lang-filters{display:flex;gap:10px;padding:16px 20px;overflow-x:auto;scrollbar-width:none}
+.lang-filters::-webkit-scrollbar{display:none}
+.lang-chip{padding:8px 18px;border-radius:20px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);font-size:14px;text-decoration:none;white-space:nowrap}
+.lang-chip.active,.lang-chip:hover{background:var(--accent-color);border-color:var(--accent-color);color:white}
+.trending-section{padding:20px}
+.trending-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.trending-header h2{font-size:28px;font-weight:800}
+.trending-header p{color:var(--text-secondary);margin-left:auto;font-size:14px}
+.trending-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block}
+.trending-card:active{transform:scale(0.97)}
+.trending-image{position:relative;height:180px;overflow:hidden}
+.trending-image img{width:100%;height:100%;object-fit:cover}
+.trending-play{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
+.trending-play i{font-size:48px;color:white}
+.trending-card:hover .trending-play,.trending-card:active .trending-play{opacity:1}
+.trending-info{padding:12px}
+.trending-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 {% endblock %}
-
 {% block content %}
-<!-- Language Selection Screen (First Time) -->
-<div class="lang-select-screen" id="langSelectScreen">
-    <div class="lang-select-header">
-        <h1>Select Language</h1>
-        <p>Choose your preferred music languages</p>
-    </div>
-    <div class="lang-select-grid">
-        <div class="lang-option" data-lang="hindi" onclick="toggleLang(this)">
-            <span class="lang-name">Hindi</span>
-        </div>
-        <div class="lang-option" data-lang="english" onclick="toggleLang(this)">
-            <span class="lang-name">English</span>
-        </div>
-        <div class="lang-option" data-lang="punjabi" onclick="toggleLang(this)">
-            <span class="lang-name">Punjabi</span>
-        </div>
-        <div class="lang-option" data-lang="tamil" onclick="toggleLang(this)">
-            <span class="lang-name">Tamil</span>
-        </div>
-        <div class="lang-option" data-lang="telugu" onclick="toggleLang(this)">
-            <span class="lang-name">Telugu</span>
-        </div>
-        <div class="lang-option" data-lang="bengali" onclick="toggleLang(this)">
-            <span class="lang-name">Bengali</span>
-        </div>
-        <div class="lang-option" data-lang="marathi" onclick="toggleLang(this)">
-            <span class="lang-name">Marathi</span>
-        </div>
-        <div class="lang-option" data-lang="gujarati" onclick="toggleLang(this)">
-            <span class="lang-name">Gujarati</span>
-        </div>
-    </div>
-    <button class="lang-done-btn" id="langDoneBtn" onclick="saveLanguages()" disabled>Done</button>
+<div class="hero-section">
+<h1>EvaMusic</h1>
+<p>Millions of songs. Free forever.</p>
+<a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
 </div>
-
-<!-- Main Content (Hidden until language selected) -->
-<div id="mainContent" style="display: none;">
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <h1>EvaMusic</h1>
-        <p>Millions of songs. Free forever.</p>
-        <a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
-    </div>
-
-    <!-- Language Filters -->
-    <div class="lang-filters">
-        <a href="/home" class="lang-chip active">All</a>
-        <a href="/search?q=hindi" class="lang-chip">Hindi</a>
-        <a href="/search?q=bengali" class="lang-chip">Bengali</a>
-        <a href="/search?q=english" class="lang-chip">English</a>
-        <a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
-        <a href="/search?q=tamil" class="lang-chip">Tamil</a>
-        <a href="/search?q=telugu" class="lang-chip">Telugu</a>
-        <a href="/search?q=marathi" class="lang-chip">Marathi</a>
-    </div>
-
-    <!-- Trending Section - Large Cards -->
-    <section class="trending-section">
-        <div class="trending-header">
-            <i class="fas fa-fire"></i>
-            <div>
-                <h2>Trending</h2>
-                <p>Hot songs right now</p>
-            </div>
-        </div>
-        <div class="trending-grid" id="trendingGrid">
-            {% for song in songs[:6] %}
-            <div class="trending-card" data-id="{{ song.id }}" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
-                <div class="trending-image">
-                    <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy"
-                         onerror="this.src='/static/images/default-album.png'">
-                    <div class="trending-play"><i class="fas fa-play-circle"></i></div>
-                </div>
-                <div class="trending-info">
-                    <h3 class="trending-title">{{ song.title }}</h3>
-                    <p class="trending-artist">{{ song.artist }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
+<div class="lang-filters">
+<a href="/home" class="lang-chip active">All</a>
+<a href="/search?q=hindi" class="lang-chip">Hindi</a>
+<a href="/search?q=bengali" class="lang-chip">Bengali</a>
+<a href="/search?q=english" class="lang-chip">English</a>
+<a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
+<a href="/search?q=tamil" class="lang-chip">Tamil</a>
 </div>
-
-<script>
-// Language Selection Logic
-let selectedLangs = [];
-
-function toggleLang(el) {
-    const lang = el.dataset.lang;
-    el.classList.toggle('selected');
-
-    if (el.classList.contains('selected')) {
-        if (!selectedLangs.includes(lang)) selectedLangs.push(lang);
-    } else {
-        selectedLangs = selectedLangs.filter(l => l !== lang);
-    }
-
-    document.getElementById('langDoneBtn').disabled = selectedLangs.length === 0;
-}
-
-function saveLanguages() {
-    if (selectedLangs.length === 0) return;
-    localStorage.setItem('evamusic_langs', JSON.stringify(selectedLangs));
-    document.getElementById('langSelectScreen').classList.add('hidden');
-    document.getElementById('mainContent').style.display = 'block';
-    showToast('✅ Languages saved!', 'success');
-}
-
-window.addEventListener('load', () => {
-    const saved = localStorage.getItem('evamusic_langs');
-    if (saved) {
-        selectedLangs = JSON.parse(saved);
-        document.getElementById('langSelectScreen').classList.add('hidden');
-        document.getElementById('mainContent').style.display = 'block';
-    }
-});
-</script>
+<section class="trending-section">
+<div class="trending-header">
+<i class="fas fa-fire" style="color:#ff6b35;font-size:28px"></i>
+<div><h2>Trending</h2><p>Hot songs right now</p></div>
+</div>
+<div class="trending-grid">
+{% for song in songs[:6] %}
+<a href="javascript:void(0)" class="trending-card" onclick="playSong('{{ song.id }}',{{ song|tojson }});return false;">
+<div class="trending-image">
+<img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+<div class="trending-play"><i class="fas fa-play-circle"></i></div>
+</div>
+<div class="trending-info">
+<h3 class="trending-title">{{ song.title }}</h3>
+<p class="trending-artist">{{ song.artist }}</p>
+</div>
+</a>
+{% endfor %}
+</div>
+</section>
 {% endblock %}
