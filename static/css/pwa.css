@@ -1,0 +1,130 @@
+.pwa-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.pwa-popup {
+    background: #1e1e1e;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 340px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.4s ease;
+    border: 1px solid #333;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.pwa-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #333;
+}
+
+.pwa-popup-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    object-fit: cover;
+}
+
+.pwa-popup-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pwa-popup-info h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 4px;
+}
+
+.pwa-popup-info p {
+    font-size: 13px;
+    color: #b3b3b3;
+    margin: 0;
+}
+
+.pwa-popup-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.pwa-popup-close:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pwa-popup-body {
+    padding: 16px 20px;
+}
+
+.pwa-popup-body p {
+    font-size: 14px;
+    color: #b3b3b3;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pwa-popup-body p:last-child {
+    margin-bottom: 0;
+}
+
+.pwa-popup-install {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: calc(100% - 40px);
+    margin: 0 20px 20px;
+    padding: 14px;
+    background: #1DB954;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pwa-popup-install:active {
+    transform: scale(0.97);
+    background: #1ed760;
+}
+
+.pwa-popup-install i {
+    font-size: 18px;
+  }
+  
