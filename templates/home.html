@@ -2,144 +2,264 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
 <style>
-.home-page{position:relative;min-height:100vh;padding-bottom:80px}
-.home-bg{position:fixed;top:0;left:0;right:0;bottom:0;background-size:cover;background-position:center;filter:blur(60px) brightness(0.3);z-index:-2;transition:background-image 0.5s ease}
-.home-bg-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(18,18,18,0.6)0%,rgba(18,18,18,0.95)100%);z-index:-1}
-.home-top-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 20px}
-.home-nav-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;display:flex;align-items:center;justify-content:center}
-.home-nav-title{font-size:18px;font-weight:700}
-.language-bar{display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
-.language-bar::-webkit-scrollbar{display:none}
-.lang-btn{padding:6px 16px;border-radius:20px;background:rgba(255,255,255,0.1);border:none;color:var(--text-secondary);font-size:13px;white-space:nowrap;cursor:pointer}
-.lang-btn.active{background:var(--accent-color);color:white}
-.song-dots{display:flex;justify-content:center;gap:6px;padding:8px 0}
-.song-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3)}
-.song-dot.active{background:var(--accent-color)}
-.home-content{padding:20px}
-.hero-album-wrapper{width:220px;height:220px;margin:0 auto 24px;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
-.hero-album-art{width:100%;height:100%;object-fit:cover}
-.hero-info{text-align:center;margin-bottom:20px}
-.hero-title{font-size:24px;font-weight:800;margin-bottom:8px}
-.hero-subtitle{font-size:16px;color:var(--text-secondary);margin-bottom:4px}
-.hero-movie{font-size:14px;color:var(--text-secondary);opacity:0.7}
-.hero-stats{display:flex;justify-content:center;gap:24px;margin-bottom:24px}
-.stat-item{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:14px}
-.hero-actions{display:flex;justify-content:center;gap:16px;margin-bottom:32px}
-.hero-btn{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
-.hero-btn.heart-btn.active{color:#ef4444}
-.scroll-hint{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-secondary);font-size:12px;opacity:0.5}
-.hero-empty{text-align:center;padding:60px 20px;color:var(--text-secondary)}
-.hero-empty i{font-size:48px;margin-bottom:16px;display:block}
+.home-page { padding-bottom: 20px; }
+
+/* Top Section */
+.home-top {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.home-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.home-logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+}
+.home-logo-text {
+    font-size: 22px;
+    font-weight: 700;
+}
+.home-top-btns {
+    display: flex;
+    gap: 12px;
+}
+.home-top-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: none;
+    color: var(--text-color);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Tabs */
+.home-tabs {
+    display: flex;
+    gap: 12px;
+    padding: 0 20px 16px;
+}
+.home-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.home-tab.active {
+    background: white;
+    color: #000;
+}
+
+/* Section Title */
+.section-title {
+    font-size: 22px;
+    font-weight: 700;
+    padding: 16px 20px 12px;
+}
+
+/* Grid - Your Usuals style */
+.grid-row {
+    display: flex;
+    gap: 14px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 8px;
+}
+.grid-row::-webkit-scrollbar { display: none; }
+
+.grid-item {
+    flex: 0 0 auto;
+    width: 140px;
+    cursor: pointer;
+}
+.grid-item-thumb {
+    width: 140px;
+    height: 140px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+}
+.grid-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.grid-item-play {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.grid-item-play i {
+    font-size: 40px;
+    color: white;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+.grid-item-thumb:hover .grid-item-play,
+.grid-item-thumb:active .grid-item-play { opacity: 1; }
+.grid-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+.grid-item-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Bottom Player Bar (like JioSaavn) */
+.bottom-play-bar {
+    position: fixed;
+    bottom: 60px;
+    left: 0; right: 0;
+    height: 64px;
+    background: #282828;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 100;
+    border-radius: 8px 8px 0 0;
+    margin: 0 8px;
+    width: calc(100% - 16px);
+}
+.bottom-play-bar.hidden { display: none; }
+.bottom-play-thumb {
+    width: 48px; height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+.bottom-play-info {
+    flex: 1;
+    min-width: 0;
+}
+.bottom-play-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bottom-play-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.bottom-play-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.bottom-play-btn.play-btn {
+    width: 44px; height: 44px;
+    background: white;
+    color: #000;
+    font-size: 18px;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="home-page">
-    <div class="home-bg" id="homeBg" style="background-image: url('{{ songs[0].image if songs else '/static/images/default-album.png' }}')"></div>
-    <div class="home-bg-overlay"></div>
-
-    <div class="home-top-nav">
-        <button class="home-nav-btn" onclick="history.back()"><i class="fas fa-chevron-left"></i></button>
-        <span class="home-nav-title" id="dailyMixTitle">Your Daily Mix</span>
-        <button class="home-nav-btn" onclick="showMoreMenu()"><i class="fas fa-ellipsis-h"></i></button>
-    </div>
-
-    <div class="language-bar">
-        <button class="lang-btn active" data-lang="all" onclick="filterLanguage('all')">All</button>
-        <button class="lang-btn" data-lang="hindi" onclick="filterLanguage('hindi')">Hindi</button>
-        <button class="lang-btn" data-lang="bengali" onclick="filterLanguage('bengali')">Bengali</button>
-        <button class="lang-btn" data-lang="english" onclick="filterLanguage('english')">English</button>
-        <button class="lang-btn" data-lang="punjabi" onclick="filterLanguage('punjabi')">Punjabi</button>
-        <button class="lang-btn" data-lang="tamil" onclick="filterLanguage('tamil')">Tamil</button>
-    </div>
-
-    <div class="song-dots" id="songDots">
-        {% for i in range(songs|length if songs else 0) %}
-        <div class="song-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
-        {% endfor %}
-    </div>
-
-    <div class="home-content">
-        <div class="song-hero" id="songHero">
-            {% if songs %}
-            {% set song = songs[0] %}
-            <div class="hero-album-wrapper" onclick="playHeroSong(0)">
-                <img src="{{ song.image }}" alt="{{ song.title }}" class="hero-album-art" id="heroAlbumArt"
-                     onerror="this.src='/static/images/default-album.png'">
-            </div>
-            <div class="hero-info">
-                <h1 class="hero-title" id="heroTitle">{{ song.title }}</h1>
-                <p class="hero-subtitle" id="heroSubtitle">{{ song.artist }}</p>
-                <p class="hero-movie" id="heroMovie">{{ song.album }}</p>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item"><i class="fas fa-heart"></i><span id="heroLikes">3.1M</span></div>
-                <div class="stat-item"><i class="fas fa-comment"></i><span id="heroComments">6K</span></div>
-                <div class="stat-item"><i class="fas fa-share"></i><span id="heroShares">52K</span></div>
-            </div>
-            <div class="hero-actions">
-                <button class="hero-btn heart-btn" id="heroHeartBtn" data-song-id="{{ song.id }}"
-                        onclick="toggleHeroFavorite('{{ song.id }}')"><i class="far fa-heart"></i></button>
-                <button class="hero-btn" onclick="showComments()"><i class="fas fa-comment"></i></button>
-                <button class="hero-btn" onclick="shareSong()"><i class="fas fa-share"></i></button>
-                <button class="hero-btn" onclick="downloadSong('{{ song.id }}')"><i class="fas fa-download"></i></button>
-                <button class="hero-btn" onclick="addToQueue()"><i class="fas fa-list-ul"></i></button>
-            </div>
-            {% else %}
-            <div class="hero-empty"><i class="fas fa-music"></i><p>No songs available</p></div>
-            {% endif %}
+    <!-- Top Header -->
+    <div class="home-top">
+        <div class="home-logo">
+            <div class="home-logo-icon"><i class="fas fa-music"></i></div>
+            <span class="home-logo-text">EvaMusic</span>
+        </div>
+        <div class="home-top-btns">
+            <button class="home-top-btn" onclick="showToast('Search coming soon', 'info')"><i class="fas fa-search"></i></button>
+            <button class="home-top-btn" onclick="window.location.href='/settings'"><i class="fas fa-cog"></i></button>
         </div>
     </div>
 
-    <div class="scroll-hint" id="scrollHint">
-        <i class="fas fa-chevron-up"></i><span>Scroll</span><i class="fas fa-chevron-down"></i>
+    <!-- Tabs -->
+    <div class="home-tabs">
+        <button class="home-tab active">Music</button>
+        <button class="home-tab" onclick="showToast('Podcasts coming soon', 'info')">Podcasts</button>
+    </div>
+
+    <!-- Your Usuals / Trending -->
+    <h2 class="section-title">Your Usuals</h2>
+    <div class="grid-row">
+        {% for song in songs[:8] %}
+        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+            <div class="grid-item-thumb">
+                <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+                <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
+            </div>
+            <div class="grid-item-title">{{ song.title }}</div>
+            <div class="grid-item-subtitle">{{ song.artist }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Trending Now -->
+    <h2 class="section-title">Trending Now</h2>
+    <div class="grid-row">
+        {% for song in songs[8:16] %}
+        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+            <div class="grid-item-thumb">
+                <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+                <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
+            </div>
+            <div class="grid-item-title">{{ song.title }}</div>
+            <div class="grid-item-subtitle">{{ song.artist }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- New Releases -->
+    <h2 class="section-title">New Releases</h2>
+    <div class="grid-row">
+        {% for song in songs[16:24] %}
+        <div class="grid-item" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+            <div class="grid-item-thumb">
+                <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+                <div class="grid-item-play"><i class="fas fa-play-circle"></i></div>
+            </div>
+            <div class="grid-item-title">{{ song.title }}</div>
+            <div class="grid-item-subtitle">{{ song.artist }}</div>
+        </div>
+        {% endfor %}
     </div>
 </div>
-
-<script>
-    window.HOME_SONGS = {{ songs|tojson }};
-
-    function playHeroSong(index) {
-        if (!window.HOME_SONGS || !window.HOME_SONGS[index]) return;
-        const song = window.HOME_SONGS[index];
-        // Use the unified EvaPlayer
-        if (typeof playSong === 'function') {
-            playSong(song.id, song);
-        }
-    }
-
-    function filterLanguage(lang) {
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.lang === lang);
-        });
-        // You can implement actual filtering here
-        showToast(lang === 'all' ? 'Showing all languages' : 'Filtered: ' + lang, 'info');
-    }
-
-    function toggleHeroFavorite(songId) {
-        const btn = document.getElementById('heroHeartBtn');
-        btn.classList.toggle('active');
-        const icon = btn.querySelector('i');
-        icon.className = btn.classList.contains('active') ? 'fas fa-heart' : 'far fa-heart';
-        toggleFavorite(); // Use EvaPlayer's favorite function
-    }
-
-    function showMoreMenu() {
-        showToast('More options coming soon!', 'info');
-    }
-
-    function showComments() {
-        showToast('Comments coming soon!', 'info');
-    }
-
-    function downloadSong(songId) {
-        showToast('Download started...', 'info');
-    }
-
-    function addToQueue() {
-        showToast('Added to queue', 'success');
-    }
-</script>
 {% endblock %}
