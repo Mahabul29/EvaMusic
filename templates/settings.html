@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-page { padding: 0 16px 80px; max-width: 600px; margin: 0 auto; }
+.settings-header { padding: 20px 0; text-align: center; }
+.settings-header h1 { font-size: 24px; font-weight: 700; }
+.settings-section { margin-bottom: 24px; }
+.settings-section-title {
+    font-size: 13px; font-weight: 600; color: var(--accent-color);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-left: 4px;
+}
+.settings-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; background: var(--card-bg); border-radius: 12px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.settings-item:active { transform: scale(0.98); background: var(--hover-bg); }
+.settings-item-left { display: flex; align-items: center; gap: 14px; }
+.settings-item-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(29, 185, 84, 0.1); display: flex;
+    align-items: center; justify-content: center;
+    color: var(--accent-color); font-size: 16px;
+}
+.settings-item-text { display: flex; flex-direction: column; }
+.settings-item-title { font-size: 15px; font-weight: 500; color: var(--text-color); }
+.settings-item-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.settings-item-right { display: flex; align-items: center; gap: 8px; }
+.settings-item-right i { color: var(--text-secondary); font-size: 14px; }
+.settings-value { font-size: 14px; color: var(--text-secondary); }
+.toggle-switch {
+    position: relative; width: 48px; height: 26px; cursor: pointer;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0; background: #444; border-radius: 26px;
+    transition: background 0.3s;
+}
+.toggle-slider::before {
+    content: ""; position: absolute; width: 20px; height: 20px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%;
+    transition: transform 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+.app-info { text-align: center; padding: 32px 0; color: var(--text-secondary); }
+.app-info .app-logo { font-size: 48px; margin-bottom: 12px; }
+.app-info .app-name { font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 4px; }
+.app-info .app-version { font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header"><h1>Settings</h1></div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Account</div>
+        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Edit Profile</span><span class="settings-item-desc">Name, avatar, bio</span></div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <div class="settings-item" onclick="showToast('Notifications settings', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-bell"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Notifications</span><span class="settings-item-desc">Push alerts</span></div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-palette"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Theme</span><span class="settings-item-desc">Dark, Light, AMOLED</span></div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">Dark</span><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-tint"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Accent Color</span><span class="settings-item-desc">App highlight color</span></div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value" style="color: #1DB954;">● Green</span><i class="fas fa-chevron-right"></i></div>
+        </a>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Playback</div>
+        <div class="settings-item" onclick="showToast('Auto-play enabled', 'success')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-play-circle"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Auto Play</span><span class="settings-item-desc">Play next song automatically</span></div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="settings-item" onclick="showToast('Gapless playback', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-music"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Gapless Playback</span><span class="settings-item-desc">No silence between songs</span></div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Quality</div>
+        <div class="settings-item" onclick="showToast('Streaming quality: High', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-wifi"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Streaming Quality</span><span class="settings-item-desc">Wi-Fi streaming</span></div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
+        </div>
+        <div class="settings-item" onclick="showToast('Download quality: High', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-download"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Download Quality</span><span class="settings-item-desc">Offline music quality</span></div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Data & Storage</div>
+        <div class="settings-item" onclick="showToast('Cache cleared!', 'success')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-trash-alt"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Clear Cache</span><span class="settings-item-desc">Free up space</span></div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">128 MB</span><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">About</div>
+        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-info-circle"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">About EvaMusic</span></div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </div>
+        <div class="settings-item" onclick="showToast('Opening privacy policy...', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Privacy Policy</span></div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <div class="app-info">
+        <div class="app-logo">🎵</div>
+        <div class="app-name">EvaMusic</div>
+        <div class="app-version">Version 1.0.0</div>
+    </div>
+</div>
+
+<script>
+function showToast(message, type = 'info') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}
+              
