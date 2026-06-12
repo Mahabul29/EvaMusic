@@ -3,123 +3,411 @@
 
 {% block extra_css %}
 <style>
-.player-page {
-    min-height: 100vh;
+.now-playing-page {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.np-bg {
+    position: absolute;
+    inset: -60px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(50px) brightness(0.35);
+    transform: scale(1.1);
+    z-index: 0;
+}
+.np-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.9) 100%);
+    z-index: 1;
+}
+.np-header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    padding-top: max(16px, env(safe-area-inset-top));
+}
+.np-header-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: white;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+.np-header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.np-content {
+    position: relative;
+    z-index: 10;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    text-align: center;
+    padding: 0 28px 20px;
+    overflow-y: auto;
 }
-.player-page-bg {
-    position: fixed;
-    inset: -50px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(60px) brightness(0.3);
-    transform: scale(1.1);
-    z-index: -2;
-}
-.player-page-overlay {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.95) 100%);
-    z-index: -1;
-}
-.player-page-album {
-    width: 260px;
-    height: 260px;
-    border-radius: 16px;
+.np-album-art {
+    width: min(300px, 70vw);
+    height: min(300px, 70vw);
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    margin-bottom: 28px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+    margin-bottom: 40px;
+    position: relative;
 }
-.player-page-album img {
+.np-album-art img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.player-page-title {
-    font-size: 22px;
+.np-song-info {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 24px;
+}
+.np-song-title {
+    font-size: 26px;
     font-weight: 700;
     margin-bottom: 8px;
-    max-width: 90vw;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.player-page-artist {
-    font-size: 15px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-.player-page-album-name {
-    font-size: 13px;
-    color: rgba(255,255,255,0.4);
-    margin-bottom: 28px;
-}
-.player-page-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 40px;
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 30px;
+.np-song-artist {
     font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 16px;
-}
-.player-page-btn:active { transform: scale(0.97); }
-.player-page-back {
     color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 14px;
+}
+.np-actions-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+.np-action-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.np-action-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+.np-action-btn.liked { color: #ef4444; }
+.np-action-btn.liked i { font-weight: 900; }
+.np-progress-area {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 24px;
+}
+.np-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+.np-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-color);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+.np-progress-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s, left 0.1s linear;
+}
+.np-progress-bar:hover .np-progress-thumb { opacity: 1; }
+.np-time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.np-main-controls {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 28px;
+}
+.np-control-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.np-control-btn.play-main-btn {
+    width: 72px;
+    height: 72px;
+    background: white;
+    color: #000;
+    border-radius: 50%;
+    font-size: 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.np-control-btn.play-main-btn:active { transform: scale(0.95); }
+.np-bottom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 400px;
+    padding: 0 8px;
+}
+.np-bottom-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.np-bottom-btn.active { color: var(--accent-color); }
+
+@media (max-height: 700px) {
+    .np-album-art { width: 220px; height: 220px; margin-bottom: 24px; }
+    .np-song-title { font-size: 22px; }
+    .np-actions-row { margin-bottom: 20px; }
+    .np-progress-area { margin-bottom: 16px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="player-page-bg" style="background-image: url('{{ song.image }}')"></div>
-<div class="player-page-overlay"></div>
+<div class="now-playing-page" id="nowPlayingPage">
+    <div class="np-bg" id="npBg" style="background-image: url('{{ song.image }}')"></div>
+    <div class="np-bg-overlay"></div>
 
-<div class="player-page">
-    <div class="player-page-album">
-        <img src="{{ song.image }}" alt="{{ song.title }}" onerror="this.src='/static/images/default-album.png'">
+    <div class="np-header">
+        <button class="np-header-btn" onclick="goBack()"><i class="fas fa-chevron-down"></i></button>
+        <span class="np-header-title">Now Playing</span>
+        <button class="np-header-btn" onclick="showMoreMenu()"><i class="fas fa-ellipsis-h"></i></button>
     </div>
-    <h1 class="player-page-title">{{ song.title }}</h1>
-    <p class="player-page-artist">{{ song.artist }}</p>
-    <p class="player-page-album-name">{{ song.album }}</p>
 
-    <button class="player-page-btn" onclick="startPlaying()">
-        <i class="fas fa-play"></i> Play Now
-    </button>
-    <a href="/home" class="player-page-back">
-        <i class="fas fa-chevron-left"></i> Back to Home
-    </a>
+    <div class="np-content">
+        <div class="np-album-art">
+            <img src="{{ song.image }}" alt="{{ song.title }}" id="npAlbumArt" onerror="this.src='/static/images/default-album.png'">
+        </div>
+
+        <div class="np-song-info">
+            <h1 class="np-song-title" id="npSongTitle">{{ song.title }}</h1>
+            <p class="np-song-artist" id="npSongArtist">{{ song.artist }}</p>
+        </div>
+
+        <!-- Like, Comment, Share, Download, Queue -->
+        <div class="np-actions-row">
+            <button class="np-action-btn" id="npLikeBtn" onclick="toggleNPFavorite()" title="Like">
+                <i class="far fa-heart"></i>
+            </button>
+            <button class="np-action-btn" onclick="showComments()" title="Comments">
+                <i class="fas fa-comment"></i>
+            </button>
+            <button class="np-action-btn" onclick="shareSong()" title="Share">
+                <i class="fas fa-share-alt"></i>
+            </button>
+            <button class="np-action-btn" onclick="downloadCurrentSong()" title="Download">
+                <i class="fas fa-download"></i>
+            </button>
+            <button class="np-action-btn" onclick="addToQueue()" title="Queue">
+                <i class="fas fa-list-ul"></i>
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="np-progress-area">
+            <div class="np-progress-bar" id="npProgressBar" onclick="seekNP(event)">
+                <div class="np-progress-fill" id="npProgressFill"></div>
+                <div class="np-progress-thumb" id="npProgressThumb"></div>
+            </div>
+            <div class="np-time-row">
+                <span id="npCurrentTime">0:00</span>
+                <span id="npTotalTime">0:00</span>
+            </div>
+        </div>
+
+        <!-- Main Controls -->
+        <div class="np-main-controls">
+            <button class="np-control-btn" onclick="toggleShuffle()" id="npShuffleBtn" title="Shuffle">
+                <i class="fas fa-random"></i>
+            </button>
+            <button class="np-control-btn" onclick="previousSong()" title="Previous">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="np-control-btn play-main-btn" onclick="togglePlay()" id="npPlayBtn" title="Play/Pause">
+                <i class="fas fa-play" id="npPlayIcon"></i>
+            </button>
+            <button class="np-control-btn" onclick="nextSong()" title="Next">
+                <i class="fas fa-step-forward"></i>
+            </button>
+            <button class="np-control-btn" onclick="toggleRepeat()" id="npRepeatBtn" title="Repeat">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+
+        <!-- Bottom: Cast, Lyrics, Sleep Timer -->
+        <div class="np-bottom-controls">
+            <button class="np-bottom-btn" onclick="showDevices()" title="Devices">
+                <i class="fas fa-cast"></i>
+            </button>
+            <button class="np-bottom-btn" onclick="showLyrics()" title="Lyrics">
+                <i class="fas fa-align-center"></i>
+            </button>
+            <button class="np-bottom-btn" onclick="showSleepTimer()" title="Sleep Timer">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
     const SONG_DATA = {{ song|tojson }};
 
-    function startPlaying() {
-        if (SONG_DATA && SONG_DATA.id) {
-            playSong(SONG_DATA.id, SONG_DATA);
+    function goBack() {
+        if (window.history.length > 1) {
+            window.history.back();
         } else {
-            showToast('Song not available', 'error');
+            window.location.href = '/home';
         }
     }
 
-    window.addEventListener('load', () => {
-        if (SONG_DATA.url || SONG_DATA.audio_url) {
-            startPlaying();
+    function showMoreMenu() {
+        showToast('More options coming soon!', 'info');
+    }
+
+    function showComments() {
+        showToast('Comments coming soon!', 'info');
+    }
+
+    function downloadCurrentSong() {
+        if (!SONG_DATA || !SONG_DATA.url) {
+            showToast('Download URL not available', 'error');
+            return;
         }
+        const a = document.createElement('a');
+        a.href = SONG_DATA.url;
+        a.download = (SONG_DATA.title || 'song') + '.mp3';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Download started', 'success');
+    }
+
+    function addToQueue() {
+        showToast('Added to queue', 'success');
+    }
+
+    function seekNP(e) {
+        const bar = document.getElementById('npProgressBar');
+        const rect = bar.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        if (window.player && window.player.audio) {
+            window.player.audio.currentTime = percent * window.player.audio.duration;
+        }
+    }
+
+    function showDevices() {
+        showToast('Connect to device coming soon!', 'info');
+    }
+
+    function showLyrics() {
+        showToast('Lyrics coming soon!', 'info');
+    }
+
+    function showSleepTimer() {
+        showToast('Sleep timer coming soon!', 'info');
+    }
+
+    function toggleNPFavorite() {
+        const btn = document.getElementById('npLikeBtn');
+        btn.classList.toggle('liked');
+        const icon = btn.querySelector('i');
+        icon.className = btn.classList.contains('liked') ? 'fas fa-heart' : 'far fa-heart';
+        toggleFavorite();
+    }
+
+    // Sync UI with EvaPlayer state
+    function syncNPUI() {
+        if (!window.player) return;
+        const p = window.player;
+
+        // Update progress
+        if (p.audio.duration) {
+            const percent = (p.audio.currentTime / p.audio.duration) * 100;
+            document.getElementById('npProgressFill').style.width = percent + '%';
+            document.getElementById('npProgressThumb').style.left = percent + '%';
+            document.getElementById('npCurrentTime').textContent = p.formatTime(p.audio.currentTime);
+            document.getElementById('npTotalTime').textContent = p.formatTime(p.audio.duration);
+        }
+
+        // Update play button
+        const icon = p.isPlaying ? 'fa-pause' : 'fa-play';
+        document.getElementById('npPlayIcon').className = `fas ${icon}`;
+
+        // Update song info if changed
+        if (p.currentSong) {
+            document.getElementById('npSongTitle').textContent = p.getTitle(p.currentSong);
+            document.getElementById('npSongArtist').textContent = p.getArtist(p.currentSong);
+            document.getElementById('npAlbumArt').src = p.getImageUrl(p.currentSong);
+            document.getElementById('npBg').style.backgroundImage = `url('${p.getImageUrl(p.currentSong)}')`;
+        }
+    }
+
+    // Auto-play on load
+    window.addEventListener('load', () => {
+        if (SONG_DATA && SONG_DATA.id) {
+            playSong(SONG_DATA.id, SONG_DATA);
+        }
+        // Start sync loop
+        setInterval(syncNPUI, 200);
     });
 </script>
 {% endblock %}
