@@ -24,7 +24,7 @@
 .np-bg-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.9) 100%);
+    background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.92) 100%);
     z-index: 1;
 }
 .np-header {
@@ -33,8 +33,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    padding-top: max(16px, env(safe-area-inset-top));
+    padding: 12px 20px;
+    padding-top: max(12px, env(safe-area-inset-top));
 }
 .np-header-btn {
     width: 40px; height: 40px;
@@ -50,10 +50,10 @@
     backdrop-filter: blur(10px);
 }
 .np-header-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.8);
-    letter-spacing: 1px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 1.5px;
     text-transform: uppercase;
 }
 .np-content {
@@ -63,18 +63,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 0 28px 20px;
     overflow-y: auto;
+    gap: 20px;
 }
 .np-album-art {
-    width: min(300px, 70vw);
-    height: min(300px, 70vw);
+    width: min(280px, 65vw);
+    height: min(280px, 65vw);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 25px 80px rgba(0,0,0,0.6);
-    margin-bottom: 40px;
-    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    margin-top: 10px;
 }
 .np-album-art img {
     width: 100%;
@@ -84,30 +85,31 @@
 .np-song-info {
     width: 100%;
     text-align: center;
-    margin-bottom: 24px;
+    flex-shrink: 0;
 }
 .np-song-title {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding: 0 10px;
 }
 .np-song-artist {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--text-secondary);
 }
 .np-actions-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 32px;
-    margin-bottom: 32px;
+    gap: 24px;
+    flex-shrink: 0;
 }
 .np-action-btn {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.08);
@@ -124,8 +126,8 @@
 .np-action-btn.liked i { font-weight: 900; }
 .np-progress-area {
     width: 100%;
-    max-width: 400px;
-    margin-bottom: 24px;
+    max-width: 380px;
+    flex-shrink: 0;
 }
 .np-progress-bar {
     width: 100%;
@@ -134,7 +136,7 @@
     border-radius: 2px;
     position: relative;
     cursor: pointer;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 .np-progress-fill {
     height: 100%;
@@ -165,8 +167,8 @@
 .np-main-controls {
     display: flex;
     align-items: center;
-    gap: 28px;
-    margin-bottom: 28px;
+    gap: 24px;
+    flex-shrink: 0;
 }
 .np-control-btn {
     background: none;
@@ -181,12 +183,12 @@
     cursor: pointer;
 }
 .np-control-btn.play-main-btn {
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
     background: white;
     color: #000;
     border-radius: 50%;
-    font-size: 28px;
+    font-size: 26px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 .np-control-btn.play-main-btn:active { transform: scale(0.95); }
@@ -195,8 +197,10 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    max-width: 400px;
+    max-width: 380px;
     padding: 0 8px;
+    flex-shrink: 0;
+    margin-top: 4px;
 }
 .np-bottom-btn {
     background: none;
@@ -212,11 +216,20 @@
 }
 .np-bottom-btn.active { color: var(--accent-color); }
 
+/* Small screens */
 @media (max-height: 700px) {
-    .np-album-art { width: 220px; height: 220px; margin-bottom: 24px; }
-    .np-song-title { font-size: 22px; }
-    .np-actions-row { margin-bottom: 20px; }
-    .np-progress-area { margin-bottom: 16px; }
+    .np-content { gap: 14px; padding-bottom: 12px; }
+    .np-album-art { width: min(220px, 55vw); height: min(220px, 55vw); margin-top: 5px; }
+    .np-song-title { font-size: 20px; }
+    .np-actions-row { gap: 18px; }
+    .np-action-btn { width: 46px; height: 46px; font-size: 18px; }
+    .np-main-controls { gap: 20px; }
+    .np-control-btn.play-main-btn { width: 60px; height: 60px; font-size: 22px; }
+}
+@media (max-height: 600px) {
+    .np-album-art { width: 180px; height: 180px; }
+    .np-song-title { font-size: 18px; }
+    .np-content { gap: 10px; }
 }
 </style>
 {% endblock %}
@@ -242,13 +255,10 @@
             <p class="np-song-artist" id="npSongArtist">{{ song.artist }}</p>
         </div>
 
-        <!-- Like, Comment, Share, Download, Queue -->
+        <!-- Like, Share, Download, Queue (NO Comment) -->
         <div class="np-actions-row">
             <button class="np-action-btn" id="npLikeBtn" onclick="toggleNPFavorite()" title="Like">
                 <i class="far fa-heart"></i>
-            </button>
-            <button class="np-action-btn" onclick="showComments()" title="Comments">
-                <i class="fas fa-comment"></i>
             </button>
             <button class="np-action-btn" onclick="shareSong()" title="Share">
                 <i class="fas fa-share-alt"></i>
@@ -292,11 +302,8 @@
             </button>
         </div>
 
-        <!-- Bottom: Cast, Lyrics, Sleep Timer -->
+        <!-- Bottom: Lyrics, Sleep Timer -->
         <div class="np-bottom-controls">
-            <button class="np-bottom-btn" onclick="showDevices()" title="Devices">
-                <i class="fas fa-cast"></i>
-            </button>
             <button class="np-bottom-btn" onclick="showLyrics()" title="Lyrics">
                 <i class="fas fa-align-center"></i>
             </button>
@@ -311,38 +318,22 @@
     const SONG_DATA = {{ song|tojson }};
 
     function goBack() {
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = '/home';
-        }
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = '/home';
     }
-
-    function showMoreMenu() {
-        showToast('More options coming soon!', 'info');
-    }
-
-    function showComments() {
-        showToast('Comments coming soon!', 'info');
-    }
+    function showMoreMenu() { showToast('More options coming soon!', 'info'); }
+    function showLyrics() { showToast('Lyrics coming soon!', 'info'); }
+    function showSleepTimer() { showToast('Sleep timer coming soon!', 'info'); }
+    function addToQueue() { showToast('Added to queue', 'success'); }
 
     function downloadCurrentSong() {
-        if (!SONG_DATA || !SONG_DATA.url) {
-            showToast('Download URL not available', 'error');
-            return;
-        }
+        if (!SONG_DATA || !SONG_DATA.url) { showToast('Download URL not available', 'error'); return; }
         const a = document.createElement('a');
         a.href = SONG_DATA.url;
         a.download = (SONG_DATA.title || 'song') + '.mp3';
         a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        document.body.appendChild(a); a.click(); a.remove();
         showToast('Download started', 'success');
-    }
-
-    function addToQueue() {
-        showToast('Added to queue', 'success');
     }
 
     function seekNP(e) {
@@ -354,18 +345,6 @@
         }
     }
 
-    function showDevices() {
-        showToast('Connect to device coming soon!', 'info');
-    }
-
-    function showLyrics() {
-        showToast('Lyrics coming soon!', 'info');
-    }
-
-    function showSleepTimer() {
-        showToast('Sleep timer coming soon!', 'info');
-    }
-
     function toggleNPFavorite() {
         const btn = document.getElementById('npLikeBtn');
         btn.classList.toggle('liked');
@@ -374,12 +353,9 @@
         toggleFavorite();
     }
 
-    // Sync UI with EvaPlayer state
     function syncNPUI() {
         if (!window.player) return;
         const p = window.player;
-
-        // Update progress
         if (p.audio.duration) {
             const percent = (p.audio.currentTime / p.audio.duration) * 100;
             document.getElementById('npProgressFill').style.width = percent + '%';
@@ -387,12 +363,8 @@
             document.getElementById('npCurrentTime').textContent = p.formatTime(p.audio.currentTime);
             document.getElementById('npTotalTime').textContent = p.formatTime(p.audio.duration);
         }
-
-        // Update play button
         const icon = p.isPlaying ? 'fa-pause' : 'fa-play';
         document.getElementById('npPlayIcon').className = `fas ${icon}`;
-
-        // Update song info if changed
         if (p.currentSong) {
             document.getElementById('npSongTitle').textContent = p.getTitle(p.currentSong);
             document.getElementById('npSongArtist').textContent = p.getArtist(p.currentSong);
@@ -401,12 +373,8 @@
         }
     }
 
-    // Auto-play on load
     window.addEventListener('load', () => {
-        if (SONG_DATA && SONG_DATA.id) {
-            playSong(SONG_DATA.id, SONG_DATA);
-        }
-        // Start sync loop
+        if (SONG_DATA && SONG_DATA.id) playSong(SONG_DATA.id, SONG_DATA);
         setInterval(syncNPUI, 200);
     });
 </script>
