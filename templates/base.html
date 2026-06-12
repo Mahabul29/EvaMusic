@@ -40,7 +40,7 @@
         .toast-error { background: #ef4444; }
         .toast-info { background: #3b82f6; }
 
-        /* ═══ Simple Bottom Music Bar ═══ */
+        /* ═══ Bottom Mini Music Bar ═══ */
         .music-bar {
             position: fixed;
             bottom: 60px;
@@ -56,6 +56,7 @@
             transition: transform 0.3s ease;
         }
         .music-bar.hidden { transform: translateY(100%); }
+        .music-bar:active { opacity: 0.9; }
         .music-bar-thumb {
             width: 44px; height: 44px;
             border-radius: 6px;
@@ -93,10 +94,7 @@
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
         }
-        .music-bar-btn.play-btn {
-            font-size: 22px;
-            color: var(--text-color);
-        }
+        .music-bar-btn.play-btn { font-size: 22px; }
         .music-bar-progress {
             position: absolute;
             top: 0; left: 0; right: 0;
@@ -120,9 +118,9 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- ═══ Simple Bottom Music Bar ═══ -->
-    <div class="music-bar hidden" id="musicBar">
-        <div class="music-bar-progress" id="musicBarProgress">
+    <!-- ═══ Bottom Mini Music Bar (tap to expand) ═══ -->
+    <div class="music-bar hidden" id="musicBar" onclick="expandPlayer(event)">
+        <div class="music-bar-progress" id="musicBarProgress" onclick="event.stopPropagation(); seekBar(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
         </div>
         <img src="/static/images/default-album.png" alt="" class="music-bar-thumb" id="musicBarThumb">
@@ -131,13 +129,13 @@
             <div class="music-bar-artist" id="musicBarArtist">-</div>
         </div>
         <div class="music-bar-btns">
-            <button class="music-bar-btn" onclick="previousSong()">
+            <button class="music-bar-btn" onclick="event.stopPropagation(); previousSong()">
                 <i class="fas fa-step-backward"></i>
             </button>
-            <button class="music-bar-btn play-btn" onclick="togglePlay()">
+            <button class="music-bar-btn play-btn" onclick="event.stopPropagation(); togglePlay()">
                 <i class="fas fa-play" id="musicBarPlayIcon"></i>
             </button>
-            <button class="music-bar-btn" onclick="nextSong()">
+            <button class="music-bar-btn" onclick="event.stopPropagation(); nextSong()">
                 <i class="fas fa-step-forward"></i>
             </button>
         </div>
