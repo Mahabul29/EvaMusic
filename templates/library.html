@@ -1,58 +1,189 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.library-header {
+    padding: 20px;
+    text-align: center;
+}
+.library-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+}
+.library-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.library-tabs::-webkit-scrollbar { display: none; }
+.lib-tab {
+    flex-shrink: 0;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.lib-tab.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+.songs-list {
+    padding: 0 16px 80px;
+}
+.song-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+}
+.song-row:hover, .song-row:active { background: var(--hover-bg); }
+.song-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+.song-info { flex: 1; min-width: 0; }
+.song-info .title {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-info .artist {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+}
+.btn-icon:hover { color: var(--accent-color); }
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+.empty-state i { font-size: 48px; margin-bottom: 16px; }
+.playlist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0 16px 80px;
+}
+.playlist-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.playlist-card:active { transform: scale(0.97); }
+.playlist-cover {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #1DB954, #1ed760);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.playlist-cover i { font-size: 40px; color: white; }
+.playlist-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.playlist-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="full-player">
-    <div class="player-background" style="background-image: url('{{ song.image }}')"></div>
-    
-    <div class="player-container">
-        <div class="player-album-art">
-            <img src="{{ song.image }}" alt="{{ song.title }}" id="fullAlbumArt" onerror="this.src='/static/images/default-album.png'">
-        </div>
-        
-        <div class="player-details">
-            <h1 class="player-song-title">{{ song.title }}</h1>
-            <p class="player-song-artist">{{ song.artist }}</p>
-            <p class="player-song-album">{{ song.album }}</p>
-        </div>
-        
-        <div class="player-scrubber">
-            <span id="fullCurrentTime">0:00</span>
-            <div class="scrubber-bar" id="scrubberBar">
-                <div class="scrubber-fill" id="scrubberFill"></div>
-                <div class="scrubber-thumb" id="scrubberThumb"></div>
-            </div>
-            <span id="fullDuration">0:00</span>
-        </div>
-        
-        <div class="player-main-controls">
-            <button id="shuffleBtn" class="control-btn"><i class="fas fa-random"></i></button>
-            <button id="prevBtnMain" class="control-btn"><i class="fas fa-step-backward"></i></button>
-            <button id="playPauseBtnMain" class="control-btn play-btn"><i class="fas fa-play"></i></button>
-            <button id="nextBtnMain" class="control-btn"><i class="fas fa-step-forward"></i></button>
-            <button id="repeatBtn" class="control-btn"><i class="fas fa-redo"></i></button>
-        </div>
-        
-        <div class="player-extra-controls">
-            <button class="control-btn" onclick="addToLibrary('{{ song.id }}')">
-                <i class="far fa-heart"></i>
-            </button>
-            <button class="control-btn" onclick="shareSong('{{ song.id }}')">
-                <i class="fas fa-share-alt"></i>
-            </button>
-            <button class="control-btn" onclick="downloadSong('{{ song.id }}')">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
+<div class="library-header">
+    <h1><i class="fas fa-heart" style="color: var(--accent-color)"></i> Your Library</h1>
 </div>
 
-<script>
-    window.addEventListener('load', () => {
-        const songData = {{ song|tojson }};
-        if (songData.url) {
-            playSong('{{ song.id }}', songData);
-        }
-    });
-</script>
+<div class="library-tabs">
+    <a href="/library" class="lib-tab {% if section == 'favorites' or not section %}active{% endif %}">Favorites</a>
+    <a href="/profile/history" class="lib-tab {% if section == 'history' %}active{% endif %}">History</a>
+    <a href="/profile/playlists" class="lib-tab {% if section == 'playlists' %}active{% endif %}">Playlists</a>
+</div>
+
+{% if section == 'playlists' %}
+<div class="playlist-grid">
+    {% if playlists %}
+        {% for playlist in playlists %}
+        <div class="playlist-card" onclick="location.href='/playlist/{{ playlist.playlist_id }}'">
+            <div class="playlist-cover"><i class="fas fa-music"></i></div>
+            <div class="playlist-name">{{ playlist.name }}</div>
+            <div class="playlist-count">{{ playlist.songs|length }} songs</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <i class="fas fa-list"></i>
+            <p>No playlists yet. Create one!</p>
+        </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="songs-list">
+    {% if songs %}
+        {% for song in songs %}
+        <div class="song-row" onclick="playSong('{{ song.song_id or song.id }}', {{ song|tojson }})">
+            <img src="{{ song.image_url or song.image or '/static/images/default-album.png' }}" class="song-thumb" onerror="this.src='/static/images/default-album.png'">
+            <div class="song-info">
+                <div class="title">{{ song.title }}</div>
+                <div class="artist">{{ song.artist }}</div>
+            </div>
+            <div class="song-actions">
+                <button class="btn-icon" onclick="event.stopPropagation(); toggleFavorite('{{ song.song_id or song.id }}', {{ song|tojson }})">
+                    <i class="fas fa-heart" style="color: var(--accent-color)"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-music"></i>
+            <p>No songs here yet. Start listening!</p>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}
