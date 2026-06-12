@@ -1,11 +1,54 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.offline-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px 20px;
+}
+.offline-page i {
+    font-size: 80px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+.offline-page h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.offline-page p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: 24px;
+    max-width: 300px;
+    line-height: 1.5;
+}
+.offline-page .btn {
+    padding: 12px 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+}
+.offline-page .btn:active { transform: scale(0.95); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="offline-page">
     <i class="fas fa-wifi-slash"></i>
     <h1>You're Offline</h1>
-    <p>Check your internet connection and try again.</p>
-    <button onclick="location.reload()" class="btn-primary">Retry</button>
+    <p>Check your internet connection and try again. Your downloaded songs are still available.</p>
+    <button class="btn" onclick="location.reload()"><i class="fas fa-redo"></i> Retry</button>
 </div>
 {% endblock %}
