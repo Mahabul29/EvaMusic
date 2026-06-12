@@ -208,6 +208,18 @@ def artist(artist_id):
 def offline():
     return render_template('offline.html', title="Offline")
 
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html', title="Settings")
+
+
+@app.route('/home')
+def home():
+    songs = fetch_trending(20)
+    songs = _with_fallback(songs, 20)
+    return render_template('home.html', songs=songs, title="Your Daily Mix")
+
 # ═══════════════════════════════════════════════════════════════════════
 # API ENDPOINTS (proxies to Koyeb API app)
 # ═══════════════════════════════════════════════════════════════════════
@@ -274,3 +286,4 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
+    
