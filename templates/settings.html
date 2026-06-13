@@ -15,6 +15,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px; background: var(--card-bg); border-radius: 12px;
     margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+    text-decoration: none; color: inherit;
 }
 .settings-item:active { transform: scale(0.98); background: var(--hover-bg); }
 .settings-item-left { display: flex; align-items: center; gap: 14px; }
@@ -49,6 +50,36 @@
 .app-info .app-logo { font-size: 48px; margin-bottom: 12px; }
 .app-info .app-name { font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 4px; }
 .app-info .app-version { font-size: 13px; }
+
+/* Server selector modal */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+    background: var(--card-bg); width: 100%; max-width: 600px;
+    border-radius: 20px 20px 0 0; padding: 20px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-sheet { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
+.server-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-radius: 12px; margin-bottom: 8px;
+    background: var(--hover-bg); cursor: pointer;
+}
+.server-option:active { background: #333; }
+.server-option.selected { background: rgba(29,185,84,0.15); }
+.server-option.selected .server-name { color: var(--accent-color); }
+.server-name { font-size: 15px; font-weight: 500; }
+.server-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-color); color: #000; font-weight: 600; }
+.modal-cancel {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: var(--hover-bg); border: none; border-radius: 12px;
+    color: var(--text-color); font-size: 16px; font-weight: 500; cursor: pointer;
+}
 </style>
 {% endblock %}
 
@@ -56,95 +87,185 @@
 <div class="settings-page">
     <div class="settings-header"><h1>Settings</h1></div>
 
+    <!-- ACCOUNT -->
     <div class="settings-section">
         <div class="settings-section-title">Account</div>
-        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+        <a href="/profile/edit" class="settings-item">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Edit Profile</span><span class="settings-item-desc">Name, avatar, bio</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Edit Profile</span>
+                    <span class="settings-item-desc">Name, avatar, bio</span>
+                </div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </a>
         <div class="settings-item" onclick="showToast('Notifications settings', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-bell"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Notifications</span><span class="settings-item-desc">Push alerts</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Notifications</span>
+                    <span class="settings-item-desc">Push alerts</span>
+                </div>
             </div>
             <div class="settings-item-right">
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked><span class="toggle-slider"></span>
+                </label>
             </div>
         </div>
     </div>
 
+    <!-- APPEARANCE -->
     <div class="settings-section">
         <div class="settings-section-title">Appearance</div>
-        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+        <a href="/settings/theme" class="settings-item">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-palette"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Theme</span><span class="settings-item-desc">Dark, Light, AMOLED</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Theme</span>
+                    <span class="settings-item-desc">Dark, Light, AMOLED</span>
+                </div>
             </div>
             <div class="settings-item-right"><span class="settings-value">Dark</span><i class="fas fa-chevron-right"></i></div>
         </a>
-        <a href="/profile/edit" class="settings-item" style="text-decoration: none; color: inherit;">
+        <a href="/settings/accent" class="settings-item">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-tint"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Accent Color</span><span class="settings-item-desc">App highlight color</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Accent Color</span>
+                    <span class="settings-item-desc">App highlight color</span>
+                </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value" style="color: #1DB954;">● Green</span><i class="fas fa-chevron-right"></i></div>
+            <div class="settings-item-right">
+                <span class="settings-value" style="color: var(--accent-color);">● Green</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+        <a href="/settings/display-language" class="settings-item">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-globe"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Display Language</span>
+                    <span class="settings-item-desc">App interface language</span>
+                </div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">English</span><i class="fas fa-chevron-right"></i></div>
         </a>
     </div>
 
+    <!-- PLAYBACK -->
     <div class="settings-section">
         <div class="settings-section-title">Playback</div>
         <div class="settings-item" onclick="showToast('Auto-play enabled', 'success')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-play-circle"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Auto Play</span><span class="settings-item-desc">Play next song automatically</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Auto Play</span>
+                    <span class="settings-item-desc">Play next song automatically</span>
+                </div>
             </div>
             <div class="settings-item-right">
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked><span class="toggle-slider"></span>
+                </label>
             </div>
         </div>
         <div class="settings-item" onclick="showToast('Gapless playback', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-music"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Gapless Playback</span><span class="settings-item-desc">No silence between songs</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Gapless Playback</span>
+                    <span class="settings-item-desc">No silence between songs</span>
+                </div>
             </div>
             <div class="settings-item-right">
-                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox"><span class="toggle-slider"></span>
+                </label>
             </div>
         </div>
     </div>
 
+    <!-- MUSIC SERVER -->
+    <div class="settings-section">
+        <div class="settings-section-title">Music Server</div>
+        <div class="settings-item" onclick="openServerModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-server"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Server</span>
+                    <span class="settings-item-desc">Select streaming server</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentServer">HD1</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <a href="/settings/music-language" class="settings-item">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-language"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Music Language</span>
+                    <span class="settings-item-desc">Preferred song languages</span>
+                </div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">All</span><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="/settings/sleep-timer" class="settings-item">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-moon"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Sleep Timer</span>
+                    <span class="settings-item-desc">Auto stop playback</span>
+                </div>
+            </div>
+            <div class="settings-item-right"><span class="settings-value">Off</span><i class="fas fa-chevron-right"></i></div>
+        </a>
+    </div>
+
+    <!-- QUALITY -->
     <div class="settings-section">
         <div class="settings-section-title">Quality</div>
         <div class="settings-item" onclick="showToast('Streaming quality: High', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-wifi"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Streaming Quality</span><span class="settings-item-desc">Wi-Fi streaming</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Streaming Quality</span>
+                    <span class="settings-item-desc">Wi-Fi streaming</span>
+                </div>
             </div>
             <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
         </div>
         <div class="settings-item" onclick="showToast('Download quality: High', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-download"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Download Quality</span><span class="settings-item-desc">Offline music quality</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Download Quality</span>
+                    <span class="settings-item-desc">Offline music quality</span>
+                </div>
             </div>
             <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
         </div>
     </div>
 
+    <!-- DATA & STORAGE -->
     <div class="settings-section">
         <div class="settings-section-title">Data & Storage</div>
         <div class="settings-item" onclick="showToast('Cache cleared!', 'success')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-trash-alt"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Clear Cache</span><span class="settings-item-desc">Free up space</span></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Clear Cache</span>
+                    <span class="settings-item-desc">Free up space</span>
+                </div>
             </div>
             <div class="settings-item-right"><span class="settings-value">128 MB</span><i class="fas fa-chevron-right"></i></div>
         </div>
     </div>
 
+    <!-- ABOUT -->
     <div class="settings-section">
         <div class="settings-section-title">About</div>
         <div class="settings-item" onclick="showToast('EvaMusic v1.0.0', 'info')">
@@ -170,6 +291,22 @@
     </div>
 </div>
 
+<!-- Server Selector Modal -->
+<div class="modal-overlay" id="serverModal" onclick="closeServerModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Select Server</div>
+        <div class="server-option selected" onclick="selectServer('HD1', this)">
+            <span class="server-name">HD1</span>
+            <span class="server-badge">Fast</span>
+        </div>
+        <div class="server-option" onclick="selectServer('HD2', this)">
+            <span class="server-name">HD2</span>
+            <span class="server-badge">Backup</span>
+        </div>
+        <button class="modal-cancel" onclick="closeServerModal()">Cancel</button>
+    </div>
+</div>
+
 <script>
 function showToast(message, type = 'info') {
     document.querySelectorAll('.toast').forEach(t => t.remove());
@@ -187,6 +324,27 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Server Modal
+function openServerModal() {
+    document.getElementById('serverModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeServerModal(event) {
+    if (!event || event.target.id === 'serverModal') {
+        document.getElementById('serverModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function selectServer(server, el) {
+    document.querySelectorAll('.server-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('currentServer').textContent = server;
+    showToast(`Switched to ${server}`, 'success');
+    setTimeout(closeServerModal, 300);
+}
 </script>
 {% endblock %}
-              
+                    
