@@ -16,84 +16,189 @@
 .trending-header h2{font-size:28px;font-weight:800}
 .trending-header p{color:var(--text-secondary);margin-left:auto;font-size:14px}
 .trending-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block}
+.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block;position:relative}
 .trending-card:active{transform:scale(0.97)}
 .trending-image{position:relative;height:180px;overflow:hidden}
 .trending-image img{width:100%;height:100%;object-fit:cover}
 .trending-play{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
 .trending-play i{font-size:48px;color:white}
 .trending-card:hover .trending-play,.trending-card:active .trending-play{opacity:1}
-.trending-info{padding:12px}
+.trending-info{padding:12px;position:relative}
 .trending-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+
+.heart-btn-on-card {
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.6);
+    border:none;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.2s;
+    z-index:10;
+}
+.heart-btn-on-card:hover {
+    background:rgba(29,185,84,0.9);
+    transform:scale(1.1);
+}
+.heart-btn-on-card.liked {
+    color:#ff4757;
+}
+.heart-btn-on-card .far.fa-heart,
+.heart-btn-on-card .fas.fa-heart {
+    pointer-events:none;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="hero-section">
-<h1>EvaMusic</h1>
-<p>Millions of songs. Free forever.</p>
-<a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
+    <h1>EvaMusic</h1>
+    <p>Millions of songs. Free forever.</p>
+    <a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
 </div>
 <div class="lang-filters">
-<a href="/home" class="lang-chip active">All</a>
-<a href="/search?q=hindi" class="lang-chip">Hindi</a>
-<a href="/search?q=bengali" class="lang-chip">Bengali</a>
-<a href="/search?q=english" class="lang-chip">English</a>
-<a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
-<a href="/search?q=tamil" class="lang-chip">Tamil</a>
+    <a href="/home" class="lang-chip active">All</a>
+    <a href="/search?q=hindi" class="lang-chip">Hindi</a>
+    <a href="/search?q=bengali" class="lang-chip">Bengali</a>
+    <a href="/search?q=english" class="lang-chip">English</a>
+    <a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
+    <a href="/search?q=tamil" class="lang-chip">Tamil</a>
 </div>
 <section class="trending-section">
-<div class="trending-header">
-<i class="fas fa-fire" style="color:#ff6b35;font-size:28px"></i>
-<div><h2>Trending</h2><p>Hot songs right now</p></div>
-</div>
-<div class="trending-grid">
-{% for song in songs[:6] %}
-<a href="javascript:void(0)" class="trending-card" onclick="playSong('{{ song.id }}',{{ song|tojson }});return false;">
-<div class="trending-image">
-<img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
-<div class="trending-play"><i class="fas fa-play-circle"></i></div>
-</div>
-<div class="trending-info">
-<h3 class="trending-title">{{ song.title }}</h3>
-<p class="trending-artist">{{ song.artist }}</p>
-</div>
-</a>
-{% endfor %}
-</div>
+    <div class="trending-header">
+        <i class="fas fa-fire" style="color:#ff6b35;font-size:28px"></i>
+        <div><h2>Trending</h2><p>Hot songs right now</p></div>
+    </div>
+    <div class="trending-grid">
+        {% for song in songs[:6] %}
+        <div class="trending-card-wrapper" style="position:relative;">
+            <a href="javascript:void(0)" class="trending-card" 
+               data-song-id="{{ song.id }}"
+               data-song-title="{{ song.title }}"
+               data-song-artist="{{ song.artist }}"
+               data-song-image="{{ song.image }}"
+               data-song-url="{{ song.url }}"
+               onclick="playSong('{{ song.id }}',{{ song|tojson }});return false;">
+                <div class="trending-image">
+                    <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
+                    <div class="trending-play"><i class="fas fa-play-circle"></i></div>
+                </div>
+                <div class="trending-info">
+                    <h3 class="trending-title">{{ song.title }}</h3>
+                    <p class="trending-artist">{{ song.artist }}</p>
+                </div>
+            </a>
+            <button class="heart-btn-on-card" type="button" 
+                    data-song-id="{{ song.id }}"
+                    data-song-data='{{ song|tojson }}'
+                    onclick="event.stopPropagation(); likeSong(this);"
+                    title="Add to favorites">
+                <i class="far fa-heart"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function playSong(id, songData) {
-    // Update music bar
     document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
     document.getElementById('musicBarTitle').textContent = songData.title;
     document.getElementById('musicBarArtist').textContent = songData.artist || '-';
     document.getElementById('musicBar').classList.remove('hidden');
     
-    // Update play icon to pause
     const playIcon = document.getElementById('musicBarPlayIcon');
     if (playIcon) {
         playIcon.classList.remove('fa-play');
         playIcon.classList.add('fa-pause');
     }
     
-    // Use EvaPlayer if available
     if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
         window.EvaPlayer.play(songData);
     }
     
-    // Store current song
     localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-    
-    // Show toast
     showToast(`Now playing: ${songData.title}`, 'success');
 }
 
-// Restore last played song on page load
+async function likeSong(btn) {
+    const songData = JSON.parse(btn.dataset.songData);
+    const songId = songData.id;
+    const icon = btn.querySelector('i');
+    
+    btn.style.transform = 'scale(1.3)';
+    setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    
+    try {
+        const res = await fetch('/api/favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                song_id: songId,
+                title: songData.title || 'Unknown',
+                artist: songData.artist || 'Unknown',
+                album: songData.album || '',
+                duration: songData.duration || '',
+                image_url: songData.image || '',
+                audio_url: songData.url || '',
+                source: 'jiosaavn'
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            if (data.action === 'added') {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('liked');
+                showToast('❤️ Added to favorites', 'success');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('liked');
+                showToast('💔 Removed from favorites', 'info');
+            }
+        } else {
+            showToast(data.message || 'Failed', 'error');
+        }
+    } catch (e) {
+        console.error('Like error:', e);
+        showToast('Network error', 'error');
+    }
+}
+
+async function initHeartStates() {
+    try {
+        const res = await fetch('/api/favorites');
+        const favorites = await res.json();
+        const favIds = new Set(favorites.map(f => f.song_id));
+        
+        document.querySelectorAll('.heart-btn-on-card').forEach(btn => {
+            const songData = JSON.parse(btn.dataset.songData);
+            if (favIds.has(songData.id)) {
+                const icon = btn.querySelector('i');
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('liked');
+            }
+        });
+    } catch (e) {
+        console.log('Could not load favorite states');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const lastSong = localStorage.getItem('evamusic_currentSong');
     if (lastSong) {
@@ -105,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('musicBar').classList.remove('hidden');
         } catch(e) {}
     }
+    initHeartStates();
 });
 </script>
 {% endblock %}
+                        
