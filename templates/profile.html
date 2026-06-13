@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 
-<div class="profile-page">
+<div class="profile-page" id="profilePage">
     <div class="profile-header">
         <div class="profile-avatar-section">
             <div class="profile-avatar-wrapper">
@@ -84,7 +84,7 @@
     </div>
 
     {% if recently_played %}
-    <div class="section">
+    <div class="section" id="recentlyPlayedSection">
         <div class="section-header">
             <h2>Recently Played</h2>
             <a href="/history" class="see-all">See All</a>
@@ -100,7 +100,7 @@
                     <div class="song-title">{{ song.title }}</div>
                     <div class="song-artist">{{ song.artist }}</div>
                 </div>
-                <button class="favorite-btn" data-song-id="{{ song.song_id }}" onclick="event.stopPropagation(); toggleFavorite(this)">
+                <button class="favorite-btn" data-song-id="{{ song.song_id }}">
                     <i class="far fa-heart"></i>
                 </button>
             </div>
@@ -110,7 +110,7 @@
     {% endif %}
 
     {% if favorites %}
-    <div class="section">
+    <div class="section" id="topFavoritesSection">
         <div class="section-header">
             <h2>Top Favorites</h2>
             <a href="/favorites" class="see-all">See All</a>
@@ -133,7 +133,7 @@
     {% endif %}
 
     {% if playlists %}
-    <div class="section">
+    <div class="section" id="myPlaylistsSection">
         <div class="section-header">
             <h2>My Playlists</h2>
             <a href="/playlists" class="see-all">See All</a>
@@ -150,110 +150,5 @@
     </div>
     {% endif %}
 </div>
-
-<script>
-// Simple event delegation - no inline onclick with complex objects
-document.addEventListener('click', function(e) {
-    // Handle song row clicks
-    var row = e.target.closest('.song-row');
-    if (row && !e.target.closest('.favorite-btn')) {
-        var songData = {
-            id: row.dataset.songId,
-            title: row.dataset.songTitle,
-            artist: row.dataset.songArtist,
-            image: row.dataset.songImage || '/static/icon-512.png',
-            url: row.dataset.songUrl || ''
-        };
-        if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
-            window.EvaPlayer.play(songData);
-        }
-        // Update music bar
-        var thumb = document.getElementById('musicBarThumb');
-        var title = document.getElementById('musicBarTitle');
-        var artist = document.getElementById('musicBarArtist');
-        var bar = document.getElementById('musicBar');
-        if (thumb) thumb.src = songData.image;
-        if (title) title.textContent = songData.title;
-        if (artist) artist.textContent = songData.artist || '-';
-        if (bar) bar.classList.remove('hidden');
-        var icon = document.getElementById('musicBarPlayIcon');
-        if (icon) {
-            icon.classList.remove('fa-play');
-            icon.classList.add('fa-pause');
-        }
-        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-        if (typeof showToast === 'function') showToast('Now playing: ' + songData.title, 'success');
-    }
-    
-    // Handle song card clicks
-    var card = e.target.closest('.song-card');
-    if (card) {
-        var songData = {
-            id: card.dataset.songId,
-            title: card.dataset.songTitle,
-            artist: card.dataset.songArtist,
-            image: card.dataset.songImage || '/static/icon-512.png',
-            url: card.dataset.songUrl || ''
-        };
-        if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
-            window.EvaPlayer.play(songData);
-        }
-        var thumb = document.getElementById('musicBarThumb');
-        var title = document.getElementById('musicBarTitle');
-        var artist = document.getElementById('musicBarArtist');
-        var bar = document.getElementById('musicBar');
-        if (thumb) thumb.src = songData.image;
-        if (title) title.textContent = songData.title;
-        if (artist) artist.textContent = songData.artist || '-';
-        if (bar) bar.classList.remove('hidden');
-        var icon = document.getElementById('musicBarPlayIcon');
-        if (icon) {
-            icon.classList.remove('fa-play');
-            icon.classList.add('fa-pause');
-        }
-        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-        if (typeof showToast === 'function') showToast('Now playing: ' + songData.title, 'success');
-    }
-});
-
-function toggleFavorite(btn) {
-    var songId = btn.dataset.songId;
-    var row = btn.closest('.song-row');
-    var songData = {
-        song_id: songId,
-        title: row ? row.dataset.songTitle : 'Unknown',
-        artist: row ? row.dataset.songArtist : 'Unknown',
-        image_url: row ? row.dataset.songImage : '',
-        audio_url: row ? row.dataset.songUrl : '',
-        source: 'jiosaavn'
-    };
-    
-    fetch('/api/favorite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(songData)
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-        if (data.success && typeof showToast === 'function') {
-            showToast(data.action === 'added' ? 'Added to favorites' : 'Removed from favorites', 'success');
-        }
-    })
-    .catch(function(e) {
-        if (typeof showToast === 'function') showToast('Network error', 'error');
-    });
-}
-
-function shareProfile() {
-    var url = window.location.href;
-    if (navigator.share) {
-        navigator.share({ title: 'My EvaMusic Profile', url: url });
-    } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(function() {
-            if (typeof showToast === 'function') showToast('Profile link copied!', 'success');
-        });
-    }
-}
-</script>
 {% endblock %}
-            
+                
