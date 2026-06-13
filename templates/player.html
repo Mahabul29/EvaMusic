@@ -1,427 +1,152 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1DB954">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>{% block title %}EvaMusic{% endblock %}</title>
+<script>
+const SONG_DATA = {{ song|tojson }};
 
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo/icon-192x192.png') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+// ── Hook into global _eva engine ──────────────────────────────
+window._npUpdatePlayBtn = (playing) => {
+    const icon = document.getElementById('npPlayIcon');
+    if (icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+};
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        :root {
-            --bg-color: #121212; --text-color: #ffffff; --text-secondary: #b3b3b3;
-            --card-bg: #1e1e1e; --hover-bg: #2a2a2a; --border-color: #333;
-            --accent-color: #1DB954; --nav-bg: #1a1a1a; --nav-active: #1DB954; --nav-inactive: #888;
-            --player-bg: #181818; --player-height: 64px;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg-color); color: var(--text-color);
-            min-height: 100vh;
-            padding-bottom: calc(var(--player-height) + 60px + env(safe-area-inset-bottom, 0px));
-            overflow-x: hidden;
-        }
-        .toast {
-            position: fixed; bottom: 140px; left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            padding: 10px 20px; border-radius: 20px;
-            font-size: 13px; font-weight: 500; color: white;
-            z-index: 1000; opacity: 0; transition: all 0.3s ease;
-            pointer-events: none; white-space: nowrap;
-        }
-        .toast-success { background: #1DB954; }
-        .toast-error   { background: #ef4444; }
-        .toast-info    { background: #3b82f6; }
+window._npUpdateSongUI = (songData) => {
+    document.getElementById('npSongTitle').textContent  = songData.title  || '';
+    document.getElementById('npSongArtist').textContent = songData.artist || '';
+    document.getElementById('npAlbumArt').src = songData.image || '/static/images/default-album.png';
+    document.getElementById('npBg').style.backgroundImage = `url('${songData.image || ""}')`;
+    const label = document.getElementById('npArtistLabel');
+    const link  = document.getElementById('npViewArtist');
+    if (label) label.textContent = songData.artist || 'Artist';
+    if (link)  link.href = `/search?q=${encodeURIComponent(songData.artist || '')}`;
+};
 
-        /* ═══ Bottom Mini Music Bar ═══ */
-        .music-bar {
-            position: fixed;
-            bottom: 60px;
-            left: 0; right: 0;
-            height: var(--player-height);
-            background: var(--player-bg);
-            border-top: 1px solid #282828;
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-            gap: 12px;
-            z-index: 100;
-            transition: transform 0.3s ease;
-        }
-        .music-bar.hidden { transform: translateY(200%); }
-        .music-bar-thumb {
-            width: 44px; height: 44px;
-            border-radius: 6px;
-            object-fit: cover;
-            flex-shrink: 0;
-        }
-        .music-bar-info {
-            flex: 1;
-            min-width: 0;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .music-bar-title {
-            font-size: 13px; font-weight: 600;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            color: var(--text-color);
-        }
-        .music-bar-artist {
-            font-size: 11px;
-            color: var(--text-secondary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .music-bar-btns {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-shrink: 0;
-        }
-        .music-bar-btn {
-            background: none; border: none;
-            color: var(--text-color);
-            font-size: 18px;
-            width: 36px; height: 36px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .music-bar-btn:active { color: var(--accent-color); }
-        .music-bar-btn.play-btn { font-size: 22px; }
-        .music-bar-progress {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: #282828;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .music-bar-progress-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--accent-color);
-            transition: width 0.1s linear;
-            pointer-events: none;
-        }
-    </style>
+window._npOnTimeUpdate = (currentTime, duration) => {
+    if (window._seekTouching) return;
+    const pct = (currentTime / duration) * 100;
+    document.getElementById('npProgressFill').style.width = pct + '%';
+    document.getElementById('npProgressThumb').style.left  = pct + '%';
+    document.getElementById('npCurrentTime').textContent = _fmt(currentTime);
+    document.getElementById('npTotalTime').textContent   = _fmt(duration);
+};
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <div class="main-content">
-        {% block content %}{% endblock %}
-    </div>
+window._npSetSong = (songData) => {
+    window._npUpdateSongUI(songData);
+    checkFavoriteState(songData.id);
+};
 
-    <!-- ═══ Bottom Mini Music Bar ═══ -->
-    <div class="music-bar hidden" id="musicBar">
-        <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
-            <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
-        </div>
-        <img src="/static/images/default-album.png" alt=""
-             class="music-bar-thumb" id="musicBarThumb"
-             onclick="expandPlayer(event)">
-        <div class="music-bar-info" onclick="expandPlayer(event)">
-            <div class="music-bar-title"  id="musicBarTitle">Select a song</div>
-            <div class="music-bar-artist" id="musicBarArtist">-</div>
-        </div>
-        <div class="music-bar-btns">
-            <button class="music-bar-btn" onclick="barPrev()" title="Previous">
-                <i class="fas fa-step-backward"></i>
-            </button>
-            <button class="music-bar-btn play-btn" onclick="barTogglePlay()" title="Play/Pause">
-                <i class="fas fa-play" id="musicBarPlayIcon"></i>
-            </button>
-            <button class="music-bar-btn" onclick="barNext()" title="Next">
-                <i class="fas fa-step-forward"></i>
-            </button>
-        </div>
-    </div>
+function _fmt(s) {
+    if (!s || isNaN(s)) return '0:00';
+    return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
+}
 
-    <nav class="bottom-nav" id="bottomNav">
-        <a href="/home" class="nav-item" data-tab="play">
-            <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
-            <span class="nav-label">Play</span>
-        </a>
-        <a href="/search" class="nav-item" data-tab="search">
-            <div class="nav-icon"><i class="fas fa-search"></i></div>
-            <span class="nav-label">Search</span>
-        </a>
-        <a href="/profile" class="nav-item" data-tab="profile">
-            <div class="nav-icon"><i class="fas fa-user"></i></div>
-            <span class="nav-label">Profile</span>
-        </a>
-        <a href="/settings" class="nav-item" data-tab="settings">
-            <div class="nav-icon"><i class="fas fa-cog"></i></div>
-            <span class="nav-label">Settings</span>
-        </a>
-    </nav>
+// ── Controls (delegate to global engine) ─────────────────────
+function togglePlay()   { barTogglePlay(); }
+function nextSong()     { barNext(); }
+function previousSong() { barPrev(); }
 
-    <script>
-    // ═══════════════════════════════════════════════════════════
-    // GLOBAL AUDIO ENGINE — works on ALL pages
-    // ═══════════════════════════════════════════════════════════
-    window._eva = {
-        audio:      null,
-        current:    null,
-        queue:      [],
-        queueIndex: 0,
-        isShuffle:  false,
-        repeatMode: 0,   // 0=off 1=all 2=one
-        isPlaying:  false
-    };
+function toggleShuffle() {
+    window._eva.isShuffle = !window._eva.isShuffle;
+    const btn = document.getElementById('npShuffleBtn');
+    btn?.classList.toggle('active', window._eva.isShuffle);
+    showToast(window._eva.isShuffle ? 'Shuffle on' : 'Shuffle off', 'info');
+}
 
-    // ── Toast ──────────────────────────────────────────────────
-    function showToast(msg, type = 'info') {
-        let t = document.getElementById('evaToast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'evaToast';
-            t.className = 'toast';
-            document.body.appendChild(t);
-        }
-        t.textContent = msg;
-        t.className = `toast toast-${type}`;
-        t.style.opacity = '1';
-        t.style.transform = 'translateX(-50%) translateY(0)';
-        clearTimeout(t._timer);
-        t._timer = setTimeout(() => {
-            t.style.opacity = '0';
-            t.style.transform = 'translateX(-50%) translateY(20px)';
-        }, 2500);
+function toggleRepeat() {
+    window._eva.repeatMode = (window._eva.repeatMode + 1) % 3;
+    const btn  = document.getElementById('npRepeatBtn');
+    const icon = btn?.querySelector('i');
+    const modes = ['Repeat off', 'Repeat all', 'Repeat one'];
+    showToast(modes[window._eva.repeatMode], 'info');
+    btn?.classList.toggle('active', window._eva.repeatMode > 0);
+    if (icon) icon.className = window._eva.repeatMode === 2 ? 'fas fa-redo-alt' : 'fas fa-redo';
+}
+
+// ── Seek ──────────────────────────────────────────────────────
+window._seekTouching = false;
+
+function seekNP(e) {
+    const audio = window._eva.audio;
+    if (!audio || !audio.duration) return;
+    const bar  = document.getElementById('npProgressBar');
+    const rect = bar.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = pct * audio.duration;
+}
+function startSeekTouch(e) { window._seekTouching = true; seekTouch(e); }
+function seekTouch(e) {
+    if (!window._seekTouching) return;
+    e.preventDefault();
+    const audio = window._eva.audio;
+    if (!audio || !audio.duration) return;
+    const bar   = document.getElementById('npProgressBar');
+    const rect  = bar.getBoundingClientRect();
+    const touch = e.touches[0];
+    const pct   = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+    document.getElementById('npProgressFill').style.width = (pct*100) + '%';
+    document.getElementById('npProgressThumb').style.left  = (pct*100) + '%';
+    document.getElementById('npCurrentTime').textContent = _fmt(pct * audio.duration);
+}
+function endSeekTouch(e) {
+    const audio = window._eva.audio;
+    if (!audio || !audio.duration) return;
+    const bar   = document.getElementById('npProgressBar');
+    const rect  = bar.getBoundingClientRect();
+    const touch = e.changedTouches[0];
+    const pct   = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+    audio.currentTime = pct * audio.duration;
+    window._seekTouching = false;
+}
+
+// ── Favorite ─────────────────────────────────────────────────
+async function checkFavoriteState(songId) {
+    try {
+        const res  = await fetch('/api/favorites');
+        const favs = await res.json();
+        const liked = favs.some(f => f.song_id === songId);
+        const btn  = document.getElementById('npLikeBtn');
+        const icon = btn?.querySelector('i');
+        btn?.classList.toggle('liked', liked);
+        if (icon) icon.className = liked ? 'fas fa-heart' : 'far fa-heart';
+    } catch(e) {}
+}
+
+async function toggleNPFavorite() {
+    const song = window._eva.current || SONG_DATA;
+    const btn  = document.getElementById('npLikeBtn');
+    await toggleFavorite(song.id, song, btn);
+}
+
+// ── Misc ──────────────────────────────────────────────────────
+function goBack() {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = '/home';
+}
+function showMoreMenu()   { showToast('More options coming soon!', 'info'); }
+function showLyrics()     { showToast('Lyrics coming soon!', 'info'); }
+function showSleepTimer() { showToast('Sleep timer coming soon!', 'info'); }
+function addToQueue()     {
+    const song = window._eva.current || SONG_DATA;
+    showToast(`${song.title} added to queue`, 'success');
+}
+function shareSong() {
+    const song = window._eva.current || SONG_DATA;
+    if (navigator.share) {
+        navigator.share({ title: song.title, text: `${song.title} by ${song.artist}`, url: window.location.href });
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => showToast('🔗 Link copied!', 'success'));
     }
+}
+function downloadCurrentSong() {
+    const song = window._eva.current || SONG_DATA;
+    if (!song?.url) { showToast('Download not available', 'error'); return; }
+    const a = document.createElement('a');
+    a.href = song.url; a.download = (song.title || 'song') + '.mp3'; a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('Download started', 'success');
+}
 
-    // ── Core play ─────────────────────────────────────────────
-    function playSong(id, songData) {
-        if (!songData || !songData.url) {
-            showToast('No audio available', 'error');
-            return;
-        }
-
-        const eva = window._eva;
-
-        // Stop existing
-        if (eva.audio) {
-            eva.audio.pause();
-            eva.audio.src = '';
-        }
-
-        eva.audio = new Audio(songData.url);
-        eva.audio.preload = 'auto';
-        eva.current = songData;
-        eva.isPlaying = false;
-
-        eva.audio.addEventListener('play',  () => {
-            eva.isPlaying = true;
-            updateBarPlayIcon(true);
-            if (window._npUpdatePlayBtn) window._npUpdatePlayBtn(true);
-        });
-        eva.audio.addEventListener('pause', () => {
-            eva.isPlaying = false;
-            updateBarPlayIcon(false);
-            if (window._npUpdatePlayBtn) window._npUpdatePlayBtn(false);
-        });
-        eva.audio.addEventListener('ended', () => { _onEnded(); });
-        eva.audio.addEventListener('timeupdate', () => { _onTimeUpdate(); });
-        eva.audio.addEventListener('error', () => { showToast('Failed to load audio', 'error'); });
-
-        eva.audio.play().catch(e => console.warn('Autoplay blocked:', e));
-
-        // Update music bar
-        _updateBar(songData);
-        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-
-        // If on player page, update its UI too
-        if (window._npUpdateSongUI) window._npUpdateSongUI(songData);
-    }
-
-    function _updateBar(songData) {
-        const thumb  = document.getElementById('musicBarThumb');
-        const title  = document.getElementById('musicBarTitle');
-        const artist = document.getElementById('musicBarArtist');
-        const bar    = document.getElementById('musicBar');
-        if (thumb)  thumb.src  = songData.image || '/static/images/default-album.png';
-        if (title)  title.textContent  = songData.title  || '';
-        if (artist) artist.textContent = songData.artist || '';
-        if (bar)    bar.classList.remove('hidden');
-    }
-
-    function _onTimeUpdate() {
-        const eva = window._eva;
-        if (!eva.audio || !eva.audio.duration) return;
-        const pct = (eva.audio.currentTime / eva.audio.duration) * 100;
-        const fill = document.getElementById('musicBarProgressFill');
-        if (fill) fill.style.width = pct + '%';
-        if (window._npOnTimeUpdate) window._npOnTimeUpdate(eva.audio.currentTime, eva.audio.duration);
-    }
-
-    function _onEnded() {
-        const eva = window._eva;
-        if (eva.repeatMode === 2) {
-            eva.audio.currentTime = 0;
-            eva.audio.play();
-        } else if (eva.queue.length > 0) {
-            barNext();
-        }
-    }
-
-    // ── Bar controls (called from music bar buttons) ───────────
-    function barTogglePlay() {
-        const eva = window._eva;
-        if (!eva.audio) {
-            // Try restore from localStorage
-            const saved = localStorage.getItem('evamusic_currentSong');
-            if (saved) { try { playSong(null, JSON.parse(saved)); } catch(e){} }
-            return;
-        }
-        if (eva.isPlaying) eva.audio.pause();
-        else eva.audio.play();
-    }
-
-    function barNext() {
-        const eva = window._eva;
-        if (!eva.queue.length) { showToast('No next song', 'info'); return; }
-        if (eva.isShuffle) {
-            eva.queueIndex = Math.floor(Math.random() * eva.queue.length);
-        } else {
-            eva.queueIndex++;
-            if (eva.queueIndex >= eva.queue.length) {
-                if (eva.repeatMode === 1) eva.queueIndex = 0;
-                else { showToast('End of queue', 'info'); return; }
-            }
-        }
-        const next = eva.queue[eva.queueIndex];
-        playSong(next.id, next);
-        if (window._npSetSong) window._npSetSong(next);
-    }
-
-    function barPrev() {
-        const eva = window._eva;
-        // If >3s in, restart
-        if (eva.audio && eva.audio.currentTime > 3) {
-            eva.audio.currentTime = 0;
-            return;
-        }
-        if (!eva.queue.length || eva.queueIndex <= 0) {
-            if (eva.audio) eva.audio.currentTime = 0;
-            return;
-        }
-        eva.queueIndex--;
-        const prev = eva.queue[eva.queueIndex];
-        playSong(prev.id, prev);
-        if (window._npSetSong) window._npSetSong(prev);
-    }
-
-    function barSeek(e) {
-        const eva = window._eva;
-        if (!eva.audio || !eva.audio.duration) return;
-        const bar  = document.getElementById('musicBarProgress');
-        const rect = bar.getBoundingClientRect();
-        const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        eva.audio.currentTime = pct * eva.audio.duration;
-    }
-
-    function updateBarPlayIcon(playing) {
-        const icon = document.getElementById('musicBarPlayIcon');
-        if (icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
-    }
-
-    // ── Expand player ─────────────────────────────────────────
-    function expandPlayer(e) {
-        if (e) e.stopPropagation();
-        const song = window._eva.current;
-        if (!song) return;
-        window.location.href = `/player/${song.id}`;
-    }
-
-    // ── Aliases so old code still works ───────────────────────
-    function togglePlay()    { barTogglePlay(); }
-    function nextSong()      { barNext(); }
-    function previousSong()  { barPrev(); }
-
-    // ── Queue setter ──────────────────────────────────────────
-    function setQueue(songs, startIndex = 0) {
-        window._eva.queue      = songs;
-        window._eva.queueIndex = startIndex;
-    }
-
-    // ── toggleFavorite (called from various pages) ────────────
-    async function toggleFavorite(songId, songData, btn) {
-        if (btn) {
-            btn.style.transform = 'scale(1.3)';
-            setTimeout(() => btn.style.transform = 'scale(1)', 200);
-        }
-        try {
-            const res = await fetch('/api/favorite', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    song_id:   songId,
-                    title:     songData.title   || 'Unknown',
-                    artist:    songData.artist  || 'Unknown',
-                    album:     songData.album   || '',
-                    duration:  songData.duration || '',
-                    image_url: songData.image   || '',
-                    audio_url: songData.url     || '',
-                    source:    'jiosaavn'
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                if (btn) {
-                    const icon = btn.querySelector('i');
-                    if (data.action === 'added') {
-                        icon?.classList.replace('far', 'fas');
-                        btn.classList.add('liked');
-                        showToast('❤️ Added to favorites', 'success');
-                    } else {
-                        icon?.classList.replace('fas', 'far');
-                        btn.classList.remove('liked');
-                        showToast('💔 Removed from favorites', 'info');
-                    }
-                } else {
-                    showToast(data.action === 'added' ? '❤️ Added to favorites' : '💔 Removed', 'success');
-                }
-            }
-        } catch(e) { showToast('Network error', 'error'); }
-    }
-
-    // ── Restore last song on page load ────────────────────────
-    document.addEventListener('DOMContentLoaded', function() {
-        const saved = localStorage.getItem('evamusic_currentSong');
-        if (saved) {
-            try {
-                const song = JSON.parse(saved);
-                _updateBar(song);
-                window._eva.current = song;
-            } catch(e) {}
-        }
-    });
-
-    window.addEventListener('pageshow', function(e) {
-        if (e.persisted) window.location.reload();
-    });
-
-    // ── EvaPlayer API (for player.html to hook into) ──────────
-    window.EvaPlayer = {
-        play:     (s) => playSong(s.id, s),
-        setQueue: (songs, idx = 0) => { setQueue(songs, idx); },
-        get isPlaying() { return window._eva.isPlaying; },
-        get audio()     { return window._eva.audio; }
-    };
-    </script>
-
-    <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+// ── Init ──────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+    playSong(SONG_DATA.id, SONG_DATA);
+    checkFavoriteState(SONG_DATA.id);
+    window._npUpdateSongUI(SONG_DATA);
+});
+</script>
