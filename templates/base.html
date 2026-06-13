@@ -19,17 +19,20 @@
             --bg-color: #121212; --text-color: #ffffff; --text-secondary: #b3b3b3;
             --card-bg: #1e1e1e; --hover-bg: #2a2a2a; --border-color: #333;
             --accent-color: #1DB954; --nav-bg: #1a1a1a; --nav-active: #1DB954; --nav-inactive: #888;
-            --player-bg: #181818; --player-height: 64px;
+            --player-bg: #181818; --player-height: 64px; --nav-height: 60px;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg-color); color: var(--text-color);
             min-height: 100vh;
-            padding-bottom: calc(var(--player-height) + 60px + env(safe-area-inset-bottom, 0px));
+            /* space for: mini player bar + bottom nav + safe area */
+            padding-bottom: calc(var(--player-height) + var(--nav-height) + env(safe-area-inset-bottom, 0px));
             overflow-x: hidden;
         }
+
+        /* ── Toast ── */
         .toast {
-            position: fixed; bottom: 140px; left: 50%;
+            position: fixed; bottom: 150px; left: 50%;
             transform: translateX(-50%) translateY(20px);
             padding: 10px 20px; border-radius: 20px;
             font-size: 13px; font-weight: 500; color: white;
@@ -40,19 +43,23 @@
         .toast-error   { background: #ef4444; }
         .toast-info    { background: #3b82f6; }
 
-        /* ═══ Bottom Mini Music Bar ═══ */
+        /* ── Bottom Mini Music Bar ── */
         .music-bar {
             position: fixed;
-            bottom: 60px; left: 0; right: 0;
+            bottom: var(--nav-height);   /* sits directly above the bottom nav */
+            left: 0; right: 0;
             height: var(--player-height);
             background: var(--player-bg);
             border-top: 1px solid #282828;
             display: flex; align-items: center;
             padding: 0 12px; gap: 12px;
-            z-index: 200;
+            z-index: 300;               /* above nav (z-index 200) */
             transition: transform 0.3s ease;
         }
-        .music-bar.hidden { transform: translateY(200%); }
+        /* hidden = slide below nav entirely */
+        .music-bar.hidden {
+            transform: translateY(calc(100% + var(--nav-height)));
+        }
         .music-bar-thumb {
             width: 44px; height: 44px; border-radius: 6px;
             object-fit: cover; flex-shrink: 0; cursor: pointer;
@@ -91,7 +98,7 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- ═══ Bottom Mini Music Bar ═══ -->
+    <!-- ═══ Bottom Mini Music Bar — outside .main-content so SPA nav never destroys it ═══ -->
     <div class="music-bar hidden" id="musicBar">
         <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
@@ -116,6 +123,7 @@
         </div>
     </div>
 
+    <!-- ═══ Bottom Nav ═══ -->
     <nav class="bottom-nav" id="bottomNav">
         <a href="/home" class="nav-item" data-tab="play">
             <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
@@ -135,10 +143,11 @@
         </a>
     </nav>
 
-    <!-- Load order matters: player engine first, then SPA nav, then page scripts -->
+    <!-- Load order: player engine → SPA nav → bottom nav → page scripts -->
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
     <script src="{{ url_for('static', filename='js/spa-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+            </html>
+            
