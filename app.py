@@ -83,11 +83,18 @@ def fetch_artist_songs(artist_id, limit=20):
         return data
     return []
 
+# ── PAGE ROUTES ────────────────────────────────────────────────
+
 @app.route('/')
 def index():
     songs = fetch_trending(12)
     print(f"[HOME] {len(songs)} songs")
     return render_template('index.html', songs=songs, title="Home")
+
+@app.route('/home')
+def home():
+    songs = fetch_trending(20)
+    return render_template('home.html', songs=songs, title="Your Daily Mix")
 
 @app.route('/search')
 def search():
@@ -99,13 +106,37 @@ def search():
         print(f"[SEARCH] '{query}' -> {len(songs)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
+@app.route('/trending')
+def trending():
+    songs = fetch_trending(24)
+    print(f"[TRENDING] {len(songs)} songs")
+    return render_template('trending.html', songs=songs, title="Trending")
+
+@app.route('/library')
+def library():
+    return render_template('library.html', title="Your Library")
+
+@app.route('/offline')
+def offline():
+    return render_template('offline.html', title="Offline")
+
+@app.route('/settings')
+def settings():
+    return render_template('settingsworker.html', title="Settings")
+
+# ── PLAYER / CONTENT ROUTES ────────────────────────────────────
+
 @app.route('/player/<song_id>')
 def player(song_id):
     song = fetch_song(song_id)
     if not song:
         song = {
-            "id": song_id, "title": "Unknown Song", "artist": "Unknown Artist",
-            "album": "Unknown Album", "url": "", "image": "/static/images/default-album.png",
+            "id": song_id,
+            "title": "Unknown Song",
+            "artist": "Unknown Artist",
+            "album": "Unknown Album",
+            "url": "",
+            "image": "/static/images/default-album.png",
             "duration": 0,
         }
     if song.get("id"):
@@ -116,16 +147,6 @@ def player(song_id):
             "image_url": song.get("image", "")
         })
     return render_template('player.html', song=song, title=song.get("title", "Player"))
-
-@app.route('/trending')
-def trending():
-    songs = fetch_trending(24)
-    print(f"[TRENDING] {len(songs)} songs")
-    return render_template('trending.html', songs=songs, title="Trending")
-
-@app.route('/library')
-def library():
-    return render_template('library.html', title="Your Library")
 
 @app.route('/playlist/<playlist_id>')
 def playlist(playlist_id):
@@ -140,20 +161,10 @@ def album(album_id):
 @app.route('/artist/<artist_id>')
 def artist(artist_id):
     songs = fetch_artist_songs(artist_id, 20)
-    return render_template('artist.html', songs=songs, title="Artist")
+    artist_name = songs[0].get('artist', 'Artist') if songs else 'Artist'
+    return render_template('artist.html', songs=songs, title=artist_name)
 
-@app.route('/offline')
-def offline():
-    return render_template('offline.html', title="Offline")
-
-@app.route('/settings')
-def settings():
-    return render_template('settingsworker.html', title="Settings")
-
-@app.route('/home')
-def home():
-    songs = fetch_trending(20)
-    return render_template('home.html', songs=songs, title="Your Daily Mix")
+# ── PROFILE ROUTES ─────────────────────────────────────────────
 
 @app.route('/profile')
 def profile():
@@ -209,7 +220,6 @@ def edit_profile():
     }
     return render_template('edit_profile.html', title="Edit Profile", profile=profile_data)
 
-# ── NEW ROUTE ──────────────────────────────────────────────────
 @app.route('/favorites')
 def favorites():
     user_id = get_user_id()
@@ -221,7 +231,14 @@ def history():
     user_id = get_user_id()
     songs = db.get_recently_played(user_id, 50)
     return render_template('history.html', songs=songs, title="Listening History")
-# ──────────────────────────────────────────────────────────────
+
+@app.route('/playlists')
+def playlists():
+    user_id = get_user_id()
+    playlists_data = db.get_user_playlists(user_id)
+    return render_template('playlists.html', playlists=playlists_data, title="My Playlists")
+
+# ── API ROUTES ─────────────────────────────────────────────────
 
 @app.route('/api/search')
 def api_search():
@@ -282,16 +299,38 @@ def api_search_history():
     history = db.get_search_history(user_id, limit)
     return jsonify([h["query"] for h in history])
 
+@app.route('/api/playlist/create', methods=['POST'])
+def api_create_playlist():
+    user_id = get_user_id()
+    data = request.get_json() or {}
+    name = data.get("name", "My Playlist")
+    description = data.get("description", "")
+    result = db.create_playlist(user_id, name, description)
+    return jsonify(result)
+
+@app.route('/api/playlist/<playlist_id>/add', methods=['POST'])
+def api_add_to_playlist(playlist_id):
+    user_id = get_user_id()
+    data = request.get_json() or {}
+    result = db.add_song_to_playlist(user_id, playlist_id, data)
+    return jsonify(result)
+
+@app.route('/api/playlists')
+def api_get_playlists():
+    user_id = get_user_id()
+    playlists_data = db.get_user_playlists(user_id)
+    return jsonify(playlists_data)
+
 @app.route('/api/stats')
 def api_stats():
     user_id = get_user_id()
     favorites = db.get_user_favorites(user_id)
-    playlists = db.get_user_playlists(user_id)
+    playlists_data = db.get_user_playlists(user_id)
     recent = db.get_recently_played(user_id, 9999)
 
     return jsonify({
         "total_favorites":  len(favorites),
-        "total_playlists":  len(playlists),
+        "total_playlists":  len(playlists_data),
         "total_plays":      len(recent),
         "listening_hours":  round(len(recent) * 3.5 / 60, 1)
     })
@@ -311,6 +350,8 @@ def api_debug():
         "api_status": api_status,
         "db_health":  db_health
     })
+
+# ── STATIC & ERRORS ────────────────────────────────────────────
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
