@@ -8,7 +8,6 @@
     <div class="profile-header">
         <div class="profile-avatar-section">
             <div class="profile-avatar-wrapper">
-                <!-- Use icon-512.png as avatar fallback -->
                 <img src="{{ profile.avatar_url or '/static/icon-512.png' }}"
                      alt="{{ profile.display_name or profile.username }}"
                      class="profile-avatar" id="profileAvatar"
@@ -92,7 +91,7 @@
         </div>
         <div class="song-list">
             {% for song in recently_played[:6] %}
-            <div class="song-row" onclick="playSong('{{ song.song_id }}', {{ song|tojson }})" data-song-id="{{ song.song_id }}">
+            <div class="song-row" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '' }}" data-song-url="{{ song.audio_url or '' }}">
                 <div class="song-number">{{ loop.index }}</div>
                 <img src="{{ song.image_url or '/static/icon-512.png' }}"
                      class="song-thumb" alt="{{ song.title }}"
@@ -101,7 +100,7 @@
                     <div class="song-title">{{ song.title }}</div>
                     <div class="song-artist">{{ song.artist }}</div>
                 </div>
-                <button class="favorite-btn" data-song-id="{{ song.song_id }}" onclick="event.stopPropagation(); toggleFavorite('{{ song.song_id }}', {{ song|tojson }})">
+                <button class="favorite-btn" data-song-id="{{ song.song_id }}" onclick="event.stopPropagation(); toggleFavorite(this)">
                     <i class="far fa-heart"></i>
                 </button>
             </div>
@@ -118,7 +117,7 @@
         </div>
         <div class="song-grid">
             {% for song in favorites[:6] %}
-            <div class="song-card" onclick="playSong('{{ song.song_id }}', {{ song|tojson }})" data-song-id="{{ song.song_id }}">
+            <div class="song-card" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '' }}" data-song-url="{{ song.audio_url or '' }}">
                 <div class="song-card-img-wrapper">
                     <img src="{{ song.image_url or '/static/icon-512.png' }}"
                          alt="{{ song.title }}"
@@ -153,68 +152,108 @@
 </div>
 
 <script>
-function playSong(id, songData) {
-    songData.image = songData.image_url || songData.image || '';
-    songData.url   = songData.audio_url  || songData.url  || '';
-    songData.id    = songData.song_id    || songData.id   || id;
-
-    const thumbEl = document.getElementById('musicBarThumb');
-    const titleEl = document.getElementById('musicBarTitle');
-    const artistEl = document.getElementById('musicBarArtist');
-    const barEl = document.getElementById('musicBar');
-
-    if (thumbEl) thumbEl.src = songData.image || '/static/icon-512.png';
-    if (titleEl) titleEl.textContent = songData.title;
-    if (artistEl) artistEl.textContent = songData.artist || '-';
-    if (barEl) barEl.classList.remove('hidden');
-
-    const playIcon = document.getElementById('musicBarPlayIcon');
-    if (playIcon) {
-        playIcon.classList.remove('fa-play');
-        playIcon.classList.add('fa-pause');
+// Simple event delegation - no inline onclick with complex objects
+document.addEventListener('click', function(e) {
+    // Handle song row clicks
+    var row = e.target.closest('.song-row');
+    if (row && !e.target.closest('.favorite-btn')) {
+        var songData = {
+            id: row.dataset.songId,
+            title: row.dataset.songTitle,
+            artist: row.dataset.songArtist,
+            image: row.dataset.songImage || '/static/icon-512.png',
+            url: row.dataset.songUrl || ''
+        };
+        if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
+            window.EvaPlayer.play(songData);
+        }
+        // Update music bar
+        var thumb = document.getElementById('musicBarThumb');
+        var title = document.getElementById('musicBarTitle');
+        var artist = document.getElementById('musicBarArtist');
+        var bar = document.getElementById('musicBar');
+        if (thumb) thumb.src = songData.image;
+        if (title) title.textContent = songData.title;
+        if (artist) artist.textContent = songData.artist || '-';
+        if (bar) bar.classList.remove('hidden');
+        var icon = document.getElementById('musicBarPlayIcon');
+        if (icon) {
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        }
+        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+        if (typeof showToast === 'function') showToast('Now playing: ' + songData.title, 'success');
     }
-
-    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
-        window.EvaPlayer.play(songData);
+    
+    // Handle song card clicks
+    var card = e.target.closest('.song-card');
+    if (card) {
+        var songData = {
+            id: card.dataset.songId,
+            title: card.dataset.songTitle,
+            artist: card.dataset.songArtist,
+            image: card.dataset.songImage || '/static/icon-512.png',
+            url: card.dataset.songUrl || ''
+        };
+        if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
+            window.EvaPlayer.play(songData);
+        }
+        var thumb = document.getElementById('musicBarThumb');
+        var title = document.getElementById('musicBarTitle');
+        var artist = document.getElementById('musicBarArtist');
+        var bar = document.getElementById('musicBar');
+        if (thumb) thumb.src = songData.image;
+        if (title) title.textContent = songData.title;
+        if (artist) artist.textContent = songData.artist || '-';
+        if (bar) bar.classList.remove('hidden');
+        var icon = document.getElementById('musicBarPlayIcon');
+        if (icon) {
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        }
+        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+        if (typeof showToast === 'function') showToast('Now playing: ' + songData.title, 'success');
     }
+});
 
-    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-    showToast('Now playing: ' + songData.title, 'success');
-}
-
-async function toggleFavorite(songId, songData) {
-    try {
-        const res = await fetch('/api/favorite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                song_id: songId,
-                title: songData.title || 'Unknown',
-                artist: songData.artist || 'Unknown',
-                image_url: songData.image_url || songData.image || '',
-                audio_url: songData.audio_url || songData.url || '',
-                source: 'jiosaavn'
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
+function toggleFavorite(btn) {
+    var songId = btn.dataset.songId;
+    var row = btn.closest('.song-row');
+    var songData = {
+        song_id: songId,
+        title: row ? row.dataset.songTitle : 'Unknown',
+        artist: row ? row.dataset.songArtist : 'Unknown',
+        image_url: row ? row.dataset.songImage : '',
+        audio_url: row ? row.dataset.songUrl : '',
+        source: 'jiosaavn'
+    };
+    
+    fetch('/api/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(songData)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success && typeof showToast === 'function') {
             showToast(data.action === 'added' ? 'Added to favorites' : 'Removed from favorites', 'success');
         }
-    } catch (e) {
-        showToast('Network error', 'error');
-    }
+    })
+    .catch(function(e) {
+        if (typeof showToast === 'function') showToast('Network error', 'error');
+    });
 }
 
 function shareProfile() {
-    const url = window.location.href;
+    var url = window.location.href;
     if (navigator.share) {
         navigator.share({ title: 'My EvaMusic Profile', url: url });
-    } else {
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('Profile link copied!', 'success');
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() {
+            if (typeof showToast === 'function') showToast('Profile link copied!', 'success');
         });
     }
 }
 </script>
 {% endblock %}
-    
+            
