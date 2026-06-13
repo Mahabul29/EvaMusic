@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
+
 {% block extra_css %}
 <style>
 .hero-section{padding:30px 20px;text-align:center;background:linear-gradient(180deg,rgba(29,185,84,0.08)0%,transparent 100%)}
@@ -27,6 +28,7 @@
 .trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="hero-section">
 <h1>EvaMusic</h1>
@@ -40,12 +42,6 @@
 <a href="/search?q=english" class="lang-chip">English</a>
 <a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
 <a href="/search?q=tamil" class="lang-chip">Tamil</a>
-<a href="/search?q=telugu" class="lang-chip">Telugu</a>
-<a href="/search?q=marathi" class="lang-chip">Marathi</a>
-<a href="/search?q=gujarati" class="lang-chip">Gujarati</a>
-<a href="/search?q=kannada" class="lang-chip">Kannada</a>
-<a href="/search?q=malayalam" class="lang-chip">Malayalam</a>
-<a href="/search?q=urdu" class="lang-chip">Urdu</a>
 </div>
 <section class="trending-section">
 <div class="trending-header">
@@ -68,19 +64,47 @@
 </div>
 </section>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-// Sync language chips with user preference from Settings
-const preferredLang = localStorage.getItem('evamusic_musicLanguage');
-if (preferredLang && preferredLang !== 'All') {
-    document.querySelectorAll('.lang-chip').forEach(chip => {
-        const url = new URL(chip.href, window.location.origin);
-        const q = url.searchParams.get('q');
-        if (q === preferredLang.toLowerCase()) {
-            chip.classList.add('active');
-            document.querySelector('.lang-chip[href="/home"]').classList.remove('active');
-        }
-    });
+function playSong(id, songData) {
+    // Update music bar
+    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
+    document.getElementById('musicBarTitle').textContent = songData.title;
+    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
+    document.getElementById('musicBar').classList.remove('hidden');
+    
+    // Update play icon to pause
+    const playIcon = document.getElementById('musicBarPlayIcon');
+    if (playIcon) {
+        playIcon.classList.remove('fa-play');
+        playIcon.classList.add('fa-pause');
+    }
+    
+    // Use EvaPlayer if available
+    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
+        window.EvaPlayer.play(songData);
+    }
+    
+    // Store current song
+    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+    
+    // Show toast
+    showToast(`Now playing: ${songData.title}`, 'success');
 }
+
+// Restore last played song on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const lastSong = localStorage.getItem('evamusic_currentSong');
+    if (lastSong) {
+        try {
+            const song = JSON.parse(lastSong);
+            document.getElementById('musicBarThumb').src = song.image || '/static/images/default-album.png';
+            document.getElementById('musicBarTitle').textContent = song.title;
+            document.getElementById('musicBarArtist').textContent = song.artist || '-';
+            document.getElementById('musicBar').classList.remove('hidden');
+        } catch(e) {}
+    }
+});
 </script>
 {% endblock %}
