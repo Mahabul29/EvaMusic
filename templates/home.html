@@ -142,8 +142,8 @@
             <span class="home-logo-text">EvaMusic</span>
         </div>
         <div class="home-top-btns">
-            <button class="home-top-btn" onclick="window.location.href='/search'"><i class="fas fa-search"></i></button>
-            <button class="home-top-btn" onclick="window.location.href='/settings'"><i class="fas fa-cog"></i></button>
+            <button class="home-top-btn" onclick="navigateTo('/search')"><i class="fas fa-search"></i></button>
+            <button class="home-top-btn" onclick="navigateTo('/settings')"><i class="fas fa-cog"></i></button>
         </div>
     </div>
 
@@ -196,27 +196,28 @@
 </div>
 
 <script>
-// Attach click handlers after DOM loads
+// Fallback: attach click handlers on direct page load
+// SPA navigation handles this via _attachSongCards() in spa-nav.js
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.grid-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const songData = {
-                id: this.dataset.songId,
-                title: this.dataset.songTitle,
-                artist: this.dataset.songArtist,
-                image: this.dataset.songImage,
-                url: this.dataset.songUrl
-            };
-            console.log('[Home] Clicked song:', songData.id, songData.title);
-            if (typeof playSong === 'function') {
-                playSong(songData.id, songData);
-            } else {
-                console.error('[Home] playSong function not found!');
-                showToast('Player not ready', 'error');
-            }
+    if (typeof _attachSongCards !== 'function') {
+        document.querySelectorAll('.grid-item[data-song-id]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const songData = {
+                    id: this.dataset.songId,
+                    title: this.dataset.songTitle,
+                    artist: this.dataset.songArtist,
+                    image: this.dataset.songImage,
+                    url: this.dataset.songUrl || ''
+                };
+                if (typeof playSong === 'function') {
+                    playSong(songData.id, songData);
+                } else {
+                    showToast('Player not ready', 'error');
+                }
+            });
         });
-    });
+    }
 });
 </script>
 {% endblock %}
