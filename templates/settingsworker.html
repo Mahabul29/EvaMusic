@@ -1,1 +1,769 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
 
+{% block extra_css %}
+<style>
+.settings-page { padding: 0 16px 80px; max-width: 600px; margin: 0 auto; }
+.settings-header { padding: 20px 0; text-align: center; }
+.settings-header h1 { font-size: 24px; font-weight: 700; }
+.settings-section { margin-bottom: 24px; }
+.settings-section-title {
+    font-size: 13px; font-weight: 600; color: var(--accent-color);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-left: 4px;
+}
+.settings-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; background: var(--card-bg); border-radius: 12px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+    text-decoration: none; color: inherit;
+}
+.settings-item:active { transform: scale(0.98); background: var(--hover-bg); }
+.settings-item-left { display: flex; align-items: center; gap: 14px; }
+.settings-item-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(29, 185, 84, 0.1); display: flex;
+    align-items: center; justify-content: center;
+    color: var(--accent-color); font-size: 16px;
+}
+.settings-item-text { display: flex; flex-direction: column; }
+.settings-item-title { font-size: 15px; font-weight: 500; color: var(--text-color); }
+.settings-item-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.settings-item-right { display: flex; align-items: center; gap: 8px; }
+.settings-item-right i { color: var(--text-secondary); font-size: 14px; }
+.settings-value { font-size: 14px; color: var(--text-secondary); }
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative; width: 48px; height: 26px; cursor: pointer;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0; background: #444; border-radius: 26px;
+    transition: background 0.3s;
+}
+.toggle-slider::before {
+    content: ""; position: absolute; width: 20px; height: 20px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%;
+    transition: transform 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+/* Server Selector Modal */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+    background: var(--card-bg); width: 100%; max-width: 600px;
+    border-radius: 20px 20px 0 0; padding: 20px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-sheet { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
+.server-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-radius: 12px; margin-bottom: 8px;
+    background: var(--hover-bg); cursor: pointer;
+}
+.server-option:active { background: #333; }
+.server-option.selected { background: rgba(29,185,84,0.15); }
+.server-option.selected .server-name { color: var(--accent-color); }
+.server-name { font-size: 15px; font-weight: 500; }
+.server-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-color); color: #000; font-weight: 600; }
+.modal-cancel {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: var(--hover-bg); border: none; border-radius: 12px;
+    color: var(--text-color); font-size: 16px; font-weight: 500; cursor: pointer;
+}
+
+/* Sleep Timer Modal */
+.timer-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.timer-option {
+    flex: 1; min-width: 70px; padding: 10px; text-align: center;
+    background: var(--hover-bg); border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 500; border: 2px solid transparent;
+}
+.timer-option:active { background: #333; }
+.timer-option.selected { border-color: var(--accent-color); color: var(--accent-color); background: rgba(29,185,84,0.1); }
+.timer-custom {
+    display: flex; gap: 8px; align-items: center; margin-top: 8px;
+}
+.timer-custom input {
+    flex: 1; background: var(--hover-bg); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 10px 14px; color: var(--text-color);
+    font-size: 14px; outline: none;
+}
+.timer-custom input:focus { border-color: var(--accent-color); }
+.timer-custom button {
+    padding: 10px 18px; background: var(--accent-color); border: none;
+    border-radius: 10px; color: #000; font-weight: 600; cursor: pointer;
+}
+
+/* Music Language Modal */
+.lang-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.lang-option {
+    padding: 12px 8px; text-align: center; background: var(--hover-bg);
+    border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 500;
+    border: 2px solid transparent;
+}
+.lang-option:active { background: #333; }
+.lang-option.selected { border-color: var(--accent-color); color: var(--accent-color); background: rgba(29,185,84,0.1); }
+
+/* Accent Color Modal */
+.color-grid { display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; }
+.color-option {
+    width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: transform 0.2s;
+}
+.color-option:active { transform: scale(0.9); }
+.color-option.selected { border-color: white; box-shadow: 0 0 0 2px var(--accent-color); }
+
+/* Cache clearing animation */
+.cache-clearing { opacity: 0.6; pointer-events: none; }
+.cache-clearing .settings-item-right::after {
+    content: ""; width: 14px; height: 14px; border: 2px solid var(--accent-color);
+    border-top-color: transparent; border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-left: 4px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.app-info { text-align: center; padding: 32px 0; color: var(--text-secondary); }
+.app-info .app-logo { font-size: 48px; margin-bottom: 12px; }
+.app-info .app-name { font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 4px; }
+.app-info .app-version { font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header"><h1>Settings</h1></div>
+
+    <!-- ACCOUNT -->
+    <div class="settings-section">
+        <div class="settings-section-title">Account</div>
+        <a href="/profile/edit" class="settings-item">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Edit Profile</span>
+                    <span class="settings-item-desc">Name, avatar, bio</span>
+                </div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <div class="settings-item" onclick="toggleSetting(this, 'notifications')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-bell"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Notifications</span>
+                    <span class="settings-item-desc">Push alerts</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="notifications-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPEARANCE -->
+    <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <div class="settings-item" onclick="openThemeModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-palette"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Theme</span>
+                    <span class="settings-item-desc">Dark, Light, AMOLED</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentTheme">Dark</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="settings-item" onclick="openAccentModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-tint"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Accent Color</span>
+                    <span class="settings-item-desc">App highlight color</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentAccent" style="color: var(--accent-color);">● Green</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYBACK -->
+    <div class="settings-section">
+        <div class="settings-section-title">Playback</div>
+        <div class="settings-item" onclick="toggleSetting(this, 'autoplay')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-play-circle"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Auto Play</span>
+                    <span class="settings-item-desc">Play next song automatically</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="autoplay-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="settings-item" onclick="toggleSetting(this, 'gapless')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-music"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Gapless Playback</span>
+                    <span class="settings-item-desc">No silence between songs</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <label class="toggle-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="gapless-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- MUSIC SERVER -->
+    <div class="settings-section">
+        <div class="settings-section-title">Music Server</div>
+        <div class="settings-item" onclick="openServerModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-server"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Server</span>
+                    <span class="settings-item-desc">Select streaming server</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentServer">HD1</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="settings-item" onclick="openLangModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-language"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Music Language</span>
+                    <span class="settings-item-desc">Preferred song languages</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentMusicLang">All</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="settings-item" onclick="openTimerModal()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-moon"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Sleep Timer</span>
+                    <span class="settings-item-desc">Auto stop playback</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentTimer">Off</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUALITY -->
+    <div class="settings-section">
+        <div class="settings-section-title">Quality</div>
+        <div class="settings-item" onclick="openQualityModal('streaming')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-wifi"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Streaming Quality</span>
+                    <span class="settings-item-desc">Wi-Fi streaming</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentStreamQuality">High (320kbps)</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="settings-item" onclick="openQualityModal('download')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-download"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Download Quality</span>
+                    <span class="settings-item-desc">Offline music quality</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentDownloadQuality">High (320kbps)</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATA & STORAGE -->
+    <div class="settings-section">
+        <div class="settings-section-title">Data & Storage</div>
+        <div class="settings-item" id="cacheItem" onclick="clearCache()">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-trash-alt"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Clear Cache</span>
+                    <span class="settings-item-desc">Free up space</span>
+                </div>
+            </div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="cacheSize">128 MB</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="settings-section">
+        <div class="settings-section-title">About</div>
+        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0\nMade with ❤️', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-info-circle"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">About EvaMusic</span></div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </div>
+        <div class="settings-item" onclick="showToast('Opening privacy policy...', 'info')">
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="settings-item-text"><span class="settings-item-title">Privacy Policy</span></div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <div class="app-info">
+        <div class="app-logo">🎵</div>
+        <div class="app-name">EvaMusic</div>
+        <div class="app-version">Version 1.0.0</div>
+    </div>
+</div>
+
+<!-- ═══ Server Selector Modal ═══ -->
+<div class="modal-overlay" id="serverModal" onclick="closeModal(event, 'serverModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Select Server</div>
+        <div class="server-option selected" data-server="HD1" onclick="selectServer('HD1', this)">
+            <span class="server-name">HD1</span>
+            <span class="server-badge">Fast</span>
+        </div>
+        <div class="server-option" data-server="HD2" onclick="selectServer('HD2', this)">
+            <span class="server-name">HD2</span>
+            <span class="server-badge">Backup</span>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'serverModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Sleep Timer Modal ═══ -->
+<div class="modal-overlay" id="timerModal" onclick="closeModal(event, 'timerModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Sleep Timer</div>
+        <div class="timer-options">
+            <div class="timer-option" data-time="5" onclick="selectTimer(5, this)">5 min</div>
+            <div class="timer-option" data-time="10" onclick="selectTimer(10, this)">10 min</div>
+            <div class="timer-option" data-time="15" onclick="selectTimer(15, this)">15 min</div>
+            <div class="timer-option" data-time="30" onclick="selectTimer(30, this)">30 min</div>
+            <div class="timer-option" data-time="45" onclick="selectTimer(45, this)">45 min</div>
+            <div class="timer-option" data-time="60" onclick="selectTimer(60, this)">60 min</div>
+        </div>
+        <div class="timer-custom">
+            <input type="number" id="customTimerInput" placeholder="Custom (min)" min="1" max="180">
+            <button onclick="setCustomTimer()">Set</button>
+        </div>
+        <div class="timer-options" style="margin-top: 8px;">
+            <div class="timer-option selected" data-time="0" onclick="selectTimer(0, this)" style="flex: 1;">Off</div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'timerModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Music Language Modal ═══ -->
+<div class="modal-overlay" id="langModal" onclick="closeModal(event, 'langModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Music Language</div>
+        <div class="lang-grid">
+            <div class="lang-option selected" data-lang="All" onclick="selectLang('All', this)">All</div>
+            <div class="lang-option" data-lang="Hindi" onclick="selectLang('Hindi', this)">Hindi</div>
+            <div class="lang-option" data-lang="English" onclick="selectLang('English', this)">English</div>
+            <div class="lang-option" data-lang="Punjabi" onclick="selectLang('Punjabi', this)">Punjabi</div>
+            <div class="lang-option" data-lang="Tamil" onclick="selectLang('Tamil', this)">Tamil</div>
+            <div class="lang-option" data-lang="Telugu" onclick="selectLang('Telugu', this)">Telugu</div>
+            <div class="lang-option" data-lang="Marathi" onclick="selectLang('Marathi', this)">Marathi</div>
+            <div class="lang-option" data-lang="Gujarati" onclick="selectLang('Gujarati', this)">Gujarati</div>
+            <div class="lang-option" data-lang="Bengali" onclick="selectLang('Bengali', this)">Bengali</div>
+            <div class="lang-option" data-lang="Kannada" onclick="selectLang('Kannada', this)">Kannada</div>
+            <div class="lang-option" data-lang="Malayalam" onclick="selectLang('Malayalam', this)">Malayalam</div>
+            <div class="lang-option" data-lang="Urdu" onclick="selectLang('Urdu', this)">Urdu</div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'langModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Theme Modal ═══ -->
+<div class="modal-overlay" id="themeModal" onclick="closeModal(event, 'themeModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Select Theme</div>
+        <div class="server-option selected" data-theme="Dark" onclick="selectTheme('Dark', this)">
+            <span class="server-name">🌙 Dark</span>
+        </div>
+        <div class="server-option" data-theme="Light" onclick="selectTheme('Light', this)">
+            <span class="server-name">☀️ Light</span>
+        </div>
+        <div class="server-option" data-theme="AMOLED" onclick="selectTheme('AMOLED', this)">
+            <span class="server-name">⚫ AMOLED</span>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'themeModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Accent Color Modal ═══ -->
+<div class="modal-overlay" id="accentModal" onclick="closeModal(event, 'accentModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Accent Color</div>
+        <div class="color-grid">
+            <div class="color-option selected" style="background: #1DB954;" data-color="#1DB954" data-name="Green" onclick="selectAccent('#1DB954', 'Green', this)"></div>
+            <div class="color-option" style="background: #FF6B6B;" data-color="#FF6B6B" data-name="Red" onclick="selectAccent('#FF6B6B', 'Red', this)"></div>
+            <div class="color-option" style="background: #4ECDC4;" data-color="#4ECDC4" data-name="Teal" onclick="selectAccent('#4ECDC4', 'Teal', this)"></div>
+            <div class="color-option" style="background: #45B7D1;" data-color="#45B7D1" data-name="Blue" onclick="selectAccent('#45B7D1', 'Blue', this)"></div>
+            <div class="color-option" style="background: #96CEB4;" data-color="#96CEB4" data-name="Mint" onclick="selectAccent('#96CEB4', 'Mint', this)"></div>
+            <div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', 'Purple', this)"></div>
+            <div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', 'Yellow', this)"></div>
+            <div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', 'Orange', this)"></div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'accentModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Quality Modal ═══ -->
+<div class="modal-overlay" id="qualityModal" onclick="closeModal(event, 'qualityModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title" id="qualityModalTitle">Streaming Quality</div>
+        <div class="server-option" data-quality="Low (96kbps)" onclick="selectQuality('Low (96kbps)', this)">
+            <span class="server-name">Low</span>
+            <span class="server-badge">96kbps</span>
+        </div>
+        <div class="server-option" data-quality="Medium (160kbps)" onclick="selectQuality('Medium (160kbps)', this)">
+            <span class="server-name">Medium</span>
+            <span class="server-badge">160kbps</span>
+        </div>
+        <div class="server-option selected" data-quality="High (320kbps)" onclick="selectQuality('High (320kbps)', this)">
+            <span class="server-name">High</span>
+            <span class="server-badge">320kbps</span>
+        </div>
+        <div class="server-option" data-quality="Lossless (FLAC)" onclick="selectQuality('Lossless (FLAC)', this)">
+            <span class="server-name">Lossless</span>
+            <span class="server-badge">FLAC</span>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'qualityModal')">Cancel</button>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// SETTINGS STATE MANAGEMENT
+// ═══════════════════════════════════════
+const SettingsStore = {
+    get(key, defaultVal) {
+        try { return JSON.parse(localStorage.getItem('evamusic_' + key)) ?? defaultVal; }
+        catch { return defaultVal; }
+    },
+    set(key, val) { localStorage.setItem('evamusic_' + key, JSON.stringify(val)); },
+    remove(key) { localStorage.removeItem('evamusic_' + key); }
+};
+
+// ═══════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════
+function showToast(message, type = 'info') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ═══════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(event, id) {
+    if (!event || event.target.id === id) {
+        document.getElementById(id).classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// ═══════════════════════════════════════
+// TOGGLE SETTINGS
+// ═══════════════════════════════════════
+function toggleSetting(el, key) {
+    const checkbox = el.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    SettingsStore.set(key, checkbox.checked);
+    const status = checkbox.checked ? 'enabled' : 'disabled';
+    const name = el.querySelector('.settings-item-title').textContent;
+    showToast(`${name} ${status}`, checkbox.checked ? 'success' : 'info');
+}
+
+// ═══════════════════════════════════════
+// SERVER SELECTOR
+// ═══════════════════════════════════════
+function openServerModal() { openModal('serverModal'); }
+
+function selectServer(server, el) {
+    document.querySelectorAll('#serverModal .server-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('server', server);
+    document.getElementById('currentServer').textContent = server;
+    showToast(`Switched to ${server}`, 'success');
+    setTimeout(() => closeModal(null, 'serverModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// SLEEP TIMER
+// ═══════════════════════════════════════
+let sleepTimerId = null;
+
+function openTimerModal() { openModal('timerModal'); }
+
+function selectTimer(minutes, el) {
+    document.querySelectorAll('#timerModal .timer-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    setSleepTimer(minutes);
+}
+
+function setCustomTimer() {
+    const input = document.getElementById('customTimerInput');
+    const minutes = parseInt(input.value);
+    if (!minutes || minutes < 1) { showToast('Enter valid minutes', 'error'); return; }
+    document.querySelectorAll('#timerModal .timer-option').forEach(opt => opt.classList.remove('selected'));
+    setSleepTimer(minutes);
+}
+
+function setSleepTimer(minutes) {
+    if (sleepTimerId) { clearTimeout(sleepTimerId); sleepTimerId = null; }
+    SettingsStore.set('sleepTimer', minutes);
+
+    if (minutes === 0) {
+        document.getElementById('currentTimer').textContent = 'Off';
+        showToast('Sleep timer off', 'info');
+        closeModal(null, 'timerModal');
+        return;
+    }
+
+    document.getElementById('currentTimer').textContent = `${minutes} min`;
+    showToast(`Sleep timer set: ${minutes} min`, 'success');
+    closeModal(null, 'timerModal');
+
+    sleepTimerId = setTimeout(() => {
+        showToast('Sleep timer ended - playback stopped', 'info');
+    }, minutes * 60 * 1000);
+}
+
+// ═══════════════════════════════════════
+// MUSIC LANGUAGE
+// ═══════════════════════════════════════
+function openLangModal() { openModal('langModal'); }
+
+function selectLang(lang, el) {
+    document.querySelectorAll('#langModal .lang-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('musicLanguage', lang);
+    document.getElementById('currentMusicLang').textContent = lang;
+    showToast(`Music language: ${lang}`, 'success');
+    setTimeout(() => closeModal(null, 'langModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// THEME SELECTOR
+// ═══════════════════════════════════════
+function openThemeModal() { openModal('themeModal'); }
+
+function selectTheme(theme, el) {
+    document.querySelectorAll('#themeModal .server-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('theme', theme);
+    document.getElementById('currentTheme').textContent = theme;
+    applyTheme(theme);
+    showToast(`Theme: ${theme}`, 'success');
+    setTimeout(() => closeModal(null, 'themeModal'), 300);
+}
+
+function applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'Light') {
+        root.style.setProperty('--bg-color', '#f5f5f5');
+        root.style.setProperty('--text-color', '#121212');
+        root.style.setProperty('--text-secondary', '#666');
+        root.style.setProperty('--card-bg', '#ffffff');
+        root.style.setProperty('--hover-bg', '#e8e8e8');
+        root.style.setProperty('--border-color', '#ddd');
+        root.style.setProperty('--nav-bg', '#ffffff');
+        root.style.setProperty('--player-bg', '#ffffff');
+    } else if (theme === 'AMOLED') {
+        root.style.setProperty('--bg-color', '#000000');
+        root.style.setProperty('--text-color', '#ffffff');
+        root.style.setProperty('--text-secondary', '#888');
+        root.style.setProperty('--card-bg', '#0a0a0a');
+        root.style.setProperty('--hover-bg', '#141414');
+        root.style.setProperty('--border-color', '#1a1a1a');
+        root.style.setProperty('--nav-bg', '#000000');
+        root.style.setProperty('--player-bg', '#000000');
+    } else {
+        root.style.setProperty('--bg-color', '#121212');
+        root.style.setProperty('--text-color', '#ffffff');
+        root.style.setProperty('--text-secondary', '#b3b3b3');
+        root.style.setProperty('--card-bg', '#1e1e1e');
+        root.style.setProperty('--hover-bg', '#2a2a2a');
+        root.style.setProperty('--border-color', '#333');
+        root.style.setProperty('--nav-bg', '#1a1a1a');
+        root.style.setProperty('--player-bg', '#181818');
+    }
+}
+
+// ═══════════════════════════════════════
+// ACCENT COLOR
+// ═══════════════════════════════════════
+function openAccentModal() { openModal('accentModal'); }
+
+function selectAccent(color, name, el) {
+    document.querySelectorAll('#accentModal .color-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('accentColor', { color, name });
+    document.documentElement.style.setProperty('--accent-color', color);
+    document.getElementById('currentAccent').innerHTML = `<span style="color: ${color};">● ${name}</span>`;
+    showToast(`Accent: ${name}`, 'success');
+    setTimeout(() => closeModal(null, 'accentModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// QUALITY SELECTOR
+// ═══════════════════════════════════════
+let currentQualityType = 'streaming';
+
+function openQualityModal(type) {
+    currentQualityType = type;
+    document.getElementById('qualityModalTitle').textContent =
+        type === 'streaming' ? 'Streaming Quality' : 'Download Quality';
+    openModal('qualityModal');
+}
+
+function selectQuality(quality, el) {
+    document.querySelectorAll('#qualityModal .server-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set(currentQualityType + 'Quality', quality);
+    const displayId = currentQualityType === 'streaming' ? 'currentStreamQuality' : 'currentDownloadQuality';
+    document.getElementById(displayId).textContent = quality;
+    showToast(`${currentQualityType === 'streaming' ? 'Streaming' : 'Download'}: ${quality}`, 'success');
+    setTimeout(() => closeModal(null, 'qualityModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// CLEAR CACHE
+// ═══════════════════════════════════════
+function clearCache() {
+    const item = document.getElementById('cacheItem');
+    item.classList.add('cache-clearing');
+
+    setTimeout(() => {
+        if ('caches' in window) {
+            caches.keys().then(names => names.forEach(name => caches.delete(name)));
+        }
+        const settings = {};
+        ['server','sleepTimer','musicLanguage','theme','accentColor','streamingQuality',
+         'downloadQuality','notifications','autoplay','gapless'].forEach(k => {
+            settings[k] = SettingsStore.get(k);
+        });
+        localStorage.clear();
+        Object.entries(settings).forEach(([k, v]) => { if (v !== null) SettingsStore.set(k, v); });
+
+        document.getElementById('cacheSize').textContent = '0 MB';
+        item.classList.remove('cache-clearing');
+        showToast('Cache cleared!', 'success');
+    }, 1500);
+}
+
+// ═══════════════════════════════════════
+// INITIALIZE SETTINGS ON LOAD
+// ═══════════════════════════════════════
+function initSettings() {
+    const toggles = {
+        'notifications-toggle': 'notifications',
+        'autoplay-toggle': 'autoplay',
+        'gapless-toggle': 'gapless'
+    };
+    Object.entries(toggles).forEach(([id, key]) => {
+        const val = SettingsStore.get(key);
+        if (val !== null) document.getElementById(id).checked = val;
+    });
+
+    const server = SettingsStore.get('server', 'HD1');
+    document.getElementById('currentServer').textContent = server;
+    document.querySelectorAll('#serverModal .server-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.server === server);
+    });
+
+    const lang = SettingsStore.get('musicLanguage', 'All');
+    document.getElementById('currentMusicLang').textContent = lang;
+    document.querySelectorAll('#langModal .lang-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.lang === lang);
+    });
+
+    const timer = SettingsStore.get('sleepTimer', 0);
+    document.getElementById('currentTimer').textContent = timer ? `${timer} min` : 'Off';
+
+    const theme = SettingsStore.get('theme', 'Dark');
+    document.getElementById('currentTheme').textContent = theme;
+    applyTheme(theme);
+    document.querySelectorAll('#themeModal .server-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.theme === theme);
+    });
+
+    const accent = SettingsStore.get('accentColor', { color: '#1DB954', name: 'Green' });
+    document.documentElement.style.setProperty('--accent-color', accent.color);
+    document.getElementById('currentAccent').innerHTML = `<span style="color: ${accent.color};">● ${accent.name}</span>`;
+    document.querySelectorAll('#accentModal .color-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.color === accent.color);
+    });
+
+    const streamQ = SettingsStore.get('streamingQuality', 'High (320kbps)');
+    const downloadQ = SettingsStore.get('downloadQuality', 'High (320kbps)');
+    document.getElementById('currentStreamQuality').textContent = streamQ;
+    document.getElementById('currentDownloadQuality').textContent = downloadQ;
+}
+
+// Run on load
+initSettings();
+</script>
+{% endblock %}v
