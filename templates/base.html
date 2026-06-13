@@ -167,13 +167,13 @@
             <div class="music-bar-artist" id="musicBarArtist">-</div>
         </div>
         <div class="music-bar-btns">
-            <button class="music-bar-btn" onclick="barPrev()" title="Previous">
+            <button class="music-bar-btn" onclick="event.stopPropagation();barPrev()" title="Previous">
                 <i class="fas fa-step-backward"></i>
             </button>
-            <button class="music-bar-btn play-btn" onclick="barTogglePlay()" title="Play/Pause">
+            <button class="music-bar-btn play-btn" onclick="event.stopPropagation();barTogglePlay()" title="Play/Pause">
                 <i class="fas fa-play" id="musicBarPlayIcon"></i>
             </button>
-            <button class="music-bar-btn" onclick="barNext()" title="Next">
+            <button class="music-bar-btn" onclick="event.stopPropagation();barNext()" title="Next">
                 <i class="fas fa-step-forward"></i>
             </button>
         </div>
