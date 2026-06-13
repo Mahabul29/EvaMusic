@@ -116,11 +116,36 @@
     // ── Re-attach song card click handlers after SPA swap ───────────────────────
     function _attachSongCards(container) {
         if (!container) container = document;
+
+        // ── Handle home.html .grid-item cards ──
         container.querySelectorAll('.grid-item[data-song-id]').forEach(item => {
-            // Remove old listeners by cloning (clean slate)
             const clone = item.cloneNode(true);
             item.parentNode.replaceChild(clone, item);
-            // Attach fresh click handler
+            clone.addEventListener('click', function(e) {
+                if (e.target.closest('.queue-item-remove') ||
+                    e.target.closest('.queue-item-drag')) return;
+                e.preventDefault();
+                const songData = {
+                    id:     this.dataset.songId,
+                    title:  this.dataset.songTitle,
+                    artist: this.dataset.songArtist,
+                    image:  this.dataset.songImage,
+                    url:    this.dataset.songUrl || ''
+                };
+                if (window.player && typeof window.player.playSong === 'function') {
+                    window.player.playSong(songData.id, songData);
+                } else if (typeof playSong === 'function') {
+                    playSong(songData.id, songData);
+                } else {
+                    showToast('Player not ready', 'error');
+                }
+            });
+        });
+
+        // ── Handle index.html .trending-card cards ──
+        container.querySelectorAll('.trending-card[data-song-id]').forEach(item => {
+            const clone = item.cloneNode(true);
+            item.parentNode.replaceChild(clone, item);
             clone.addEventListener('click', function(e) {
                 e.preventDefault();
                 const songData = {
@@ -130,14 +155,35 @@
                     image:  this.dataset.songImage,
                     url:    this.dataset.songUrl || ''
                 };
-                if (typeof playSong === 'function') {
+                if (window.player && typeof window.player.playSong === 'function') {
+                    window.player.playSong(songData.id, songData);
+                } else if (typeof playSong === 'function') {
                     playSong(songData.id, songData);
                 } else {
-                    console.error('[SPA] playSong not found');
                     showToast('Player not ready', 'error');
                 }
             });
         });
+
+        // ── Re-attach heart buttons on index.html ──
+        container.querySelectorAll('.heart-btn-standalone').forEach(btn => {
+            const clone = btn.cloneNode(true);
+            btn.parentNode.replaceChild(clone, btn);
+            clone.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (typeof handleLikeClick === 'function') {
+                    handleLikeClick(e, this);
+                }
+                return false;
+            });
+        });
+
+        // ── Re-init heart states if function exists ──
+        if (typeof initHeartStates === 'function') {
+            initHeartStates();
+        }
     }
 
     _updateNav(window.location.pathname);
