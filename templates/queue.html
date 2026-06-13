@@ -392,13 +392,6 @@ const QUEUE_LIMIT = 20;
     // Track how many songs have been played this session
     if (typeof p._songsPlayed === 'undefined') p._songsPlayed = 0;
 
-    const origPlaySong = p.playSong.bind(p);
-    p.playSong = async function(songId, songData) {
-        // Only count auto-advances (not user-initiated plays)
-        // We'll count via handleEnded patch below
-        return origPlaySong(songId, songData);
-    };
-
     const origHandleEnded = p.handleEnded.bind(p);
     p.handleEnded = function() {
         p._songsPlayed = (p._songsPlayed || 0) + 1;
@@ -465,7 +458,10 @@ function qRender() {
 
     // ── Up next label ──
     const upLabel = document.getElementById('qUpNextLabel');
-    const upQueue = queue.slice(idx + 1, QUEUE_LIMIT); // only show up to limit
+    // Show all songs after current, up to the limit
+    const upQueue = (idx >= 0 && idx < queue.length)
+        ? queue.slice(idx + 1)
+        : queue.slice(0, QUEUE_LIMIT);
     if (upLabel) upLabel.style.display = upQueue.length ? '' : 'none';
 
     // ── Song list ──
@@ -481,7 +477,7 @@ function qRender() {
     empty.classList.remove('visible');
 
     upQueue.forEach((song, i) => {
-        const realIdx = idx + 1 + i; // index in the actual queue array
+        const realIdx = (idx >= 0) ? (idx + 1 + i) : i; // index in the actual queue array
         const isCur   = (realIdx === idx); // shouldn't be, but safety
         const li      = document.createElement('li');
         li.className  = 'queue-item' + (isCur ? ' is-current' : '');
@@ -540,9 +536,27 @@ function qRemoveSong(realIdx, e) {
     if (!p) return;
     const song = p.queue[realIdx];
     if (!song) return;
+
+    const wasCurrent = (realIdx === p.currentIndex);
     p.queue.splice(realIdx, 1);
+
     // Adjust currentIndex if needed
-    if (realIdx < p.currentIndex) p.currentIndex--;
+    if (realIdx < p.currentIndex) {
+        p.currentIndex--;
+    } else if (wasCurrent) {
+        // Current song was removed — stop playback
+        p.audio.pause();
+        p.isPlaying = false;
+        p._syncPlayIcons(false);
+        p.currentSong = null;
+        p.currentIndex = -1;
+        // Try to play next if available
+        if (p.queue.length > 0 && realIdx < p.queue.length) {
+            p.currentIndex = realIdx;
+            p.playSong(p.getId(p.queue[realIdx]), p.queue[realIdx]);
+        }
+    }
+
     showToast('Removed from queue', 'info');
     qRender();
 }
@@ -553,15 +567,16 @@ function queueClearAll() {
     if (!p) return;
     const current = p.currentSong;
     const curIdx  = p.currentIndex;
-    if (current && curIdx !== -1) {
+    if (current && curIdx !== -1 && curIdx < p.queue.length) {
         // Keep only the currently playing song
-        p.queue = [current];
+        p.queue = [p.queue[curIdx]];
         p.currentIndex = 0;
         p._songsPlayed = 0;
         showToast('Queue cleared', 'info');
     } else {
         p.queue = [];
-        p.currentIndex = 0;
+        p.currentIndex = -1;
+        p.currentSong = null;
         p._songsPlayed = 0;
         showToast('Queue cleared', 'info');
     }
@@ -642,4 +657,5 @@ window.addEventListener('pagehide', () => {
 });
 </script>
 {% endblock %}
-  
+
+   
