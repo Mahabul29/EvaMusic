@@ -154,7 +154,7 @@ def offline():
 
 @app.route('/settings')
 def settings():
-    return render_template('settings.html', title="Settings")
+    return render_template('settingsworker.html', title="Settings")
 
 
 @app.route('/home')
@@ -269,6 +269,9 @@ def not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
+    import traceback
+    print(f"[500 ERROR] {e}")
+    print(traceback.format_exc())
     return jsonify({"error": "Internal server error"}), 500
 
 
