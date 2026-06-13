@@ -16,44 +16,56 @@
 .trending-header h2{font-size:28px;font-weight:800}
 .trending-header p{color:var(--text-secondary);margin-left:auto;font-size:14px}
 .trending-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block;position:relative}
+
+/* Card wrapper - contains both card and heart button */
+.song-card-wrapper{position:relative;background:var(--card-bg);border-radius:16px;overflow:hidden}
+
+.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block}
 .trending-card:active{transform:scale(0.97)}
 .trending-image{position:relative;height:180px;overflow:hidden}
 .trending-image img{width:100%;height:100%;object-fit:cover}
 .trending-play{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
 .trending-play i{font-size:48px;color:white}
 .trending-card:hover .trending-play,.trending-card:active .trending-play{opacity:1}
-.trending-info{padding:12px;position:relative}
+.trending-info{padding:12px}
 .trending-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.heart-btn-on-card {
+/* Heart button - OUTSIDE the <a> tag */
+.heart-btn-standalone {
     position:absolute;
     top:8px;
     right:8px;
-    width:36px;
-    height:36px;
+    width:40px;
+    height:40px;
     border-radius:50%;
-    background:rgba(0,0,0,0.6);
-    border:none;
+    background:rgba(0,0,0,0.7);
+    border:2px solid rgba(255,255,255,0.3);
     color:white;
-    font-size:16px;
+    font-size:18px;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
     transition:all 0.2s;
-    z-index:10;
+    z-index:20;
+    backdrop-filter:blur(4px);
 }
-.heart-btn-on-card:hover {
+.heart-btn-standalone:hover {
     background:rgba(29,185,84,0.9);
-    transform:scale(1.1);
+    border-color:#1DB954;
+    transform:scale(1.15);
 }
-.heart-btn-on-card.liked {
-    color:#ff4757;
+.heart-btn-standalone:active {
+    transform:scale(0.95);
 }
-.heart-btn-on-card .far.fa-heart,
-.heart-btn-on-card .fas.fa-heart {
+.heart-btn-standalone.liked {
+    background:rgba(255,71,87,0.9);
+    border-color:#ff4757;
+    color:white;
+}
+.heart-btn-standalone .far.fa-heart,
+.heart-btn-standalone .fas.fa-heart {
     pointer-events:none;
 }
 </style>
@@ -80,7 +92,9 @@
     </div>
     <div class="trending-grid">
         {% for song in songs[:6] %}
-        <div class="trending-card-wrapper" style="position:relative;">
+        <!-- WRAPPER div - heart button is sibling of <a>, NOT child -->
+        <div class="song-card-wrapper">
+            <!-- Clickable card -->
             <a href="javascript:void(0)" class="trending-card" 
                data-song-id="{{ song.id }}"
                data-song-title="{{ song.title }}"
@@ -97,10 +111,11 @@
                     <p class="trending-artist">{{ song.artist }}</p>
                 </div>
             </a>
-            <button class="heart-btn-on-card" type="button" 
+            <!-- Heart button - OUTSIDE the <a> tag, same level -->
+            <button class="heart-btn-standalone" type="button" 
                     data-song-id="{{ song.id }}"
                     data-song-data='{{ song|tojson }}'
-                    onclick="event.stopPropagation(); likeSong(this);"
+                    onclick="handleLikeClick(event, this);"
                     title="Add to favorites">
                 <i class="far fa-heart"></i>
             </button>
@@ -132,11 +147,18 @@ function playSong(id, songData) {
     showToast(`Now playing: ${songData.title}`, 'success');
 }
 
-async function likeSong(btn) {
+// FIXED: Proper event handling - stops ALL propagation
+async function handleLikeClick(event, btn) {
+    // CRITICAL: Stop the click from reaching the card
+    event.stopPropagation();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    
     const songData = JSON.parse(btn.dataset.songData);
     const songId = songData.id;
     const icon = btn.querySelector('i');
     
+    // Visual feedback
     btn.style.transform = 'scale(1.3)';
     setTimeout(() => btn.style.transform = 'scale(1)', 200);
     
@@ -177,6 +199,8 @@ async function likeSong(btn) {
         console.error('Like error:', e);
         showToast('Network error', 'error');
     }
+    
+    return false; // Extra safety
 }
 
 async function initHeartStates() {
@@ -185,7 +209,7 @@ async function initHeartStates() {
         const favorites = await res.json();
         const favIds = new Set(favorites.map(f => f.song_id));
         
-        document.querySelectorAll('.heart-btn-on-card').forEach(btn => {
+        document.querySelectorAll('.heart-btn-standalone').forEach(btn => {
             const songData = JSON.parse(btn.dataset.songData);
             if (favIds.has(songData.id)) {
                 const icon = btn.querySelector('i');
@@ -214,4 +238,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+    
                         
