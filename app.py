@@ -1,10 +1,18 @@
 import os
 import requests
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, jsonify, request, send_from_directory, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
+
+# ═══════════════════════════════════════════════════════════════════════
+# IMPORT DATABASE MODULE (THE MISSING LINK!)
+# ═══════════════════════════════════════════════════════════════════════
+import database as db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+
+# Initialize DB on startup (creates indexes)
+db.init_db()
 
 _LAST_GOOD_TRENDING = []
 
@@ -15,6 +23,18 @@ HEADERS = {
     ),
     "Accept": "application/json",
 }
+
+# ─── Simple user session (replace with real auth later) ─────────────────
+
+def get_user_id():
+    """Get or create a simple user ID for the session."""
+    if 'user_id' not in session:
+        import uuid
+        session['user_id'] = str(uuid.uuid4())
+        # Auto-create user in DB
+        db.create_user(session['user_id'], f"User_{session['user_id'][:8]}")
+    return session['user_id']
+
 
 # ─── API helpers (calls your separate Koyeb API app) ─────────────────────────
 
@@ -101,6 +121,8 @@ def search():
     songs = []
     if query:
         songs = fetch_songs(query, 30)
+        # Save search to history
+        db.save_search_query(get_user_id(), query)
         print(f"[SEARCH] '{query}' -> {len(songs)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
@@ -114,6 +136,16 @@ def player(song_id):
             "album": "Unknown Album", "url": "", "image": "/static/images/default-album.png",
             "duration": 0,
         }
+    
+    # ─── TRACK RECENTLY PLAYED ───
+    if song.get("id"):
+        db.add_to_recently_played(get_user_id(), {
+            "song_id": song.get("id"),
+            "title": song.get("title", "Unknown"),
+            "artist": song.get("artist", "Unknown"),
+            "image_url": song.get("image", "")
+        })
+    
     return render_template('player.html', song=song, title=song.get("title", "Player"))
 
 
@@ -165,53 +197,66 @@ def home():
 
 @app.route('/profile')
 def profile():
-    """Profile page with default demo data."""
-    profile_data = {
-        "username": "EvaUser",
-        "display_name": "EvaUser",
-        "bio": "Music lover 🎵",
-        "avatar_url": "/static/images/default-album.png",
-        "social_links": {
-            "instagram": "",
-            "twitter": "",
-            "youtube": "",
-            "spotify": ""
-        }
-    }
+    """Profile page with REAL data from MongoDB."""
+    user_id = get_user_id()
+    
+    # Get real stats from database
+    favorites = db.get_user_favorites(user_id)
+    playlists = db.get_user_playlists(user_id)
+    recent = db.get_recently_played(user_id, 5)
+    
     stats = {
-        "total_favorites": 0,
-        "total_playlists": 0,
-        "total_plays": 0,
-        "listening_hours": 0
+        "total_favorites": len(favorites),
+        "total_playlists": len(playlists),
+        "total_plays": len(db.get_recently_played(user_id, 9999)),  # all time
+        "listening_hours": round(len(db.get_recently_played(user_id, 9999)) * 3.5 / 60, 1)  # rough estimate
     }
+    
+    # Build profile data (in real app, fetch from users collection)
+    user_doc = db.get_collection("users").find_one({"user_id": user_id})
+    if user_doc:
+        profile_data = {
+            "username": user_doc.get("username", "EvaUser"),
+            "display_name": user_doc.get("username", "EvaUser"),
+            "bio": "Music lover 🎵",
+            "avatar_url": "/static/images/default-album.png",
+            "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
+        }
+    else:
+        profile_data = {
+            "username": "EvaUser",
+            "display_name": "EvaUser",
+            "bio": "Music lover 🎵",
+            "avatar_url": "/static/images/default-album.png",
+            "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
+        }
+    
     return render_template('profile.html',
                          title="Profile",
                          profile=profile_data,
                          stats=stats,
-                         recently_played=[],
-                         favorites=[],
-                         playlists=[])
+                         recently_played=recent,
+                         favorites=favorites[:5],
+                         playlists=playlists[:5])
 
 
 @app.route('/profile/edit')
 def edit_profile():
     """Edit profile page."""
+    user_id = get_user_id()
+    user_doc = db.get_collection("users").find_one({"user_id": user_id})
+    
     profile_data = {
-        "username": "EvaUser",
-        "display_name": "EvaUser",
+        "username": user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
+        "display_name": user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
         "bio": "Music lover 🎵",
         "avatar_url": "/static/images/default-album.png",
-        "social_links": {
-            "instagram": "",
-            "twitter": "",
-            "youtube": "",
-            "spotify": ""
-        }
+        "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
     }
     return render_template('edit_profile.html', title="Edit Profile", profile=profile_data)
 
 # ═══════════════════════════════════════════════════════════════════════
-# API ENDPOINTS (proxies to your Koyeb API app)
+# API ENDPOINTS (proxies + DATABASE)
 # ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/api/search')
@@ -237,18 +282,85 @@ def api_song(song_id):
     return jsonify({"error": "Song not found"}), 404
 
 
+@app.route('/api/favorite', methods=['POST'])
+def api_toggle_favorite():
+    """Toggle like/unlike a song."""
+    user_id = get_user_id()
+    data = request.get_json() or {}
+    
+    song_data = {
+        "song_id": data.get("song_id"),
+        "title": data.get("title", "Unknown"),
+        "artist": data.get("artist", "Unknown"),
+        "album": data.get("album", ""),
+        "duration": data.get("duration", ""),
+        "image_url": data.get("image_url", ""),
+        "audio_url": data.get("audio_url", ""),
+        "source": data.get("source", "jiosaavn")
+    }
+    
+    result = db.toggle_favorite(user_id, song_data)
+    return jsonify(result)
+
+
+@app.route('/api/favorites')
+def api_get_favorites():
+    """Get user's favorite songs."""
+    user_id = get_user_id()
+    favorites = db.get_user_favorites(user_id)
+    return jsonify(favorites)
+
+
+@app.route('/api/history')
+def api_get_history():
+    """Get user's recently played."""
+    user_id = get_user_id()
+    limit = request.args.get('limit', 20, type=int)
+    history = db.get_recently_played(user_id, limit)
+    return jsonify(history)
+
+
+@app.route('/api/search-history')
+def api_search_history():
+    """Get user's search history."""
+    user_id = get_user_id()
+    limit = request.args.get('limit', 10, type=int)
+    history = db.get_search_history(user_id, limit)
+    return jsonify([h["query"] for h in history])
+
+
+@app.route('/api/stats')
+def api_stats():
+    """Get user's stats for profile."""
+    user_id = get_user_id()
+    favorites = db.get_user_favorites(user_id)
+    playlists = db.get_user_playlists(user_id)
+    recent = db.get_recently_played(user_id, 9999)
+    
+    return jsonify({
+        "total_favorites": len(favorites),
+        "total_playlists": len(playlists),
+        "total_plays": len(recent),
+        "listening_hours": round(len(recent) * 3.5 / 60, 1)
+    })
+
+
 @app.route('/api/debug')
 def api_debug():
-    """Check connectivity to the Koyeb API app."""
+    """Check connectivity to the Koyeb API app + DB."""
     try:
         r = requests.get(f"{API_BASE_URL}/", timeout=10)
-        return jsonify({
-            "api_base": API_BASE_URL,
-            "status": r.status_code,
-            "response": r.json(),
-        })
+        api_status = r.status_code
     except Exception as e:
-        return jsonify({"api_base": API_BASE_URL, "error": str(e)}), 500
+        api_status = f"error: {e}"
+    
+    db_health = db.check_db_health()
+    
+    return jsonify({
+        "api_base": API_BASE_URL,
+        "api_status": api_status,
+        "db_health": db_health
+    })
 
 # ═══════════════════════════════════════════════════════════════════════
 # STATIC & ERROR HANDLERS
@@ -261,7 +373,6 @@ def static_files(filename):
 
 @app.errorhandler(404)
 def not_found(e):
-    # Don't render templates for missing static files
     if request.path.startswith('/static/'):
         return jsonify({"error": "Not found"}), 404
     return render_template('index.html', songs=[], title="Not Found"), 404
@@ -278,3 +389,4 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
+    
