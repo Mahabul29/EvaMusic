@@ -24,8 +24,8 @@ class EvaPlayer {
         this.queue = [];
         this.currentIndex = 0;
         this._listenersAttached = false;
+        this._favoritesCache = null;
 
-        // Mini bar DOM refs
         this.els = {
             musicBar:        document.getElementById('musicBar'),
             musicBarThumb:   document.getElementById('musicBarThumb'),
@@ -43,7 +43,6 @@ class EvaPlayer {
 
     getAudioUrl(song) {
         if (!song) return '';
-        // Try all possible URL fields from JioSaavn API
         return song.url || song.downloadUrl || song.media_url || song.audio_url || 
                song.download_url || song.stream_url || song.song_url || '';
     }
@@ -61,14 +60,12 @@ class EvaPlayer {
         if (this._listenersAttached) return;
         this._listenersAttached = true;
 
-        // Mini bar progress click
         this.els.musicBarProgress?.addEventListener('click', (e) => {
             e.stopPropagation();
             const rect = this.els.musicBarProgress.getBoundingClientRect();
             this.seek((e.clientX - rect.left) / rect.width);
         });
 
-        // Audio events
         this.audio.addEventListener('timeupdate', () => this.updateProgress());
         this.audio.addEventListener('ended', () => this.handleEnded());
         this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
@@ -85,7 +82,6 @@ class EvaPlayer {
             setTimeout(() => this.next(), 1500);
         });
 
-        // Keyboard
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.code === 'Space') { e.preventDefault(); this.togglePlay(); }
@@ -97,7 +93,7 @@ class EvaPlayer {
     }
 
     refreshQueueFromDOM() {
-        const items = document.querySelectorAll('.grid-item[data-song-id]');
+        const items = document.querySelectorAll('.grid-item[data-song-id], .trending-card[data-song-id]');
         console.log('[EvaPlayer] Found', items.length, 'songs in DOM');
         if (!items.length) return;
         const newQueue = [];
@@ -128,7 +124,6 @@ class EvaPlayer {
         console.log('[EvaPlayer] playSong called:', songId, songData);
 
         if (!songData) {
-            // Try to find in queue
             const idx = this.queue.findIndex(s => this.getId(s) === songId);
             if (idx !== -1) songData = this.queue[idx];
         }
@@ -146,7 +141,6 @@ class EvaPlayer {
         let audioUrl = this.getAudioUrl(songData);
         console.log('[EvaPlayer] Audio URL from data:', audioUrl);
 
-        // If no URL in data, try to fetch from API
         if (!audioUrl && songId) {
             showToast('Fetching song...', 'info');
             try {
@@ -172,7 +166,6 @@ class EvaPlayer {
             return;
         }
 
-        // Set source and play
         if (this.audio.src !== audioUrl) {
             this.audio.src = audioUrl;
             this.audio.load();
@@ -276,9 +269,7 @@ class EvaPlayer {
         if (this.els.musicBarProgressFill) this.els.musicBarProgressFill.style.width = percent + '%';
     }
 
-    updateDuration() {
-        // Duration updated
-    }
+    updateDuration() {}
 
     updateUI() {
         if (!this.currentSong) return;
@@ -308,16 +299,62 @@ class EvaPlayer {
         showToast(modes[this.repeatMode], 'info');
     }
 
-    toggleFavorite() {
+    async toggleFavorite() {
         if (!this.currentSong) return;
-        const id = this.getId(this.currentSong);
+        
+        const song = this.currentSong;
+        const songId = this.getId(song);
+        
         try {
-            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-            const idx = favorites.indexOf(id);
-            if (idx === -1) { favorites.push(id); showToast('Added to favorites', 'success'); }
-            else { favorites.splice(idx, 1); showToast('Removed from favorites', 'info'); }
-            localStorage.setItem('favorites', JSON.stringify(favorites));
-        } catch (e) {}
+            const res = await fetch('/api/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    song_id: songId,
+                    title: this.getTitle(song),
+                    artist: this.getArtist(song),
+                    album: song.album || '',
+                    duration: song.duration || '',
+                    image_url: this.getImageUrl(song),
+                    audio_url: this.getAudioUrl(song),
+                    source: 'jiosaavn'
+                })
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+                if (data.action === 'added') {
+                    showToast('❤️ Added to favorites', 'success');
+                } else {
+                    showToast('💔 Removed from favorites', 'info');
+                }
+                this._favoritesCache = null;
+            } else {
+                showToast(data.message || 'Failed to update favorites', 'error');
+            }
+        } catch (e) {
+            console.error('[EvaPlayer] Favorite API error:', e);
+            showToast('Network error - try again', 'error');
+        }
+    }
+
+    async isCurrentSongFavorited() {
+        if (!this.currentSong) return false;
+        const songId = this.getId(this.currentSong);
+        
+        if (this._favoritesCache !== null) {
+            return this._favoritesCache.some(f => f.song_id === songId);
+        }
+        
+        try {
+            const res = await fetch('/api/favorites');
+            const favorites = await res.json();
+            this._favoritesCache = favorites;
+            return favorites.some(f => f.song_id === songId);
+        } catch (e) {
+            return false;
+        }
     }
 
     shareSong() {
@@ -345,10 +382,6 @@ class EvaPlayer {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Global Instance & Helpers
-// ═══════════════════════════════════════════════════════════════════════════════
 
 console.log('[EvaPlayer] Creating global player instance...');
 const player = new EvaPlayer();
@@ -408,3 +441,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('[EvaPlayer] Script loaded successfully');
+                
