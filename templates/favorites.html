@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}My Favorites{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -27,6 +27,7 @@
     background: var(--card-bg);
     border-radius: 12px;
     overflow: hidden;
+    transition: opacity 0.3s, transform 0.3s;
 }
 .song-card {
     background: var(--card-bg);
@@ -93,6 +94,11 @@
     justify-content: center;
     transition: all 0.2s;
     z-index: 20;
+    backdrop-filter: blur(4px);
+}
+.heart-btn:hover {
+    transform: scale(1.15);
+    background: rgba(255,71,87,1);
 }
 .heart-btn:active { transform: scale(0.95); }
 .empty-state {
@@ -101,7 +107,25 @@
     color: var(--text-secondary);
     grid-column: 1 / -1;
 }
-.empty-state i { font-size: 48px; margin-bottom: 16px; display: block; }
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    color: #ff4757;
+}
+.empty-state p { font-size: 15px; margin-bottom: 6px; }
+.empty-state small { font-size: 13px; }
+.empty-state a {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
 @media (min-width: 768px) {
     .songs-grid { grid-template-columns: repeat(4, 1fr); }
 }
@@ -110,18 +134,19 @@
 
 {% block content %}
 <div class="page-header">
-    <h1><i class="fas fa-heart" style="color: #ff4757"></i> My Favorites</h1>
-    <p>Songs you've loved</p>
+    <h1><i class="fas fa-heart" style="color:#ff4757"></i> My Favorites</h1>
+    <p id="songCount">{{ songs|length }} saved song{% if songs|length != 1 %}s{% endif %}</p>
 </div>
 
 <div class="songs-grid" id="songsGrid">
     {% if songs %}
         {% for song in songs %}
-        <div class="song-card-wrapper" data-id="{{ song.song_id }}">
+        <div class="song-card-wrapper" id="card-{{ song.song_id }}">
             <div class="song-card" role="button" tabindex="0"
                  onclick="playSong('{{ song.song_id }}', {{ song | tojson }})">
                 <div class="song-image">
-                    <img src="{{ song.image_url }}" alt="{{ song.title }}"
+                    <img src="{{ song.image_url or '/static/images/default-album.png' }}"
+                         alt="{{ song.title }}"
                          loading="lazy"
                          onerror="this.src='/static/images/default-album.png'">
                     <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -132,16 +157,19 @@
                 </div>
             </div>
             <button class="heart-btn" type="button"
-                    onclick="removeFavorite(event, this, '{{ song.song_id }}')"
+                    onclick="removeFavorite(event, '{{ song.song_id }}')"
                     title="Remove from favorites">
                 <i class="fas fa-heart"></i>
             </button>
         </div>
         {% endfor %}
     {% else %}
-        <div class="empty-state">
+        <div class="empty-state" id="emptyState">
             <i class="fas fa-heart-broken"></i>
-            <p>No favorites yet.<br>Tap the ❤️ on any song to save it here.</p>
+            <p>No favorites yet.</p>
+            <small>Tap ❤️ on any song to save it here.</small>
+            <br>
+            <a href="/trending"><i class="fas fa-fire"></i> Explore Trending</a>
         </div>
     {% endif %}
 </div>
@@ -150,9 +178,9 @@
 {% block extra_js %}
 <script>
 function playSong(id, songData) {
-    // Normalize field names (DB uses image_url/audio_url)
     songData.image = songData.image_url || songData.image || '';
     songData.url   = songData.audio_url  || songData.url  || '';
+    songData.id    = songData.song_id    || songData.id   || id;
 
     document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
     document.getElementById('musicBarTitle').textContent = songData.title;
@@ -173,7 +201,7 @@ function playSong(id, songData) {
     showToast(`Now playing: ${songData.title}`, 'success');
 }
 
-async function removeFavorite(event, btn, songId) {
+async function removeFavorite(event, songId) {
     event.stopPropagation();
     event.preventDefault();
 
@@ -186,25 +214,36 @@ async function removeFavorite(event, btn, songId) {
         const data = await res.json();
 
         if (data.success) {
-            // Remove card from UI
-            const wrapper = btn.closest('.song-card-wrapper');
-            wrapper.style.opacity = '0';
-            wrapper.style.transform = 'scale(0.9)';
-            wrapper.style.transition = 'all 0.3s';
-            setTimeout(() => {
-                wrapper.remove();
-                // Show empty state if no songs left
-                if (!document.querySelector('.song-card-wrapper')) {
-                    document.getElementById('songsGrid').innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-heart-broken"></i>
-                            <p>No favorites yet.<br>Tap the ❤️ on any song to save it here.</p>
-                        </div>`;
-                }
-            }, 300);
+            const card = document.getElementById(`card-${songId}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.85)';
+                setTimeout(() => {
+                    card.remove();
+                    const remaining = document.querySelectorAll('.song-card-wrapper').length;
+                    const countEl = document.getElementById('songCount');
+                    if (countEl) {
+                        countEl.textContent = `${remaining} saved song${remaining !== 1 ? 's' : ''}`;
+                    }
+                    if (remaining === 0) {
+                        document.getElementById('songsGrid').innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-heart-broken" style="font-size:48px;margin-bottom:16px;display:block;color:#ff4757"></i>
+                                <p>No favorites yet.</p>
+                                <small>Tap ❤️ on any song to save it here.</small><br>
+                                <a href="/trending" style="display:inline-block;margin-top:20px;padding:10px 28px;background:var(--accent-color);color:white;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px;">
+                                    <i class="fas fa-fire"></i> Explore Trending
+                                </a>
+                            </div>`;
+                    }
+                }, 300);
+            }
             showToast('Removed from favorites', 'info');
+        } else {
+            showToast(data.message || 'Failed', 'error');
         }
     } catch (e) {
+        console.error('Remove error:', e);
         showToast('Network error', 'error');
     }
 }
