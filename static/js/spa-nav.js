@@ -5,15 +5,11 @@
 (function () {
     'use strict';
 
-    const HARD_NAV   = ['/static/', '/api/', 'http://', 'https://'];
-    const SPA_STYLE  = 'spa-page-style'; // attribute marker on injected <style> tags
+    const HARD_NAV  = ['/static/', '/api/', 'http://', 'https://'];
+    const SPA_STYLE = 'spa-page-style';
 
-    // ── Inject <style> tags from the fetched page's <head> ──────────────────
     function _injectStyles(newDoc) {
-        // Remove previously SPA-injected styles
         document.querySelectorAll(`style[${SPA_STYLE}]`).forEach(s => s.remove());
-
-        // Grab every <style> from the new page's <head> and <body>
         newDoc.querySelectorAll('style').forEach(s => {
             const clone = document.createElement('style');
             clone.textContent = s.textContent;
@@ -22,7 +18,6 @@
         });
     }
 
-    // ── Swap page content ────────────────────────────────────────────────────
     async function navigateTo(url, pushState = true) {
         if (!url || url === '#') return;
         if (url === window.location.pathname + window.location.search) return;
@@ -38,31 +33,28 @@
 
             if (!newMain || !curMain) { window.location.href = url; return; }
 
-            // 1. Inject styles BEFORE swapping content
             _injectStyles(newDoc);
-
-            // 2. Swap content
             curMain.innerHTML = newMain.innerHTML;
 
-            // 3. Update <title>
             const newTitle = newDoc.querySelector('title');
             if (newTitle) document.title = newTitle.textContent;
 
-            // 4. Push history
             if (pushState) history.pushState({ url }, '', url);
 
-            // 5. Update bottom nav
             _updateNav(url);
-
-            // 6. Re-execute inline <script> tags in swapped content
             _execScripts(curMain);
 
-            // 7. Refresh player queue
+            // ── KEY FIX: refresh queue AND re-show bar after every navigation ──
             if (window.__evaPlayerInstance) {
                 window.__evaPlayerInstance.refreshQueueFromDOM();
+                // Re-show bar if a song is loaded (bar HTML is outside .main-content so it survives)
+                if (window.__evaPlayerInstance.currentSong) {
+                    window.__evaPlayerInstance.showMusicBar();
+                    window.__evaPlayerInstance._updateBarUI(window.__evaPlayerInstance.currentSong);
+                    window.__evaPlayerInstance._syncPlayIcons(window.__evaPlayerInstance.isPlaying);
+                }
             }
 
-            // 8. Scroll to top
             window.scrollTo(0, 0);
 
         } catch (err) {
@@ -71,7 +63,6 @@
         }
     }
 
-    // Re-execute <script> tags injected via innerHTML
     function _execScripts(container) {
         container.querySelectorAll('script').forEach(oldScript => {
             const s = document.createElement('script');
@@ -81,7 +72,6 @@
         });
     }
 
-    // Update bottom nav active state
     function _updateNav(url) {
         const path = url.split('?')[0];
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -94,7 +84,6 @@
         });
     }
 
-    // ── Intercept link clicks ────────────────────────────────────────────────
     document.addEventListener('click', function (e) {
         const a = e.target.closest('a[href]');
         if (!a) return;
@@ -108,13 +97,11 @@
         navigateTo(href);
     }, true);
 
-    // ── Handle browser back/forward ──────────────────────────────────────────
     window.addEventListener('popstate', function (e) {
         const url = e.state?.url || window.location.pathname + window.location.search;
         navigateTo(url, false);
     });
 
-    // ── Intercept form submits (search) ──────────────────────────────────────
     document.addEventListener('submit', function (e) {
         const form = e.target;
         if (!form || form.method?.toLowerCase() !== 'get') return;
@@ -125,9 +112,7 @@
         navigateTo(action + (params ? '?' + params : ''));
     });
 
-    // Init nav on first load
     _updateNav(window.location.pathname);
-
     console.log('[SPA] Navigation initialized');
 })();
-                                              
+                
