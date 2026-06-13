@@ -40,6 +40,12 @@
 <a href="/search?q=english" class="lang-chip">English</a>
 <a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
 <a href="/search?q=tamil" class="lang-chip">Tamil</a>
+<a href="/search?q=telugu" class="lang-chip">Telugu</a>
+<a href="/search?q=marathi" class="lang-chip">Marathi</a>
+<a href="/search?q=gujarati" class="lang-chip">Gujarati</a>
+<a href="/search?q=kannada" class="lang-chip">Kannada</a>
+<a href="/search?q=malayalam" class="lang-chip">Malayalam</a>
+<a href="/search?q=urdu" class="lang-chip">Urdu</a>
 </div>
 <section class="trending-section">
 <div class="trending-header">
@@ -61,4 +67,20 @@
 {% endfor %}
 </div>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Sync language chips with user preference from Settings
+const preferredLang = localStorage.getItem('evamusic_musicLanguage');
+if (preferredLang && preferredLang !== 'All') {
+    document.querySelectorAll('.lang-chip').forEach(chip => {
+        const url = new URL(chip.href, window.location.origin);
+        const q = url.searchParams.get('q');
+        if (q === preferredLang.toLowerCase()) {
+            chip.classList.add('active');
+            document.querySelector('.lang-chip[href="/home"]').classList.remove('active');
+        }
+    });
+}
+</script>
 {% endblock %}
