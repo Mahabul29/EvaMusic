@@ -161,14 +161,14 @@ def profile():
     favorites = db.get_user_favorites(user_id)
     playlists = db.get_user_playlists(user_id)
     recent = db.get_recently_played(user_id, 5)
-    
+
     stats = {
         "total_favorites": len(favorites),
         "total_playlists": len(playlists),
         "total_plays": len(db.get_recently_played(user_id, 9999)),
         "listening_hours": round(len(db.get_recently_played(user_id, 9999)) * 3.5 / 60, 1)
     }
-    
+
     user_doc = db.get_collection("users").find_one({"user_id": user_id})
     if user_doc:
         profile_data = {
@@ -186,20 +186,20 @@ def profile():
             "avatar_url": "/static/images/default-album.png",
             "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
         }
-    
+
     return render_template('profile.html',
-                         title="Profile",
-                         profile=profile_data,
-                         stats=stats,
-                         recently_played=recent,
-                         favorites=favorites[:5],
-                         playlists=playlists[:5])
+                           title="Profile",
+                           profile=profile_data,
+                           stats=stats,
+                           recently_played=recent,
+                           favorites=favorites[:5],
+                           playlists=playlists[:5])
 
 @app.route('/profile/edit')
 def edit_profile():
     user_id = get_user_id()
     user_doc = db.get_collection("users").find_one({"user_id": user_id})
-    
+
     profile_data = {
         "username": user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
         "display_name": user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
@@ -208,6 +208,20 @@ def edit_profile():
         "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
     }
     return render_template('edit_profile.html', title="Edit Profile", profile=profile_data)
+
+# ── NEW ROUTE ──────────────────────────────────────────────────
+@app.route('/favorites')
+def favorites():
+    user_id = get_user_id()
+    songs = db.get_user_favorites(user_id)
+    return render_template('favorites.html', songs=songs, title="My Favorites")
+
+@app.route('/history')
+def history():
+    user_id = get_user_id()
+    songs = db.get_recently_played(user_id, 50)
+    return render_template('history.html', songs=songs, title="Listening History")
+# ──────────────────────────────────────────────────────────────
 
 @app.route('/api/search')
 def api_search():
@@ -233,18 +247,18 @@ def api_song(song_id):
 def api_toggle_favorite():
     user_id = get_user_id()
     data = request.get_json() or {}
-    
+
     song_data = {
-        "song_id": data.get("song_id"),
-        "title": data.get("title", "Unknown"),
-        "artist": data.get("artist", "Unknown"),
-        "album": data.get("album", ""),
-        "duration": data.get("duration", ""),
-        "image_url": data.get("image_url", ""),
-        "audio_url": data.get("audio_url", ""),
-        "source": data.get("source", "jiosaavn")
+        "song_id":   data.get("song_id"),
+        "title":     data.get("title", "Unknown"),
+        "artist":    data.get("artist", "Unknown"),
+        "album":     data.get("album", ""),
+        "duration":  data.get("duration", ""),
+        "image_url": data.get("image_url") or data.get("image", ""),
+        "audio_url": data.get("audio_url") or data.get("url", ""),
+        "source":    data.get("source", "jiosaavn")
     }
-    
+
     result = db.toggle_favorite(user_id, song_data)
     return jsonify(result)
 
@@ -274,12 +288,12 @@ def api_stats():
     favorites = db.get_user_favorites(user_id)
     playlists = db.get_user_playlists(user_id)
     recent = db.get_recently_played(user_id, 9999)
-    
+
     return jsonify({
-        "total_favorites": len(favorites),
-        "total_playlists": len(playlists),
-        "total_plays": len(recent),
-        "listening_hours": round(len(recent) * 3.5 / 60, 1)
+        "total_favorites":  len(favorites),
+        "total_playlists":  len(playlists),
+        "total_plays":      len(recent),
+        "listening_hours":  round(len(recent) * 3.5 / 60, 1)
     })
 
 @app.route('/api/debug')
@@ -289,13 +303,13 @@ def api_debug():
         api_status = r.status_code
     except Exception as e:
         api_status = f"error: {e}"
-    
+
     db_health = db.check_db_health()
-    
+
     return jsonify({
-        "api_base": API_BASE_URL,
+        "api_base":   API_BASE_URL,
         "api_status": api_status,
-        "db_health": db_health
+        "db_health":  db_health
     })
 
 @app.route('/static/<path:filename>')
