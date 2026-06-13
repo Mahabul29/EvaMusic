@@ -65,17 +65,18 @@
     </div>
 
     <div class="profile-nav">
-        <a href="/profile/favorites" class="nav-card">
+        <!-- FIXED: was /profile/favorites, /profile/history, /profile/playlists -->
+        <a href="/favorites" class="nav-card">
             <i class="fas fa-heart"></i>
             <span>My Favorites</span>
             <i class="fas fa-chevron-right"></i>
         </a>
-        <a href="/profile/history" class="nav-card">
+        <a href="/history" class="nav-card">
             <i class="fas fa-history"></i>
             <span>Listening History</span>
             <i class="fas fa-chevron-right"></i>
         </a>
-        <a href="/profile/playlists" class="nav-card">
+        <a href="/playlists" class="nav-card">
             <i class="fas fa-list"></i>
             <span>My Playlists</span>
             <i class="fas fa-chevron-right"></i>
@@ -86,7 +87,7 @@
     <div class="section">
         <div class="section-header">
             <h2>Recently Played</h2>
-            <a href="/profile/history" class="see-all">See All</a>
+            <a href="/history" class="see-all">See All</a>
         </div>
         <div class="song-list">
             {% for song in recently_played[:6] %}
@@ -110,7 +111,7 @@
     <div class="section">
         <div class="section-header">
             <h2>Top Favorites</h2>
-            <a href="/profile/favorites" class="see-all">See All</a>
+            <a href="/favorites" class="see-all">See All</a>
         </div>
         <div class="song-grid">
             {% for song in favorites[:6] %}
@@ -131,7 +132,7 @@
     <div class="section">
         <div class="section-header">
             <h2>My Playlists</h2>
-            <a href="/profile/playlists" class="see-all">See All</a>
+            <a href="/playlists" class="see-all">See All</a>
         </div>
         <div class="playlist-grid">
             {% for playlist in playlists[:4] %}
@@ -147,16 +148,62 @@
 </div>
 
 <script>
+function playSong(id, songData) {
+    songData.image = songData.image_url || songData.image || '';
+    songData.url   = songData.audio_url  || songData.url  || '';
+    songData.id    = songData.song_id    || songData.id   || id;
+
+    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
+    document.getElementById('musicBarTitle').textContent = songData.title;
+    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
+    document.getElementById('musicBar').classList.remove('hidden');
+
+    const playIcon = document.getElementById('musicBarPlayIcon');
+    if (playIcon) {
+        playIcon.classList.remove('fa-play');
+        playIcon.classList.add('fa-pause');
+    }
+
+    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
+        window.EvaPlayer.play(songData);
+    }
+
+    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+    showToast(`Now playing: ${songData.title}`, 'success');
+}
+
+async function toggleFavorite(songId, songData) {
+    try {
+        const res = await fetch('/api/favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                song_id: songId,
+                title: songData.title || 'Unknown',
+                artist: songData.artist || 'Unknown',
+                image_url: songData.image_url || songData.image || '',
+                audio_url: songData.audio_url || songData.url || '',
+                source: 'jiosaavn'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.action === 'added' ? '❤️ Added to favorites' : '💔 Removed from favorites', 'success');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
 function shareProfile() {
     const url = window.location.href;
     if (navigator.share) {
         navigator.share({ title: 'My EvaMusic Profile', url: url });
     } else {
-        navigator.clipboard.writeText(url).then(() => { 
-            showToast('🔗 Profile link copied!', 'success'); 
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('🔗 Profile link copied!', 'success');
         });
     }
 }
 </script>
 {% endblock %}
-                    
