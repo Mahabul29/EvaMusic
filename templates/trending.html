@@ -138,10 +138,8 @@
 <div class="songs-grid" id="songsGrid">
     {% if songs %}
         {% for song in songs %}
-        <!-- WRAPPER div - heart button is sibling, not child -->
         <div class="song-card-wrapper" data-id="{{ song.id }}">
-            <!-- Clickable card -->
-            <div class="song-card" onclick="playSong('{{ song.id }}', {{ song|tojson }})">
+            <div class="song-card" data-song-id="{{ song.id }}" role="button" tabindex="0">
                 <div class="song-image">
                     <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
                     <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -151,7 +149,6 @@
                     <p class="song-artist">{{ song.artist }}</p>
                 </div>
             </div>
-            <!-- Heart button - OUTSIDE the clickable card -->
             <button class="heart-btn" type="button" 
                     data-song-id="{{ song.id }}"
                     data-song-data='{{ song|tojson }}'
@@ -178,19 +175,45 @@ function playSong(id, songData) {
     document.getElementById('musicBarTitle').textContent = songData.title;
     document.getElementById('musicBarArtist').textContent = songData.artist || '-';
     document.getElementById('musicBar').classList.remove('hidden');
-    
+
     const playIcon = document.getElementById('musicBarPlayIcon');
     if (playIcon) {
         playIcon.classList.remove('fa-play');
         playIcon.classList.add('fa-pause');
     }
-    
+
     if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
         window.EvaPlayer.play(songData);
     }
-    
+
     localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
     showToast(`Now playing: ${songData.title}`, 'success');
+}
+
+// Delegate click handler for song cards - fetches via API instead of inline JSON
+function initSongCardClicks() {
+    document.getElementById('songsGrid').addEventListener('click', function(e) {
+        const card = e.target.closest('.song-card');
+        if (!card || e.target.closest('.heart-btn')) return;
+
+        const wrapper = card.closest('.song-card-wrapper');
+        const songId = wrapper?.dataset.id;
+        if (!songId) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        fetch(`/api/song/${songId}`)
+            .then(r => r.json())
+            .then(song => {
+                if (song.error) throw new Error(song.error);
+                playSong(songId, song);
+            })
+            .catch(err => {
+                console.error('Failed to load song:', err);
+                showToast('Failed to load song', 'error');
+            });
+    });
 }
 
 // Like handler - stops ALL propagation
@@ -198,15 +221,14 @@ async function handleLikeClick(event, btn) {
     event.stopPropagation();
     event.preventDefault();
     event.stopImmediatePropagation();
-    
+
     const songData = JSON.parse(btn.dataset.songData);
     const songId = songData.id;
     const icon = btn.querySelector('i');
-    
-    // Visual feedback
+
     btn.style.transform = 'scale(1.3)';
     setTimeout(() => btn.style.transform = 'scale(1)', 200);
-    
+
     try {
         const res = await fetch('/api/favorite', {
             method: 'POST',
@@ -222,20 +244,20 @@ async function handleLikeClick(event, btn) {
                 source: 'jiosaavn'
             })
         });
-        
+
         const data = await res.json();
-        
+
         if (data.success) {
             if (data.action === 'added') {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
                 btn.classList.add('liked');
-                showToast('❤️ Added to favorites', 'success');
+                showToast('Added to favorites', 'success');
             } else {
                 icon.classList.remove('fas');
                 icon.classList.add('far');
                 btn.classList.remove('liked');
-                showToast('💔 Removed from favorites', 'info');
+                showToast('Removed from favorites', 'info');
             }
         } else {
             showToast(data.message || 'Failed', 'error');
@@ -244,7 +266,7 @@ async function handleLikeClick(event, btn) {
         console.error('Like error:', e);
         showToast('Network error', 'error');
     }
-    
+
     return false;
 }
 
@@ -254,7 +276,7 @@ async function initHeartStates() {
         const res = await fetch('/api/favorites');
         const favorites = await res.json();
         const favIds = new Set(favorites.map(f => f.song_id));
-        
+
         document.querySelectorAll('.heart-btn').forEach(btn => {
             const songData = JSON.parse(btn.dataset.songData);
             if (favIds.has(songData.id)) {
@@ -281,8 +303,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('musicBar').classList.remove('hidden');
         } catch(e) {}
     }
+    initSongCardClicks();
     initHeartStates();
 });
 </script>
 {% endblock %}
-    
