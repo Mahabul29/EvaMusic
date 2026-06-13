@@ -37,8 +37,8 @@
             pointer-events: none; white-space: nowrap;
         }
         .toast-success { background: #1DB954; }
-        .toast-error { background: #ef4444; }
-        .toast-info { background: #3b82f6; }
+        .toast-error   { background: #ef4444; }
+        .toast-info    { background: #3b82f6; }
 
         /* ═══ Bottom Mini Music Bar ═══ */
         .music-bar {
@@ -55,8 +55,7 @@
             z-index: 100;
             transition: transform 0.3s ease;
         }
-        .music-bar.hidden { transform: translateY(100%); }
-        .music-bar:active { opacity: 0.9; }
+        .music-bar.hidden { transform: translateY(200%); }
         .music-bar-thumb {
             width: 44px; height: 44px;
             border-radius: 6px;
@@ -66,6 +65,7 @@
         .music-bar-info {
             flex: 1;
             min-width: 0;
+            cursor: pointer;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -93,20 +93,24 @@
             width: 36px; height: 36px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
+            transition: color 0.2s;
         }
+        .music-bar-btn:active { color: var(--accent-color); }
         .music-bar-btn.play-btn { font-size: 22px; }
         .music-bar-progress {
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 2px;
+            height: 3px;
             background: #282828;
             cursor: pointer;
+            z-index: 10;
         }
         .music-bar-progress-fill {
             height: 100%;
             width: 0%;
             background: var(--accent-color);
             transition: width 0.1s linear;
+            pointer-events: none;
         }
     </style>
 
@@ -118,24 +122,26 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- ═══ Bottom Mini Music Bar (tap to expand) ═══ -->
-    <div class="music-bar hidden" id="musicBar" onclick="expandPlayer(event)">
-        <div class="music-bar-progress" id="musicBarProgress" onclick="event.stopPropagation(); seekBar(event)">
+    <!-- ═══ Bottom Mini Music Bar ═══ -->
+    <div class="music-bar hidden" id="musicBar">
+        <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
         </div>
-        <img src="/static/images/default-album.png" alt="" class="music-bar-thumb" id="musicBarThumb">
-        <div class="music-bar-info">
-            <div class="music-bar-title" id="musicBarTitle">Select a song</div>
+        <img src="/static/images/default-album.png" alt=""
+             class="music-bar-thumb" id="musicBarThumb"
+             onclick="expandPlayer(event)">
+        <div class="music-bar-info" onclick="expandPlayer(event)">
+            <div class="music-bar-title"  id="musicBarTitle">Select a song</div>
             <div class="music-bar-artist" id="musicBarArtist">-</div>
         </div>
         <div class="music-bar-btns">
-            <button class="music-bar-btn" onclick="event.stopPropagation(); previousSong()">
+            <button class="music-bar-btn" onclick="barPrev()" title="Previous">
                 <i class="fas fa-step-backward"></i>
             </button>
-            <button class="music-bar-btn play-btn" onclick="event.stopPropagation(); togglePlay()">
+            <button class="music-bar-btn play-btn" onclick="barTogglePlay()" title="Play/Pause">
                 <i class="fas fa-play" id="musicBarPlayIcon"></i>
             </button>
-            <button class="music-bar-btn" onclick="event.stopPropagation(); nextSong()">
+            <button class="music-bar-btn" onclick="barNext()" title="Next">
                 <i class="fas fa-step-forward"></i>
             </button>
         </div>
@@ -161,12 +167,261 @@
     </nav>
 
     <script>
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted) window.location.reload();
+    // ═══════════════════════════════════════════════════════════
+    // GLOBAL AUDIO ENGINE — works on ALL pages
+    // ═══════════════════════════════════════════════════════════
+    window._eva = {
+        audio:      null,
+        current:    null,
+        queue:      [],
+        queueIndex: 0,
+        isShuffle:  false,
+        repeatMode: 0,   // 0=off 1=all 2=one
+        isPlaying:  false
+    };
+
+    // ── Toast ──────────────────────────────────────────────────
+    function showToast(msg, type = 'info') {
+        let t = document.getElementById('evaToast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'evaToast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = `toast toast-${type}`;
+        t.style.opacity = '1';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 2500);
+    }
+
+    // ── Core play ─────────────────────────────────────────────
+    function playSong(id, songData) {
+        if (!songData || !songData.url) {
+            showToast('No audio available', 'error');
+            return;
+        }
+
+        const eva = window._eva;
+
+        // Stop existing
+        if (eva.audio) {
+            eva.audio.pause();
+            eva.audio.src = '';
+        }
+
+        eva.audio = new Audio(songData.url);
+        eva.audio.preload = 'auto';
+        eva.current = songData;
+        eva.isPlaying = false;
+
+        eva.audio.addEventListener('play',  () => {
+            eva.isPlaying = true;
+            updateBarPlayIcon(true);
+            if (window._npUpdatePlayBtn) window._npUpdatePlayBtn(true);
         });
+        eva.audio.addEventListener('pause', () => {
+            eva.isPlaying = false;
+            updateBarPlayIcon(false);
+            if (window._npUpdatePlayBtn) window._npUpdatePlayBtn(false);
+        });
+        eva.audio.addEventListener('ended', () => { _onEnded(); });
+        eva.audio.addEventListener('timeupdate', () => { _onTimeUpdate(); });
+        eva.audio.addEventListener('error', () => { showToast('Failed to load audio', 'error'); });
+
+        eva.audio.play().catch(e => console.warn('Autoplay blocked:', e));
+
+        // Update music bar
+        _updateBar(songData);
+        localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+
+        // If on player page, update its UI too
+        if (window._npUpdateSongUI) window._npUpdateSongUI(songData);
+    }
+
+    function _updateBar(songData) {
+        const thumb  = document.getElementById('musicBarThumb');
+        const title  = document.getElementById('musicBarTitle');
+        const artist = document.getElementById('musicBarArtist');
+        const bar    = document.getElementById('musicBar');
+        if (thumb)  thumb.src  = songData.image || '/static/images/default-album.png';
+        if (title)  title.textContent  = songData.title  || '';
+        if (artist) artist.textContent = songData.artist || '';
+        if (bar)    bar.classList.remove('hidden');
+    }
+
+    function _onTimeUpdate() {
+        const eva = window._eva;
+        if (!eva.audio || !eva.audio.duration) return;
+        const pct = (eva.audio.currentTime / eva.audio.duration) * 100;
+        const fill = document.getElementById('musicBarProgressFill');
+        if (fill) fill.style.width = pct + '%';
+        if (window._npOnTimeUpdate) window._npOnTimeUpdate(eva.audio.currentTime, eva.audio.duration);
+    }
+
+    function _onEnded() {
+        const eva = window._eva;
+        if (eva.repeatMode === 2) {
+            eva.audio.currentTime = 0;
+            eva.audio.play();
+        } else if (eva.queue.length > 0) {
+            barNext();
+        }
+    }
+
+    // ── Bar controls (called from music bar buttons) ───────────
+    function barTogglePlay() {
+        const eva = window._eva;
+        if (!eva.audio) {
+            // Try restore from localStorage
+            const saved = localStorage.getItem('evamusic_currentSong');
+            if (saved) { try { playSong(null, JSON.parse(saved)); } catch(e){} }
+            return;
+        }
+        if (eva.isPlaying) eva.audio.pause();
+        else eva.audio.play();
+    }
+
+    function barNext() {
+        const eva = window._eva;
+        if (!eva.queue.length) { showToast('No next song', 'info'); return; }
+        if (eva.isShuffle) {
+            eva.queueIndex = Math.floor(Math.random() * eva.queue.length);
+        } else {
+            eva.queueIndex++;
+            if (eva.queueIndex >= eva.queue.length) {
+                if (eva.repeatMode === 1) eva.queueIndex = 0;
+                else { showToast('End of queue', 'info'); return; }
+            }
+        }
+        const next = eva.queue[eva.queueIndex];
+        playSong(next.id, next);
+        if (window._npSetSong) window._npSetSong(next);
+    }
+
+    function barPrev() {
+        const eva = window._eva;
+        // If >3s in, restart
+        if (eva.audio && eva.audio.currentTime > 3) {
+            eva.audio.currentTime = 0;
+            return;
+        }
+        if (!eva.queue.length || eva.queueIndex <= 0) {
+            if (eva.audio) eva.audio.currentTime = 0;
+            return;
+        }
+        eva.queueIndex--;
+        const prev = eva.queue[eva.queueIndex];
+        playSong(prev.id, prev);
+        if (window._npSetSong) window._npSetSong(prev);
+    }
+
+    function barSeek(e) {
+        const eva = window._eva;
+        if (!eva.audio || !eva.audio.duration) return;
+        const bar  = document.getElementById('musicBarProgress');
+        const rect = bar.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        eva.audio.currentTime = pct * eva.audio.duration;
+    }
+
+    function updateBarPlayIcon(playing) {
+        const icon = document.getElementById('musicBarPlayIcon');
+        if (icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+    }
+
+    // ── Expand player ─────────────────────────────────────────
+    function expandPlayer(e) {
+        if (e) e.stopPropagation();
+        const song = window._eva.current;
+        if (!song) return;
+        window.location.href = `/player/${song.id}`;
+    }
+
+    // ── Aliases so old code still works ───────────────────────
+    function togglePlay()    { barTogglePlay(); }
+    function nextSong()      { barNext(); }
+    function previousSong()  { barPrev(); }
+
+    // ── Queue setter ──────────────────────────────────────────
+    function setQueue(songs, startIndex = 0) {
+        window._eva.queue      = songs;
+        window._eva.queueIndex = startIndex;
+    }
+
+    // ── toggleFavorite (called from various pages) ────────────
+    async function toggleFavorite(songId, songData, btn) {
+        if (btn) {
+            btn.style.transform = 'scale(1.3)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 200);
+        }
+        try {
+            const res = await fetch('/api/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    song_id:   songId,
+                    title:     songData.title   || 'Unknown',
+                    artist:    songData.artist  || 'Unknown',
+                    album:     songData.album   || '',
+                    duration:  songData.duration || '',
+                    image_url: songData.image   || '',
+                    audio_url: songData.url     || '',
+                    source:    'jiosaavn'
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    if (data.action === 'added') {
+                        icon?.classList.replace('far', 'fas');
+                        btn.classList.add('liked');
+                        showToast('❤️ Added to favorites', 'success');
+                    } else {
+                        icon?.classList.replace('fas', 'far');
+                        btn.classList.remove('liked');
+                        showToast('💔 Removed from favorites', 'info');
+                    }
+                } else {
+                    showToast(data.action === 'added' ? '❤️ Added to favorites' : '💔 Removed', 'success');
+                }
+            }
+        } catch(e) { showToast('Network error', 'error'); }
+    }
+
+    // ── Restore last song on page load ────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        const saved = localStorage.getItem('evamusic_currentSong');
+        if (saved) {
+            try {
+                const song = JSON.parse(saved);
+                _updateBar(song);
+                window._eva.current = song;
+            } catch(e) {}
+        }
+    });
+
+    window.addEventListener('pageshow', function(e) {
+        if (e.persisted) window.location.reload();
+    });
+
+    // ── EvaPlayer API (for player.html to hook into) ──────────
+    window.EvaPlayer = {
+        play:     (s) => playSong(s.id, s),
+        setQueue: (songs, idx = 0) => { setQueue(songs, idx); },
+        get isPlaying() { return window._eva.isPlaying; },
+        get audio()     { return window._eva.audio; }
+    };
     </script>
+
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+    </html>
