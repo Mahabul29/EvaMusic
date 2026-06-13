@@ -16,53 +16,41 @@
     color: var(--text-secondary);
     font-size: 14px;
 }
-.songs-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+.song-list {
     padding: 0 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
-.song-card-wrapper {
-    position: relative;
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: opacity 0.3s, transform 0.3s;
-}
-.song-card {
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s;
-    display: block;
-    text-decoration: none;
-    color: var(--text-color);
-}
-.song-card:active { transform: scale(0.97); }
-.song-image {
-    position: relative;
-    aspect-ratio: 1;
-    overflow: hidden;
-}
-.song-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.play-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
+.song-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
-.play-overlay i { font-size: 36px; color: white; }
-.song-card:hover .play-overlay { opacity: 1; }
-.song-info { padding: 10px; }
+.song-row:active { background: rgba(255,255,255,0.05); }
+.song-number {
+    font-size: 13px;
+    color: var(--text-secondary);
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.song-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.song-info {
+    flex: 1;
+    min-width: 0;
+}
 .song-title {
     font-size: 14px;
     font-weight: 600;
@@ -76,36 +64,35 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.song-duration {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    min-width: 36px;
+    text-align: right;
 }
 .heart-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: rgba(255,71,87,0.9);
+    background: transparent;
     border: none;
-    color: white;
-    font-size: 16px;
+    color: #ff4757;
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-    z-index: 20;
-    backdrop-filter: blur(4px);
+    flex-shrink: 0;
+    transition: transform 0.2s;
 }
-.heart-btn:hover {
-    transform: scale(1.15);
-    background: rgba(255,71,87,1);
-}
-.heart-btn:active { transform: scale(0.95); }
+.heart-btn:active { transform: scale(0.85); }
 .empty-state {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-secondary);
-    grid-column: 1 / -1;
 }
 .empty-state i {
     font-size: 48px;
@@ -126,9 +113,6 @@
     font-weight: 600;
     font-size: 14px;
 }
-@media (min-width: 768px) {
-    .songs-grid { grid-template-columns: repeat(4, 1fr); }
-}
 </style>
 {% endblock %}
 
@@ -138,41 +122,38 @@
     <p id="songCount">{{ songs|length }} saved song{% if songs|length != 1 %}s{% endif %}</p>
 </div>
 
-<div class="songs-grid" id="songsGrid">
-    {% if songs %}
-        {% for song in songs %}
-        <div class="song-card-wrapper" id="card-{{ song.song_id }}">
-            <div class="song-card" role="button" tabindex="0"
-                 onclick="playSong('{{ song.song_id }}', {{ song | tojson }})">
-                <div class="song-image">
-                    <img src="{{ song.image_url or '/static/images/default-album.png' }}"
-                         alt="{{ song.title }}"
-                         loading="lazy"
-                         onerror="this.src='/static/images/default-album.png'">
-                    <div class="play-overlay"><i class="fas fa-play"></i></div>
-                </div>
-                <div class="song-info">
-                    <h3 class="song-title">{{ song.title }}</h3>
-                    <p class="song-artist">{{ song.artist }}</p>
-                </div>
-            </div>
-            <button class="heart-btn" type="button"
-                    onclick="removeFavorite(event, '{{ song.song_id }}')"
-                    title="Remove from favorites">
-                <i class="fas fa-heart"></i>
-            </button>
+{% if songs %}
+<div class="song-list" id="songList">
+    {% for song in songs %}
+    <div class="song-row" id="card-{{ song.song_id }}"
+         onclick="playSong('{{ song.song_id }}', {{ song | tojson }})">
+        <div class="song-number">{{ loop.index }}</div>
+        <img class="song-thumb"
+             src="{{ song.image_url or '/static/images/default-album.png' }}"
+             alt="{{ song.title }}"
+             loading="lazy"
+             onerror="this.src='/static/images/default-album.png'">
+        <div class="song-info">
+            <div class="song-title">{{ song.title }}</div>
+            <div class="song-artist">{{ song.artist }}</div>
         </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-state" id="emptyState">
-            <i class="fas fa-heart-broken"></i>
-            <p>No favorites yet.</p>
-            <small>Tap ❤️ on any song to save it here.</small>
-            <br>
-            <a href="/trending"><i class="fas fa-fire"></i> Explore Trending</a>
-        </div>
-    {% endif %}
+        <button class="heart-btn" type="button"
+                onclick="removeFavorite(event, '{{ song.song_id }}')"
+                title="Remove from favorites">
+            <i class="fas fa-heart"></i>
+        </button>
+        <div class="song-duration">{{ song.duration or '' }}</div>
+    </div>
+    {% endfor %}
 </div>
+{% else %}
+<div class="empty-state" id="emptyState">
+    <i class="fas fa-heart-broken"></i>
+    <p>No favorites yet.</p>
+    <small>Tap ❤️ on any song to save it here.</small><br>
+    <a href="/trending"><i class="fas fa-fire"></i> Explore Trending</a>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -217,16 +198,21 @@ async function removeFavorite(event, songId) {
             const card = document.getElementById(`card-${songId}`);
             if (card) {
                 card.style.opacity = '0';
-                card.style.transform = 'scale(0.85)';
+                card.style.transform = 'translateX(40px)';
+                card.style.transition = 'all 0.3s';
                 setTimeout(() => {
                     card.remove();
-                    const remaining = document.querySelectorAll('.song-card-wrapper').length;
+                    // Renumber remaining rows
+                    document.querySelectorAll('.song-row .song-number').forEach((el, i) => {
+                        el.textContent = i + 1;
+                    });
+                    const remaining = document.querySelectorAll('.song-row').length;
                     const countEl = document.getElementById('songCount');
                     if (countEl) {
                         countEl.textContent = `${remaining} saved song${remaining !== 1 ? 's' : ''}`;
                     }
                     if (remaining === 0) {
-                        document.getElementById('songsGrid').innerHTML = `
+                        document.getElementById('songList').outerHTML = `
                             <div class="empty-state">
                                 <i class="fas fa-heart-broken" style="font-size:48px;margin-bottom:16px;display:block;color:#ff4757"></i>
                                 <p>No favorites yet.</p>
@@ -239,11 +225,8 @@ async function removeFavorite(event, songId) {
                 }, 300);
             }
             showToast('Removed from favorites', 'info');
-        } else {
-            showToast(data.message || 'Failed', 'error');
         }
     } catch (e) {
-        console.error('Remove error:', e);
         showToast('Network error', 'error');
     }
 }
