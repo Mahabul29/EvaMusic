@@ -9,8 +9,8 @@
     <title>{% block title %}EvaMusic{% endblock %}</title>
 
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo/icon-192x192.png') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon-192.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -29,7 +29,7 @@
             overflow-x: hidden;
         }
 
-        /* ── Toast ── */
+        /* Toast */
         .toast {
             position: fixed; bottom: 150px; left: 50%;
             transform: translateX(-50%) translateY(20px);
@@ -42,7 +42,7 @@
         .toast-error   { background: #ef4444; }
         .toast-info    { background: #3b82f6; }
 
-        /* ── Bottom Mini Music Bar ── */
+        /* Bottom Mini Music Bar */
         .music-bar {
             position: fixed;
             bottom: var(--nav-height);
@@ -87,7 +87,7 @@
             transition: width 0.1s linear; pointer-events: none;
         }
 
-        /* ── Bottom Nav — 5-tab layout ── */
+        /* Bottom Nav */
         .bottom-nav {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -124,8 +124,6 @@
             white-space: nowrap;
         }
 
-        /* Queue badge — shows count of songs in queue */
-        .nav-item[data-tab="queue"] { position: relative; }
         .nav-queue-badge {
             position: absolute;
             top: 2px;
@@ -154,12 +152,12 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- ═══ Bottom Mini Music Bar ═══ -->
+    <!-- Bottom Mini Music Bar -->
     <div class="music-bar hidden" id="musicBar">
         <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
         </div>
-        <img src="/static/images/default-album.png" alt=""
+        <img src="/static/icon-512.png" alt=""
              class="music-bar-thumb" id="musicBarThumb"
              onclick="expandPlayer(event)">
         <div class="music-bar-info" onclick="expandPlayer(event)">
@@ -179,7 +177,7 @@
         </div>
     </div>
 
-    <!-- ═══ Bottom Nav (5 tabs) ═══ -->
+    <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav">
         <a href="/home" class="nav-item" data-tab="play">
             <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
@@ -189,7 +187,6 @@
             <div class="nav-icon"><i class="fas fa-search"></i></div>
             <span class="nav-label">Search</span>
         </a>
-
         <a href="/profile" class="nav-item" data-tab="profile">
             <div class="nav-icon"><i class="fas fa-user"></i></div>
             <span class="nav-label">Profile</span>
@@ -200,17 +197,13 @@
         </a>
     </nav>
 
-    <!-- Load order: player engine → SPA nav → bottom nav → page scripts -->
+    <!-- Load order: player engine -> SPA nav -> bottom nav -> profile page handlers -->
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
     <script src="{{ url_for('static', filename='js/spa-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
-
-    <!-- Queue badge updater — runs on every page -->
-    <script>
-    
-    </script>
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
-                                              </html>
-                                              
+    </html>
+    
