@@ -189,11 +189,7 @@
             <div class="nav-icon"><i class="fas fa-search"></i></div>
             <span class="nav-label">Search</span>
         </a>
-        <a href="/queue" class="nav-item" data-tab="queue">
-            <span class="nav-queue-badge" id="navQueueBadge"></span>
-            <div class="nav-icon"><i class="fas fa-list-ul"></i></div>
-            <span class="nav-label">Queue</span>
-        </a>
+
         <a href="/profile" class="nav-item" data-tab="profile">
             <div class="nav-icon"><i class="fas fa-user"></i></div>
             <span class="nav-label">Profile</span>
@@ -211,29 +207,10 @@
 
     <!-- Queue badge updater — runs on every page -->
     <script>
-    (function () {
-        function _updateQueueBadge() {
-            const p     = window.player;
-            const badge = document.getElementById('navQueueBadge');
-            if (!badge || !p) return;
-            // Count songs after current (up next)
-            const upNext = p.queue
-                ? Math.max(0, p.queue.length - 1 - (p.currentIndex ?? -1))
-                : 0;
-            if (upNext > 0) {
-                badge.textContent = upNext > 99 ? '99+' : upNext;
-                badge.classList.add('show');
-            } else {
-                badge.classList.remove('show');
-            }
-        }
-        // Poll lightly — only for badge, very cheap
-        setInterval(_updateQueueBadge, 1500);
-        document.addEventListener('DOMContentLoaded', _updateQueueBadge);
-    })();
+    
     </script>
 
     {% block extra_js %}{% endblock %}
 </body>
-                                      </html>
-    
+                                              </html>
+                                              
