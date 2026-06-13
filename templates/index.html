@@ -101,7 +101,7 @@
                data-song-artist="{{ song.artist }}"
                data-song-image="{{ song.image }}"
                data-song-url="{{ song.url }}"
-               onclick="playSong('{{ song.id }}',{{ song|tojson }});return false;">
+>
                 <div class="trending-image">
                     <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
                     <div class="trending-play"><i class="fas fa-play-circle"></i></div>
