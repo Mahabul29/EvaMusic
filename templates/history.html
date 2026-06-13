@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    padding: 20px;
+    text-align: center;
+}
+.page-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.history-list {
+    padding: 0 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.history-item:active { transform: scale(0.98); }
+.history-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.history-info { flex: 1; min-width: 0; }
+.history-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.history-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.history-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+.play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: none;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.play-btn:active { transform: scale(0.9); }
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    color: var(--accent-color);
+}
+.empty-state a {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-history" style="color:var(--accent-color)"></i> Listening History</h1>
+    <p>{{ songs|length }} recently played</p>
+</div>
+
+{% if songs %}
+<div class="history-list">
+    {% for song in songs %}
+    <div class="history-item" onclick="playSong('{{ song.song_id }}', {{ song | tojson }})">
+        <img class="history-thumb"
+             src="{{ song.image_url or '/static/images/default-album.png' }}"
+             alt="{{ song.title }}"
+             onerror="this.src='/static/images/default-album.png'">
+        <div class="history-info">
+            <div class="history-title">{{ song.title }}</div>
+            <div class="history-artist">{{ song.artist }}</div>
+        </div>
+        <button class="play-btn" onclick="event.stopPropagation(); playSong('{{ song.song_id }}', {{ song | tojson }})" type="button">
+            <i class="fas fa-play"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-history"></i>
+    <p>No listening history yet.</p>
+    <small>Songs you play will appear here.</small><br>
+    <a href="/trending"><i class="fas fa-fire"></i> Explore Trending</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function playSong(id, songData) {
+    songData.image = songData.image_url || songData.image || '';
+    songData.url   = songData.audio_url  || songData.url  || '';
+    songData.id    = songData.song_id    || songData.id   || id;
+
+    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
+    document.getElementById('musicBarTitle').textContent = songData.title;
+    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
+    document.getElementById('musicBar').classList.remove('hidden');
+
+    const playIcon = document.getElementById('musicBarPlayIcon');
+    if (playIcon) {
+        playIcon.classList.remove('fa-play');
+        playIcon.classList.add('fa-pause');
+    }
+
+    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
+        window.EvaPlayer.play(songData);
+    }
+
+    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
+    showToast(`Now playing: ${songData.title}`, 'success');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const lastSong = localStorage.getItem('evamusic_currentSong');
+    if (lastSong) {
+        try {
+            const song = JSON.parse(lastSong);
+            document.getElementById('musicBarThumb').src = song.image || '/static/images/default-album.png';
+            document.getElementById('musicBarTitle').textContent = song.title;
+            document.getElementById('musicBarArtist').textContent = song.artist || '-';
+            document.getElementById('musicBar').classList.remove('hidden');
+        } catch(e) {}
+    }
+});
+</script>
+{% endblock %}
