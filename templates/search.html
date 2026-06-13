@@ -3,197 +3,126 @@
 
 {% block extra_css %}
 <style>
-.search-header {
-    padding: 20px;
-    text-align: center;
-}
-.search-header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 8px;
-}
-.search-header p {
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-.search-form {
-    padding: 0 20px 20px;
-}
+.search-header { padding: 20px; text-align: center; }
+.search-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.search-header p  { color: var(--text-secondary); font-size: 14px; }
+.search-form { padding: 0 20px 20px; }
 .search-form input {
-    width: 100%;
-    padding: 14px 20px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 28px;
-    color: var(--text-color);
-    font-size: 16px;
-    outline: none;
+    width: 100%; padding: 14px 20px;
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 28px; color: var(--text-color); font-size: 16px; outline: none;
 }
 .search-form input::placeholder { color: var(--text-secondary); }
 .search-form input:focus { border-color: var(--accent-color); }
 
-/* Browse Section */
 .browse-section { padding: 0 20px 20px; }
-.browse-section h2 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.browse-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
+.browse-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.browse-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .category-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px 10px;
-    background: var(--card-bg);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--text-color);
-    transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 16px 10px; background: var(--card-bg); border-radius: 12px;
+    text-decoration: none; color: var(--text-color); transition: all 0.2s; cursor: pointer;
 }
 .category-card:active { transform: scale(0.95); }
-.category-card i {
-    font-size: 22px;
-    color: var(--accent-color);
-}
-.category-card span {
-    font-size: 12px;
-    font-weight: 500;
-}
+.category-card i    { font-size: 22px; color: var(--accent-color); }
+.category-card span { font-size: 12px; font-weight: 500; }
 
-.songs-list {
-    padding: 0 16px 80px;
-}
+.songs-list { padding: 0 16px 80px; }
 .song-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px; border-radius: 12px; cursor: pointer;
+    transition: background 0.2s; margin-bottom: 4px;
+    position: relative;
 }
 .song-row:hover, .song-row:active { background: var(--hover-bg); }
-.song-row.unavailable { opacity: 0.5; }
-.song-number {
-    width: 28px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-.song-thumb {
-    width: 52px;
-    height: 52px;
-    border-radius: 8px;
-    object-fit: cover;
-}
-.song-details { flex: 1; min-width: 0; }
-.song-details h4 {
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.song-details p {
-    font-size: 13px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.song-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.btn-icon {
-    width: 36px;
-    height: 36px;
+.song-row.playing { background: rgba(29,185,84,0.1); }
+.song-row.unavailable { opacity: 0.5; pointer-events: none; }
+.song-row.loading::after {
+    content: '';
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    border: 2px solid var(--accent-color);
+    border-top-color: transparent;
     border-radius: 50%;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.song-number  { width: 28px; text-align: center; font-size: 14px; color: var(--text-secondary); }
+.song-thumb   { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; }
+.song-details { flex: 1; min-width: 0; }
+.song-details h4 { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-details p  { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-actions    { display: flex; align-items: center; gap: 12px; }
+.btn-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: transparent; border: none; color: var(--text-secondary);
+    font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .btn-icon:hover { color: var(--accent-color); }
-.song-duration {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-width: 40px;
-    text-align: right;
-}
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-secondary);
-}
-.empty-state i { font-size: 48px; margin-bottom: 16px; }
+.btn-icon.liked { color: #ff4757; }
+.song-duration { font-size: 12px; color: var(--text-secondary); min-width: 40px; text-align: right; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.empty-state i { font-size: 48px; margin-bottom: 16px; display: block; }
 
-@media (min-width: 768px) {
-    .browse-grid { grid-template-columns: repeat(6, 1fr); }
-}
+@media (min-width: 768px) { .browse-grid { grid-template-columns: repeat(6, 1fr); } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="search-header">
     <h1><i class="fas fa-search" style="color: var(--accent-color)"></i> Search</h1>
-    {% if query %}
-    <p>Found {{ songs|length }} songs for "{{ query }}"</p>
-    {% endif %}
+    {% if query %}<p>Found {{ songs|length }} songs for "{{ query }}"</p>{% endif %}
 </div>
 
 <form class="search-form" action="/search" method="GET">
-    <input type="text" name="q" placeholder="Search songs, artists, albums..." value="{{ query }}" autofocus>
+    <input type="text" name="q" placeholder="Search songs, artists, albums..."
+           value="{{ query }}" autofocus autocomplete="off">
 </form>
 
-<!-- Browse Categories (shown when no search or always) -->
 <section class="browse-section">
     <h2><i class="fas fa-compact-disc" style="color: var(--accent-color)"></i> Browse</h2>
     <div class="browse-grid">
         <a href="/search?q=bollywood" class="category-card"><i class="fas fa-film"></i><span>Bollywood</span></a>
-        <a href="/search?q=punjabi" class="category-card"><i class="fas fa-drum"></i><span>Punjabi</span></a>
-        <a href="/search?q=romantic" class="category-card"><i class="fas fa-heart"></i><span>Romantic</span></a>
-        <a href="/search?q=party" class="category-card"><i class="fas fa-glass-cheers"></i><span>Party</span></a>
+        <a href="/search?q=punjabi"   class="category-card"><i class="fas fa-drum"></i><span>Punjabi</span></a>
+        <a href="/search?q=romantic"  class="category-card"><i class="fas fa-heart"></i><span>Romantic</span></a>
+        <a href="/search?q=party"     class="category-card"><i class="fas fa-glass-cheers"></i><span>Party</span></a>
         <a href="/search?q=devotional" class="category-card"><i class="fas fa-pray"></i><span>Devotional</span></a>
-        <a href="/search?q=hip+hop" class="category-card"><i class="fas fa-microphone"></i><span>Hip Hop</span></a>
+        <a href="/search?q=hip+hop"   class="category-card"><i class="fas fa-microphone"></i><span>Hip Hop</span></a>
     </div>
 </section>
 
 <div class="songs-list" id="searchResults">
     {% for song in songs %}
     <div class="song-row {% if not song.url %}unavailable{% endif %}"
-         data-id="{{ song.id }}"
-         {% if song.url %}onclick="playSong('{{ song.id }}', {{ song|tojson }})"{% endif %}>
+         id="song-row-{{ song.id }}"
+         data-song-id="{{ song.id }}"
+         data-song-title="{{ song.title | e }}"
+         data-song-artist="{{ song.artist | e }}"
+         data-song-image="{{ song.image | e }}"
+         data-song-url="{{ song.url | e }}"
+         onclick="searchPlaySong(this, {{ song | tojson }})">
+
         <div class="song-number">{{ loop.index }}</div>
-        <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb" onerror="this.src='/static/images/default-album.png'">
+        <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb"
+             onerror="this.src='/static/images/default-album.png'">
         <div class="song-details">
             <h4>{{ song.title }}</h4>
-            <p>{{ song.artist }} • {{ song.album }}</p>
+            <p>{{ song.artist }}{% if song.album %} • {{ song.album }}{% endif %}</p>
         </div>
-        <div class="song-actions">
+        <div class="song-actions" onclick="event.stopPropagation()">
             {% if song.url %}
-            <button class="btn-icon" onclick="event.stopPropagation(); toggleFavorite('{{ song.id }}', {{ song|tojson }})">
+            <button class="btn-icon" id="fav-{{ song.id }}"
+                    onclick="searchToggleFav('{{ song.id }}', {{ song | tojson }}, this)">
                 <i class="far fa-heart"></i>
             </button>
             {% else %}
-            <span style="color: var(--text-secondary); font-size: 12px;"><i class="fas fa-lock"></i></span>
+            <i class="fas fa-lock" style="color: var(--text-secondary); font-size: 14px;"></i>
             {% endif %}
-            <span class="song-duration">{{ song.duration // 60 }}:{{ '%02d' % (song.duration % 60) }}</span>
+            <span class="song-duration">
+                {% if song.duration %}{{ song.duration // 60 }}:{{ '%02d' % (song.duration % 60) }}{% endif %}
+            </span>
         </div>
     </div>
     {% else %}
@@ -205,4 +134,77 @@
     {% endif %}
     {% endfor %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Play a search result ──────────────────────────────────────────────────────
+async function searchPlaySong(rowEl, songData) {
+    if (rowEl.classList.contains('loading')) return;
+
+    // Highlight row
+    document.querySelectorAll('.song-row.playing').forEach(r => r.classList.remove('playing'));
+    rowEl.classList.add('playing');
+
+    // If song already has a URL, play immediately
+    if (songData.url) {
+        window.player.playSong(songData.id, songData);
+        // Update queue to all songs on this page
+        _refreshSearchQueue(songData.id);
+        return;
+    }
+
+    // No URL — fetch from API
+    rowEl.classList.add('loading');
+    try {
+        const res  = await fetch('/api/song/' + songData.id);
+        const fresh = await res.json();
+        if (fresh && fresh.url) {
+            // Patch the data-song-url so future clicks are instant
+            rowEl.dataset.songUrl = fresh.url;
+            const merged = { ...songData, ...fresh };
+            window.player.playSong(merged.id, merged);
+            _refreshSearchQueue(merged.id);
+        } else {
+            showToast('Song not available', 'error');
+            rowEl.classList.remove('playing');
+        }
+    } catch(e) {
+        showToast('Failed to load song', 'error');
+        rowEl.classList.remove('playing');
+    } finally {
+        rowEl.classList.remove('loading');
+    }
+}
+
+// Build queue from all visible search rows
+function _refreshSearchQueue(activeId) {
+    const rows = document.querySelectorAll('#searchResults .song-row:not(.unavailable)');
+    const queue = [];
+    rows.forEach(row => {
+        queue.push({
+            id:     row.dataset.songId,
+            title:  row.dataset.songTitle,
+            artist: row.dataset.songArtist,
+            image:  row.dataset.songImage,
+            url:    row.dataset.songUrl || ''
+        });
+    });
+    if (queue.length) {
+        const idx = queue.findIndex(s => s.id === activeId);
+        window.player.queue        = queue;
+        window.player.currentIndex = idx >= 0 ? idx : 0;
+    }
+}
+
+// ── Favorite toggle for search rows ──────────────────────────────────────────
+function searchToggleFav(songId, songData, btn) {
+    window.player.toggleFavorite(songData, btn);
+}
+
+// ── On page load via SPA, refresh queue ──────────────────────────────────────
+if (window.__evaPlayerInstance) {
+    window.__evaPlayerInstance.refreshQueueFromDOM();
+}
+</script>
 {% endblock %}
