@@ -3,15 +3,11 @@ import requests
 from flask import Flask, render_template, jsonify, request, send_from_directory, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
-# ═══════════════════════════════════════════════════════════════════════
-# IMPORT DATABASE MODULE (THE MISSING LINK!)
-# ═══════════════════════════════════════════════════════════════════════
 import database as db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# Initialize DB on startup (creates indexes)
 db.init_db()
 
 _LAST_GOOD_TRENDING = []
@@ -24,22 +20,14 @@ HEADERS = {
     "Accept": "application/json",
 }
 
-# ─── Simple user session (replace with real auth later) ─────────────────
-
 def get_user_id():
-    """Get or create a simple user ID for the session."""
     if 'user_id' not in session:
         import uuid
         session['user_id'] = str(uuid.uuid4())
-        # Auto-create user in DB
         db.create_user(session['user_id'], f"User_{session['user_id'][:8]}")
     return session['user_id']
 
-
-# ─── API helpers (calls your separate Koyeb API app) ─────────────────────────
-
 def _call(url, timeout=20):
-    """GET a URL from the Koyeb API app; return parsed JSON or None."""
     try:
         r = requests.get(url, headers=HEADERS, timeout=timeout)
         print(f"[API] {r.status_code} {url}")
@@ -51,9 +39,7 @@ def _call(url, timeout=20):
         print(f"[API ERROR] {url}: {e}")
     return None
 
-
 def fetch_songs(query, limit=20):
-    """Search songs via the Koyeb API app."""
     data = _call(get_search_url(query, limit))
     if isinstance(data, list) and data:
         print(f"[SEARCH] '{query}' -> {len(data)} songs")
@@ -61,9 +47,7 @@ def fetch_songs(query, limit=20):
     print(f"[SEARCH] No results for '{query}'")
     return []
 
-
 def fetch_trending(limit=20):
-    """Fetch trending songs via the Koyeb API app."""
     global _LAST_GOOD_TRENDING
     data = _call(get_trending_url(limit))
     if isinstance(data, list) and data:
@@ -75,14 +59,11 @@ def fetch_trending(limit=20):
     print("[TRENDING] API failed and no cache")
     return []
 
-
 def fetch_song(song_id):
-    """Fetch a single song by ID via the Koyeb API app."""
     data = _call(get_song_url(song_id))
     if isinstance(data, dict) and data.get("url"):
         return data
     return None
-
 
 def fetch_playlist_songs(playlist_id):
     data = _call(f"{API_BASE_URL}/api/playlist/{playlist_id}")
@@ -90,13 +71,11 @@ def fetch_playlist_songs(playlist_id):
         return data
     return []
 
-
 def fetch_album_songs(album_id):
     data = _call(f"{API_BASE_URL}/api/album/{album_id}")
     if isinstance(data, list):
         return data
     return []
-
 
 def fetch_artist_songs(artist_id, limit=20):
     data = _call(f"{API_BASE_URL}/api/artist/{artist_id}?limit={limit}")
@@ -104,16 +83,11 @@ def fetch_artist_songs(artist_id, limit=20):
         return data
     return []
 
-# ═══════════════════════════════════════════════════════════════════════
-# ROUTES
-# ═══════════════════════════════════════════════════════════════════════
-
 @app.route('/')
 def index():
     songs = fetch_trending(12)
     print(f"[HOME] {len(songs)} songs")
     return render_template('index.html', songs=songs, title="Home")
-
 
 @app.route('/search')
 def search():
@@ -121,11 +95,9 @@ def search():
     songs = []
     if query:
         songs = fetch_songs(query, 30)
-        # Save search to history
         db.save_search_query(get_user_id(), query)
         print(f"[SEARCH] '{query}' -> {len(songs)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
-
 
 @app.route('/player/<song_id>')
 def player(song_id):
@@ -136,8 +108,6 @@ def player(song_id):
             "album": "Unknown Album", "url": "", "image": "/static/images/default-album.png",
             "duration": 0,
         }
-    
-    # ─── TRACK RECENTLY PLAYED ───
     if song.get("id"):
         db.add_to_recently_played(get_user_id(), {
             "song_id": song.get("id"),
@@ -145,9 +115,7 @@ def player(song_id):
             "artist": song.get("artist", "Unknown"),
             "image_url": song.get("image", "")
         })
-    
     return render_template('player.html', song=song, title=song.get("title", "Player"))
-
 
 @app.route('/trending')
 def trending():
@@ -155,52 +123,41 @@ def trending():
     print(f"[TRENDING] {len(songs)} songs")
     return render_template('trending.html', songs=songs, title="Trending")
 
-
 @app.route('/library')
 def library():
     return render_template('library.html', title="Your Library")
-
 
 @app.route('/playlist/<playlist_id>')
 def playlist(playlist_id):
     songs = fetch_playlist_songs(playlist_id)
     return render_template('playlist.html', songs=songs, title="Playlist")
 
-
 @app.route('/album/<album_id>')
 def album(album_id):
     songs = fetch_album_songs(album_id)
     return render_template('album.html', songs=songs, title="Album")
-
 
 @app.route('/artist/<artist_id>')
 def artist(artist_id):
     songs = fetch_artist_songs(artist_id, 20)
     return render_template('artist.html', songs=songs, title="Artist")
 
-
 @app.route('/offline')
 def offline():
     return render_template('offline.html', title="Offline")
 
-
 @app.route('/settings')
 def settings():
     return render_template('settingsworker.html', title="Settings")
-
 
 @app.route('/home')
 def home():
     songs = fetch_trending(20)
     return render_template('home.html', songs=songs, title="Your Daily Mix")
 
-
 @app.route('/profile')
 def profile():
-    """Profile page with REAL data from MongoDB."""
     user_id = get_user_id()
-    
-    # Get real stats from database
     favorites = db.get_user_favorites(user_id)
     playlists = db.get_user_playlists(user_id)
     recent = db.get_recently_played(user_id, 5)
@@ -208,11 +165,10 @@ def profile():
     stats = {
         "total_favorites": len(favorites),
         "total_playlists": len(playlists),
-        "total_plays": len(db.get_recently_played(user_id, 9999)),  # all time
-        "listening_hours": round(len(db.get_recently_played(user_id, 9999)) * 3.5 / 60, 1)  # rough estimate
+        "total_plays": len(db.get_recently_played(user_id, 9999)),
+        "listening_hours": round(len(db.get_recently_played(user_id, 9999)) * 3.5 / 60, 1)
     }
     
-    # Build profile data (in real app, fetch from users collection)
     user_doc = db.get_collection("users").find_one({"user_id": user_id})
     if user_doc:
         profile_data = {
@@ -239,10 +195,8 @@ def profile():
                          favorites=favorites[:5],
                          playlists=playlists[:5])
 
-
 @app.route('/profile/edit')
 def edit_profile():
-    """Edit profile page."""
     user_id = get_user_id()
     user_doc = db.get_collection("users").find_one({"user_id": user_id})
     
@@ -255,10 +209,6 @@ def edit_profile():
     }
     return render_template('edit_profile.html', title="Edit Profile", profile=profile_data)
 
-# ═══════════════════════════════════════════════════════════════════════
-# API ENDPOINTS (proxies + DATABASE)
-# ═══════════════════════════════════════════════════════════════════════
-
 @app.route('/api/search')
 def api_search():
     query = request.args.get('q', '')
@@ -266,13 +216,11 @@ def api_search():
     songs = fetch_songs(query, limit)
     return jsonify(songs)
 
-
 @app.route('/api/trending')
 def api_trending():
     limit = request.args.get('limit', 20, type=int)
     songs = fetch_trending(limit)
     return jsonify(songs)
-
 
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
@@ -281,10 +229,8 @@ def api_song(song_id):
         return jsonify(song)
     return jsonify({"error": "Song not found"}), 404
 
-
 @app.route('/api/favorite', methods=['POST'])
 def api_toggle_favorite():
-    """Toggle like/unlike a song."""
     user_id = get_user_id()
     data = request.get_json() or {}
     
@@ -302,36 +248,28 @@ def api_toggle_favorite():
     result = db.toggle_favorite(user_id, song_data)
     return jsonify(result)
 
-
 @app.route('/api/favorites')
 def api_get_favorites():
-    """Get user's favorite songs."""
     user_id = get_user_id()
     favorites = db.get_user_favorites(user_id)
     return jsonify(favorites)
 
-
 @app.route('/api/history')
 def api_get_history():
-    """Get user's recently played."""
     user_id = get_user_id()
     limit = request.args.get('limit', 20, type=int)
     history = db.get_recently_played(user_id, limit)
     return jsonify(history)
 
-
 @app.route('/api/search-history')
 def api_search_history():
-    """Get user's search history."""
     user_id = get_user_id()
     limit = request.args.get('limit', 10, type=int)
     history = db.get_search_history(user_id, limit)
     return jsonify([h["query"] for h in history])
 
-
 @app.route('/api/stats')
 def api_stats():
-    """Get user's stats for profile."""
     user_id = get_user_id()
     favorites = db.get_user_favorites(user_id)
     playlists = db.get_user_playlists(user_id)
@@ -344,10 +282,8 @@ def api_stats():
         "listening_hours": round(len(recent) * 3.5 / 60, 1)
     })
 
-
 @app.route('/api/debug')
 def api_debug():
-    """Check connectivity to the Koyeb API app + DB."""
     try:
         r = requests.get(f"{API_BASE_URL}/", timeout=10)
         api_status = r.status_code
@@ -362,21 +298,15 @@ def api_debug():
         "db_health": db_health
     })
 
-# ═══════════════════════════════════════════════════════════════════════
-# STATIC & ERROR HANDLERS
-# ═══════════════════════════════════════════════════════════════════════
-
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
-
 
 @app.errorhandler(404)
 def not_found(e):
     if request.path.startswith('/static/'):
         return jsonify({"error": "Not found"}), 404
     return render_template('index.html', songs=[], title="Not Found"), 404
-
 
 @app.errorhandler(500)
 def server_error(e):
@@ -385,8 +315,6 @@ def server_error(e):
     print(traceback.format_exc())
     return jsonify({"error": "Internal server error"}), 500
 
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
-    
