@@ -135,10 +135,10 @@
         </a>
     </nav>
 
-    <!-- pullup-player.js is the ONLY audio engine — loaded here, once -->
+    <!-- Load order matters: player engine first, then SPA nav, then page scripts -->
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/spa-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-
