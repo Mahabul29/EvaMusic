@@ -321,9 +321,14 @@
   <div class="queue-header">
     <div class="queue-header-top">
       <h1><i class="fas fa-list" style="color:#1DB954;margin-right:8px;font-size:18px"></i>Queue</h1>
-      <button class="queue-clear-btn" onclick="queueClearAll()">
-        <i class="fas fa-trash-alt" style="margin-right:4px"></i>Clear all
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="queue-clear-btn" onclick="navigateTo('/trending')" style="background:rgba(255,107,53,0.15);color:#ff6b35;">
+          <i class="fas fa-fire" style="margin-right:4px"></i>Trending
+        </button>
+        <button class="queue-clear-btn" onclick="queueClearAll()">
+          <i class="fas fa-trash-alt" style="margin-right:4px"></i>Clear all
+        </button>
+      </div>
     </div>
     <!-- Limit bar -->
     <div class="queue-limit-bar">
@@ -368,6 +373,9 @@
     <i class="fas fa-music"></i>
     <p>Your queue is empty.<br>Start playing a song to fill it up.</p>
     <a href="/home">Browse music</a>
+    <a href="/trending" style="margin-top:8px;padding:10px 24px;background:rgba(255,255,255,0.1);color:#fff;border-radius:24px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+        <i class="fas fa-fire" style="color:#ff6b35"></i> Trending
+    </a>
   </div>
 
 </div>
@@ -640,22 +648,4 @@ function _qStartPoll() {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a tick for EvaPlayer singleton to be ready
-    setTimeout(() => {
-        qRender();
-        _qStartPoll();
-    }, 100);
-});
-
-// Also re-render if the page is revisited via SPA nav
-window.addEventListener('pageshow', () => { qRender(); });
-
-// Clean up poll when leaving
-window.addEventListener('pagehide', () => {
-    if (_qPollTimer) clearInterval(_qPollTimer);
-});
-</script>
-{% endblock %}
-
-  
+docu
