@@ -8,9 +8,11 @@
     <div class="profile-header">
         <div class="profile-avatar-section">
             <div class="profile-avatar-wrapper">
-                <img src="{{ profile.avatar_url }}" alt="{{ profile.display_name }}" 
+                <!-- FIX: fallback chain for avatar -->
+                <img src="{{ profile.avatar_url or '/static/images/default-avatar.png' }}"
+                     alt="{{ profile.display_name or profile.username }}"
                      class="profile-avatar" id="profileAvatar"
-                     onerror="this.src='/static/images/default-album.png'">
+                     onerror="this.onerror=null; this.src='/static/images/default-avatar.png';">
                 <button class="avatar-edit-btn" onclick="location.href='/profile/edit'">
                     <i class="fas fa-camera"></i>
                 </button>
@@ -19,18 +21,18 @@
         <div class="profile-info">
             <h1 class="profile-name">{{ profile.display_name or profile.username }}</h1>
             <p class="profile-username">@{{ profile.username }}</p>
-            <p class="profile-bio">{{ profile.bio }}</p>
+            <p class="profile-bio">{{ profile.bio or 'Music lover 🎵' }}</p>
             <div class="profile-socials">
-                {% if profile.social_links.instagram %}
+                {% if profile.social_links and profile.social_links.instagram %}
                 <a href="https://instagram.com/{{ profile.social_links.instagram }}" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
                 {% endif %}
-                {% if profile.social_links.twitter %}
+                {% if profile.social_links and profile.social_links.twitter %}
                 <a href="https://twitter.com/{{ profile.social_links.twitter }}" target="_blank" class="social-link"><i class="fab fa-twitter"></i></a>
                 {% endif %}
-                {% if profile.social_links.youtube %}
+                {% if profile.social_links and profile.social_links.youtube %}
                 <a href="https://youtube.com/{{ profile.social_links.youtube }}" target="_blank" class="social-link"><i class="fab fa-youtube"></i></a>
                 {% endif %}
-                {% if profile.social_links.spotify %}
+                {% if profile.social_links and profile.social_links.spotify %}
                 <a href="https://open.spotify.com/user/{{ profile.social_links.spotify }}" target="_blank" class="social-link"><i class="fab fa-spotify"></i></a>
                 {% endif %}
             </div>
@@ -44,28 +46,27 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-heart"></i></div>
-            <div class="stat-value">{{ stats.total_favorites }}</div>
+            <div class="stat-value">{{ stats.total_favorites or 0 }}</div>
             <div class="stat-label">Favorites</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-list"></i></div>
-            <div class="stat-value">{{ stats.total_playlists }}</div>
+            <div class="stat-value">{{ stats.total_playlists or 0 }}</div>
             <div class="stat-label">Playlists</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-play-circle"></i></div>
-            <div class="stat-value">{{ stats.total_plays }}</div>
+            <div class="stat-value">{{ stats.total_plays or 0 }}</div>
             <div class="stat-label">Plays</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-clock"></i></div>
-            <div class="stat-value">{{ stats.listening_hours }}h</div>
+            <div class="stat-value">{{ stats.listening_hours or 0 }}h</div>
             <div class="stat-label">Hours</div>
         </div>
     </div>
 
     <div class="profile-nav">
-        <!-- FIXED: was /profile/favorites, /profile/history, /profile/playlists -->
         <a href="/favorites" class="nav-card">
             <i class="fas fa-heart"></i>
             <span>My Favorites</span>
@@ -93,7 +94,9 @@
             {% for song in recently_played[:6] %}
             <div class="song-row" onclick="playSong('{{ song.song_id }}', {{ song|tojson }})" data-song-id="{{ song.song_id }}">
                 <div class="song-number">{{ loop.index }}</div>
-                <img src="{{ song.image_url or '/static/images/default-album.png' }}" class="song-thumb" alt="{{ song.title }}" onerror="this.src='/static/images/default-album.png'">
+                <img src="{{ song.image_url or '/static/images/default-album.png' }}"
+                     class="song-thumb" alt="{{ song.title }}"
+                     onerror="this.onerror=null; this.src='/static/images/default-album.png';">
                 <div class="song-info">
                     <div class="song-title">{{ song.title }}</div>
                     <div class="song-artist">{{ song.artist }}</div>
@@ -117,7 +120,9 @@
             {% for song in favorites[:6] %}
             <div class="song-card" onclick="playSong('{{ song.song_id }}', {{ song|tojson }})" data-song-id="{{ song.song_id }}">
                 <div class="song-card-img-wrapper">
-                    <img src="{{ song.image_url or '/static/images/default-album.png' }}" alt="{{ song.title }}" onerror="this.src='/static/images/default-album.png'">
+                    <img src="{{ song.image_url or '/static/images/default-album.png' }}"
+                         alt="{{ song.title }}"
+                         onerror="this.onerror=null; this.src='/static/images/default-album.png';">
                     <div class="play-overlay"><i class="fas fa-play"></i></div>
                 </div>
                 <div class="song-card-title">{{ song.title }}</div>
@@ -139,7 +144,7 @@
             <div class="playlist-card" onclick="location.href='/playlist/{{ playlist.playlist_id }}'">
                 <div class="playlist-cover"><i class="fas fa-music"></i></div>
                 <div class="playlist-name">{{ playlist.name }}</div>
-                <div class="playlist-count">{{ playlist.songs|length }} songs</div>
+                <div class="playlist-count">{{ (playlist.songs or [])|length }} songs</div>
             </div>
             {% endfor %}
         </div>
@@ -153,10 +158,15 @@ function playSong(id, songData) {
     songData.url   = songData.audio_url  || songData.url  || '';
     songData.id    = songData.song_id    || songData.id   || id;
 
-    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
-    document.getElementById('musicBarTitle').textContent = songData.title;
-    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
-    document.getElementById('musicBar').classList.remove('hidden');
+    const thumbEl = document.getElementById('musicBarThumb');
+    const titleEl = document.getElementById('musicBarTitle');
+    const artistEl = document.getElementById('musicBarArtist');
+    const barEl = document.getElementById('musicBar');
+
+    if (thumbEl) thumbEl.src = songData.image || '/static/images/default-album.png';
+    if (titleEl) titleEl.textContent = songData.title;
+    if (artistEl) artistEl.textContent = songData.artist || '-';
+    if (barEl) barEl.classList.remove('hidden');
 
     const playIcon = document.getElementById('musicBarPlayIcon');
     if (playIcon) {
@@ -207,3 +217,4 @@ function shareProfile() {
 }
 </script>
 {% endblock %}
+    
