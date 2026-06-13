@@ -26,11 +26,14 @@
 
     .np-container {
         position: relative;
-        min-height: 100vh;
+        height: 100vh;
+        height: 100dvh;
         display: flex;
         flex-direction: column;
-        padding: max(16px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+        padding: max(12px, env(safe-area-inset-top)) 24px max(14px, env(safe-area-inset-bottom));
         color: var(--text-color);
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     /* Top bar */
@@ -61,12 +64,14 @@
         align-items: center;
         justify-content: center;
         min-height: 0;
-        padding: 16px 0;
+        padding: 8px 0;
+        overflow: hidden;
     }
     .np-album-art {
-        width: min(78vw, 340px);
-        height: min(78vw, 340px);
-        max-height: 40vh;
+        width: min(78vw, 320px);
+        height: min(78vw, 320px);
+        max-width: 100%;
+        max-height: 100%;
         border-radius: 14px;
         object-fit: cover;
         box-shadow: 0 24px 60px rgba(0,0,0,0.55);
@@ -78,7 +83,8 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
-        margin-bottom: 20px;
+        margin-bottom: 14px;
+        flex-shrink: 0;
     }
     .np-info-text { min-width: 0; flex: 1; }
     .np-info-text h2 {
@@ -111,7 +117,7 @@
     .np-like-btn:active { transform: scale(1.25); }
 
     /* Progress */
-    .np-progress-section { margin-bottom: 18px; }
+    .np-progress-section { margin-bottom: 12px; flex-shrink: 0; }
     .np-progress-bar {
         position: relative;
         height: 4px;
@@ -146,7 +152,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 24px;
+        margin-bottom: 12px;
+        flex-shrink: 0;
     }
     .np-control-btn {
         background: none; border: none; color: var(--text-color);
@@ -172,8 +179,9 @@
     .np-secondary {
         display: flex;
         justify-content: space-around;
-        padding-top: 14px;
+        padding-top: 10px;
         border-top: 1px solid rgba(255,255,255,0.08);
+        flex-shrink: 0;
     }
     .np-secondary button {
         background: none; border: none;
@@ -434,4 +442,4 @@ window.addEventListener('load', () => {
 });
 </script>
 {% endblock %}
-    
+        
