@@ -40,7 +40,7 @@
         .toast-error { background: #ef4444; }
         .toast-info { background: #3b82f6; }
 
-        /* ═══ Bottom Mini Music Bar ═══ */
+        /* Bottom Mini Music Bar */
         .music-bar {
             position: fixed;
             bottom: 60px;
@@ -118,7 +118,7 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- ═══ Bottom Mini Music Bar (tap to expand) ═══ -->
+    <!-- Bottom Mini Music Bar -->
     <div class="music-bar hidden" id="musicBar" onclick="expandPlayer(event)">
         <div class="music-bar-progress" id="musicBarProgress" onclick="event.stopPropagation(); seekBar(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
@@ -142,19 +142,19 @@
     </div>
 
     <nav class="bottom-nav" id="bottomNav">
-        <a href="/home" class="nav-item {% if request.path == '/home' or request.path == '/' %}active{% endif %}" data-tab="play">
+        <a href="/home" class="nav-item" data-tab="play">
             <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
             <span class="nav-label">Play</span>
         </a>
-        <a href="/search" class="nav-item {% if request.path == '/search' %}active{% endif %}" data-tab="search">
+        <a href="/search" class="nav-item" data-tab="search">
             <div class="nav-icon"><i class="fas fa-search"></i></div>
             <span class="nav-label">Search</span>
         </a>
-        <a href="/profile" class="nav-item {% if request.path.startswith('/profile') %}active{% endif %}" data-tab="profile">
+        <a href="/profile" class="nav-item" data-tab="profile">
             <div class="nav-icon"><i class="fas fa-user"></i></div>
             <span class="nav-label">Profile</span>
         </a>
-        <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}" data-tab="settings">
+        <a href="/settings" class="nav-item" data-tab="settings">
             <div class="nav-icon"><i class="fas fa-cog"></i></div>
             <span class="nav-label">Settings</span>
         </a>
@@ -165,6 +165,7 @@
             if (event.persisted) window.location.reload();
         });
     </script>
+    <script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
     {% block extra_js %}{% endblock %}
