@@ -31,8 +31,20 @@
     border-radius: 12px;
     cursor: pointer;
     transition: background 0.2s;
+    position: relative;
 }
 .song-row:active { background: rgba(255,255,255,0.05); }
+.song-row.loading::after {
+    content: '';
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    border: 2px solid var(--accent-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .song-number {
     font-size: 13px;
     color: var(--text-secondary);
@@ -159,21 +171,16 @@
 
 {% block extra_js %}
 <script>
-function favPlaySong(rowEl) {
-    // Safely parse song data — avoids inline JS breaking on apostrophes/quotes in titles
-    let songData;
+async function favPlaySong(rowEl) {
+    if (rowEl.classList.contains('loading')) return;
+
+    let song;
     try {
-        songData = JSON.parse(rowEl.dataset.song);
+        song = JSON.parse(rowEl.dataset.song);
     } catch(e) {
-        console.error('[Favorites] Failed to parse song data:', e);
         showToast('Could not load song', 'error');
         return;
     }
-
-    // Normalise field names — server sends image_url / audio_url
-    songData.image = songData.image_url || songData.image || '';
-    songData.url   = songData.audio_url  || songData.url  || '';
-    songData.id    = songData.song_id    || songData.id   || '';
 
     const p = window.player || window.__evaPlayerInstance;
     if (!p || typeof p.playSong !== 'function') {
@@ -181,7 +188,52 @@ function favPlaySong(rowEl) {
         return;
     }
 
-    // Build queue from all visible rows so Next/Prev works
+    // Normalise MongoDB field names → player field names
+    const songId  = song.song_id || song.id || '';
+    let   audioUrl = song.audio_url || song.url || '';
+
+    if (!songId) {
+        showToast('Invalid song data', 'error');
+        return;
+    }
+
+    // If stored audio_url is missing or empty, fetch a fresh one from API
+    // (JioSaavn URLs expire, so saved URLs may be stale)
+    if (!audioUrl) {
+        rowEl.classList.add('loading');
+        try {
+            const res  = await fetch('/api/song/' + songId);
+            const fresh = await res.json();
+            if (fresh && fresh.url) {
+                audioUrl = fresh.url;
+                // Merge fresh data into song so player has full metadata
+                Object.assign(song, fresh);
+            } else {
+                showToast('Song not available', 'error');
+                rowEl.classList.remove('loading');
+                return;
+            }
+        } catch(e) {
+            showToast('Failed to load song', 'error');
+            rowEl.classList.remove('loading');
+            return;
+        } finally {
+            rowEl.classList.remove('loading');
+        }
+    }
+
+    // Build a clean song object with consistent field names for the player
+    const songData = {
+        id:     songId,
+        title:  song.title  || 'Unknown',
+        artist: song.artist || 'Unknown',
+        album:  song.album  || '',
+        image:  song.image_url || song.image || '/static/images/default-album.png',
+        url:    audioUrl,
+        duration: song.duration || 0
+    };
+
+    // Build queue from all visible rows so Next/Prev works through favorites
     const rows = document.querySelectorAll('#songList .song-row');
     const queue = [];
     rows.forEach(row => {
@@ -197,7 +249,7 @@ function favPlaySong(rowEl) {
         } catch(e) {}
     });
     if (queue.length) {
-        const idx = queue.findIndex(s => s.id === songData.id);
+        const idx = queue.findIndex(s => s.id === songId);
         p.queue        = queue;
         p.currentIndex = idx >= 0 ? idx : 0;
     }
@@ -257,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const lastSong = localStorage.getItem('evamusic_currentSong');
     if (lastSong) {
         try {
-            const song = JSON.parse(lastSong);
+            const song   = JSON.parse(lastSong);
             const thumb  = document.getElementById('musicBarThumb');
             const title  = document.getElementById('musicBarTitle');
             const artist = document.getElementById('musicBarArtist');
