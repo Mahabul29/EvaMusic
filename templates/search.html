@@ -33,7 +33,7 @@
 }
 .song-row:hover, .song-row:active { background: var(--hover-bg); }
 .song-row.playing    { background: rgba(29,185,84,0.1); }
-.song-row.unavailable { opacity: 0.5; pointer-events: none; }
+.song-row.unavailable { opacity: 0.5; }
 .song-row.loading::after {
     content: ''; position: absolute; right: 12px; top: 50%;
     transform: translateY(-50%); width: 16px; height: 16px;
@@ -73,12 +73,13 @@
 <section class="browse-section">
     <h2><i class="fas fa-compact-disc" style="color:var(--accent-color)"></i> Browse</h2>
     <div class="browse-grid">
-        <a href="/search?q=bollywood"  class="category-card"><i class="fas fa-film"></i><span>Bollywood</span></a>
-        <a href="/search?q=punjabi"    class="category-card"><i class="fas fa-drum"></i><span>Punjabi</span></a>
         <a href="/search?q=romantic"   class="category-card"><i class="fas fa-heart"></i><span>Romantic</span></a>
+        <a href="/search?q=sad"        class="category-card"><i class="fas fa-sad-tear"></i><span>Sad</span></a>
+        <a href="/search?q=dance"      class="category-card"><i class="fas fa-music"></i><span>Dance</span></a>
         <a href="/search?q=party"      class="category-card"><i class="fas fa-glass-cheers"></i><span>Party</span></a>
         <a href="/search?q=devotional" class="category-card"><i class="fas fa-pray"></i><span>Devotional</span></a>
         <a href="/search?q=hip+hop"    class="category-card"><i class="fas fa-microphone"></i><span>Hip Hop</span></a>
+        <a href="/search?q=workout"    class="category-card"><i class="fas fa-dumbbell"></i><span>Gym</span></a>
     </div>
 </section>
 
@@ -154,7 +155,7 @@ async function searchPlaySong(rowEl, songData) {
 }
 
 function _refreshSearchQueue(activeId) {
-    const rows  = document.querySelectorAll('#searchResults .song-row:not(.unavailable)');
+    const rows  = document.querySelectorAll('#searchResults .song-row');
     const queue = [];
     rows.forEach(row => queue.push({
         id: row.dataset.songId, title: row.dataset.songTitle,
