@@ -27,6 +27,9 @@ def get_user_id():
         db.create_user(session['user_id'], f"User_{session['user_id'][:8]}")
     return session['user_id']
 
+def is_logged_in():
+    return bool(session.get('logged_in'))
+
 def _call(url, timeout=20):
     try:
         r = requests.get(url, headers=HEADERS, timeout=timeout)
@@ -207,6 +210,10 @@ def offline():
 def settings():
     return render_template('settingsworker.html', title="Settings")
 
+@app.route('/help')
+def help_support():
+    return render_template('help.html', title="Help & Support")
+
 # ── PLAYER / CONTENT ROUTES ────────────────────────────────────
 
 @app.route('/player/<song_id>')
@@ -241,6 +248,80 @@ def artist(artist_id):
     songs = fetch_artist_songs(artist_id, 20)
     artist_name = songs[0].get('artist', 'Artist') if songs else 'Artist'
     return render_template('artist.html', songs=songs, title=artist_name)
+
+# ── AUTH ROUTES ────────────────────────────────────────────────
+
+@app.route('/api/signup', methods=['POST'])
+def api_signup():
+    data = request.get_json(silent=True) or request.form
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+
+    user_id = get_user_id()  # current (guest) session id — favorites etc. stay under this id
+    result = db.create_account(user_id, username, password)
+
+    if result.get('success'):
+        session['logged_in'] = True
+        session['username'] = result['username']
+        session['user_id'] = result['user_id']
+
+    return jsonify(result)
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json(silent=True) or request.form
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+
+    result = db.verify_login(username, password)
+
+    if result.get('success'):
+        guest_user_id = session.get('user_id')
+        target_user_id = result['user_id']
+
+        # If the guest had any local favorites/history under a different id,
+        # merge them into the account being logged into.
+        if guest_user_id and guest_user_id != target_user_id:
+            db.merge_guest_data(guest_user_id, target_user_id)
+
+        session['user_id'] = target_user_id
+        session['username'] = result['username']
+        session['logged_in'] = True
+
+    return jsonify(result)
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.pop('logged_in', None)
+    session.pop('username', None)
+    session.pop('user_id', None)
+    # A fresh guest session/user_id will be created on next get_user_id() call
+    return jsonify({"success": True, "message": "Logged out"})
+
+@app.route('/api/auth-status')
+def api_auth_status():
+    if is_logged_in():
+        return jsonify({
+            "logged_in": True,
+            "username": session.get('username')
+        })
+    return jsonify({"logged_in": False})
+
+@app.route('/api/change-password', methods=['POST'])
+def api_change_password():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "You must be logged in to change your password"}), 401
+
+    data = request.get_json(silent=True) or request.form
+    old_password = data.get('old_password') or ''
+    new_password = data.get('new_password') or ''
+    confirm_password = data.get('confirm_password') or ''
+
+    if new_password != confirm_password:
+        return jsonify({"success": False, "message": "New passwords do not match"})
+
+    result = db.change_password(session['user_id'], old_password, new_password)
+    return jsonify(result)
 
 # ── PROFILE ROUTES ─────────────────────────────────────────────
 
@@ -304,7 +385,6 @@ def favorites():
             fresh = fetch_song(song_id)
             if fresh and fresh.get("url"):
                 song["audio_url"] = fresh["url"]
-                # Also update image in case it changed
                 if fresh.get("image"):
                     song["image_url"] = fresh["image"]
 
@@ -458,4 +538,4 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
-    
+                          
