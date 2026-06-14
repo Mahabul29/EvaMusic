@@ -1,12 +1,14 @@
 """
 EvaMusic - Simple File-Based Database (no MongoDB needed)
-Stores favorites, history, playlists in JSON files.
+Stores favorites, history, playlists, users in JSON files.
 """
 
 import json
 import os
 import uuid
 from datetime import datetime, timezone
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -33,11 +35,10 @@ def _save(name, data):
 def add_to_favorites(user_id, song_data):
     data = _load("favorites")
     user_favs = data.get(user_id, [])
-    
-    # Check if already exists
+
     if any(f["song_id"] == song_data.get("song_id") for f in user_favs):
         return {"success": False, "message": "Song already in favorites"}
-    
+
     user_favs.append({
         "song_id": song_data.get("song_id"),
         "title": song_data.get("title"),
@@ -49,7 +50,7 @@ def add_to_favorites(user_id, song_data):
         "source": song_data.get("source", "jiosaavn"),
         "added_at": datetime.now(timezone.utc).isoformat()
     })
-    
+
     data[user_id] = user_favs
     _save("favorites", data)
     return {"success": True, "message": "Added to favorites"}
@@ -60,7 +61,7 @@ def remove_from_favorites(user_id, song_id):
     user_favs = data.get(user_id, [])
     original_len = len(user_favs)
     user_favs = [f for f in user_favs if f["song_id"] != song_id]
-    
+
     if len(user_favs) < original_len:
         data[user_id] = user_favs
         _save("favorites", data)
@@ -71,7 +72,6 @@ def remove_from_favorites(user_id, song_id):
 def get_user_favorites(user_id, limit=50, skip=0):
     data = _load("favorites")
     favs = data.get(user_id, [])
-    # Sort by added_at descending
     favs.sort(key=lambda x: x.get("added_at", ""), reverse=True)
     return favs[skip:skip + limit]
 
@@ -101,11 +101,9 @@ def toggle_favorite(user_id, song_data):
 def add_to_recently_played(user_id, song_data):
     data = _load("recently_played")
     user_history = data.get(user_id, [])
-    
-    # Remove existing entry for this song
+
     user_history = [h for h in user_history if h.get("song_id") != song_data.get("song_id")]
-    
-    # Add to top
+
     user_history.insert(0, {
         "song_id": song_data.get("song_id"),
         "title": song_data.get("title"),
@@ -113,8 +111,7 @@ def add_to_recently_played(user_id, song_data):
         "image_url": song_data.get("image_url"),
         "played_at": datetime.now(timezone.utc).isoformat()
     })
-    
-    # Keep only last 50
+
     user_history = user_history[:50]
     data[user_id] = user_history
     _save("recently_played", data)
@@ -134,7 +131,7 @@ def get_recently_played(user_id, limit=20):
 def create_playlist(user_id, name, description=""):
     data = _load("playlists")
     user_playlists = data.get(user_id, [])
-    
+
     playlist = {
         "playlist_id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -153,7 +150,7 @@ def create_playlist(user_id, name, description=""):
 def add_song_to_playlist(user_id, playlist_id, song_data):
     data = _load("playlists")
     user_playlists = data.get(user_id, [])
-    
+
     for pl in user_playlists:
         if pl["playlist_id"] == playlist_id:
             pl["songs"].append(song_data)
@@ -177,16 +174,14 @@ def get_user_playlists(user_id):
 def save_search_query(user_id, query):
     data = _load("search_history")
     user_history = data.get(user_id, [])
-    
-    # Remove duplicate
+
     user_history = [h for h in user_history if h.get("query") != query]
-    
+
     user_history.insert(0, {
         "query": query,
         "searched_at": datetime.now(timezone.utc).isoformat()
     })
-    
-    # Keep only last 20
+
     user_history = user_history[:20]
     data[user_id] = user_history
     _save("search_history", data)
@@ -203,14 +198,17 @@ def get_search_history(user_id, limit=10):
 # ═══════════════════════════════════════════════════════════════
 
 def create_user(user_id, username, email=None):
+    """Create a lightweight guest user record (no password)."""
     data = _load("users")
     if user_id in data:
         return {"success": False, "message": "User already exists"}
-    
+
     data[user_id] = {
         "user_id": user_id,
         "username": username,
         "email": email,
+        "password_hash": None,
+        "is_guest": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "last_active": datetime.now(timezone.utc).isoformat(),
         "preferences": {"theme": "dark", "language": "en", "notifications": True}
@@ -234,10 +232,9 @@ def get_collection(name):
 class _CollectionShim:
     def __init__(self, name):
         self.name = name
-    
+
     def find_one(self, query):
         data = _load(self.name)
-        # Simple query matching
         for key, val in query.items():
             for k, v in data.items():
                 if isinstance(v, dict) and v.get(key) == val:
@@ -250,12 +247,184 @@ class _CollectionShim:
 
 
 # ═══════════════════════════════════════════════════════════════
+# AUTHENTICATION (username + password, file-based)
+# ═══════════════════════════════════════════════════════════════
+#
+# Users are stored in users.json, keyed by user_id (uuid).
+# usernames.json maps lowercase username -> user_id for fast lookups
+# and to enforce case-insensitive uniqueness.
+
+def _username_key(username):
+    return (username or "").strip().lower()
+
+
+def get_user_by_username(username):
+    """Return the user record for a given username, or None."""
+    users = _load("users")
+    uname_index = _load("usernames")
+    user_id = uname_index.get(_username_key(username))
+    if user_id and user_id in users:
+        return users[user_id]
+    # Fallback scan (covers users/usernames created before index existed)
+    for uid, u in users.items():
+        if _username_key(u.get("username")) == _username_key(username):
+            return u
+    return None
+
+
+def username_exists(username):
+    return get_user_by_username(username) is not None
+
+
+def create_account(user_id, username, password, email=None):
+    """
+    Create a new account with a username + hashed password.
+
+    `user_id` is the caller's existing session user_id. If that id
+    already has a (guest) record, it is upgraded in place so any
+    favorites/playlists/history already stored under it carry over
+    automatically (they're keyed by user_id).
+    """
+    username = (username or "").strip()
+    if not username:
+        return {"success": False, "message": "Username is required"}
+    if len(username) < 3:
+        return {"success": False, "message": "Username must be at least 3 characters"}
+    if not password or len(password) < 6:
+        return {"success": False, "message": "Password must be at least 6 characters"}
+    if username_exists(username):
+        return {"success": False, "message": "Username is already taken"}
+
+    users = _load("users")
+    uname_index = _load("usernames")
+    now = datetime.now(timezone.utc).isoformat()
+
+    if user_id in users:
+        record = users[user_id]
+        record["username"] = username
+        record["email"] = email
+        record["password_hash"] = generate_password_hash(password)
+        record["is_guest"] = False
+        record["updated_at"] = now
+    else:
+        record = {
+            "user_id": user_id,
+            "username": username,
+            "email": email,
+            "password_hash": generate_password_hash(password),
+            "is_guest": False,
+            "created_at": now,
+            "last_active": now,
+            "preferences": {"theme": "dark", "language": "en", "notifications": True}
+        }
+        users[user_id] = record
+
+    uname_index[_username_key(username)] = user_id
+
+    _save("users", users)
+    _save("usernames", uname_index)
+
+    return {"success": True, "message": "Account created", "user_id": user_id, "username": username}
+
+
+def verify_login(username, password):
+    """
+    Check username/password.
+    Returns {"success": True, "user_id": ..., "username": ...} on success,
+    or {"success": False, "message": ...} on failure.
+    """
+    user = get_user_by_username(username)
+    if not user:
+        return {"success": False, "message": "Invalid username or password"}
+
+    pw_hash = user.get("password_hash")
+    if not pw_hash or not check_password_hash(pw_hash, password):
+        return {"success": False, "message": "Invalid username or password"}
+
+    update_user_activity(user["user_id"])
+    return {"success": True, "user_id": user["user_id"], "username": user.get("username")}
+
+
+def change_password(user_id, old_password, new_password):
+    """Change a logged-in user's password after verifying the old one."""
+    users = _load("users")
+    user = users.get(user_id)
+    if not user:
+        return {"success": False, "message": "Account not found"}
+
+    pw_hash = user.get("password_hash")
+    if not pw_hash or not check_password_hash(pw_hash, old_password):
+        return {"success": False, "message": "Current password is incorrect"}
+
+    if not new_password or len(new_password) < 6:
+        return {"success": False, "message": "New password must be at least 6 characters"}
+
+    if check_password_hash(pw_hash, new_password):
+        return {"success": False, "message": "New password must be different from the current password"}
+
+    user["password_hash"] = generate_password_hash(new_password)
+    user["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _save("users", users)
+    return {"success": True, "message": "Password updated successfully"}
+
+
+def merge_guest_data(guest_user_id, target_user_id):
+    """
+    Merge favorites/playlists/history/search-history from a guest user_id
+    into target_user_id. Used when logging into an existing account from
+    a guest session whose data lives under a different user_id.
+    No-op if the ids are the same (the common signup case).
+    """
+    if guest_user_id == target_user_id:
+        return
+
+    for store_name, merge_strategy in [
+        ("favorites", "list_unique_song_id"),
+        ("playlists", "list_extend"),
+        ("recently_played", "list_prepend_unique_song_id"),
+        ("search_history", "list_prepend_unique_query"),
+    ]:
+        data = _load(store_name)
+        guest_items = data.get(guest_user_id, [])
+        if not guest_items:
+            continue
+        target_items = data.get(target_user_id, [])
+
+        if merge_strategy == "list_unique_song_id":
+            existing_ids = {f.get("song_id") for f in target_items}
+            for item in guest_items:
+                if item.get("song_id") not in existing_ids:
+                    target_items.append(item)
+                    existing_ids.add(item.get("song_id"))
+        elif merge_strategy == "list_prepend_unique_song_id":
+            existing_ids = {h.get("song_id") for h in target_items}
+            for item in guest_items:
+                if item.get("song_id") not in existing_ids:
+                    target_items.append(item)
+                    existing_ids.add(item.get("song_id"))
+            target_items.sort(key=lambda x: x.get("played_at", ""), reverse=True)
+            target_items = target_items[:50]
+        elif merge_strategy == "list_prepend_unique_query":
+            existing_queries = {h.get("query") for h in target_items}
+            for item in guest_items:
+                if item.get("query") not in existing_queries:
+                    target_items.append(item)
+                    existing_queries.add(item.get("query"))
+            target_items = target_items[:20]
+        else:  # list_extend (playlists)
+            target_items.extend(guest_items)
+
+        data[target_user_id] = target_items
+        data.pop(guest_user_id, None)
+        _save(store_name, data)
+
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH & INIT
 # ═══════════════════════════════════════════════════════════════
 
 def check_db_health():
     try:
-        # Test write/read
         _save("_health", {"test": "ok"})
         _load("_health")
         return {"status": "healthy", "connected": True, "type": "file_json"}
@@ -267,4 +436,4 @@ def init_db():
     """No-op for file-based DB — files are created on first write."""
     print("✅ File-based database ready (no MongoDB needed)")
     return True
-    
+        
