@@ -42,6 +42,7 @@
             if (pushState) history.pushState({ url }, '', url);
 
             _updateNav(url);
+
             // Always re-execute page scripts — page-specific functions
             // (playSong, removeFavorite, etc.) must re-register on every swap
             _execScripts(curMain, newDoc);
@@ -59,24 +60,25 @@
 
             window.scrollTo(0, 0);
 
+            // ── Notify base.html so back-header updates on every swap ──
+            document.dispatchEvent(new CustomEvent('spa:navigated', { detail: { url } }));
+
         } catch (err) {
             console.warn('[SPA] fetch failed, hard navigating:', err);
             window.location.href = url;
         }
     }
 
+    // Expose globally so base.html spaGoBack() can call it
+    window._spaNavigateTo = navigateTo;
+
     function _execScripts(container, newDoc) {
-        // Always re-execute ALL inline scripts from the new page
-        // so page-specific functions re-register after every SPA swap
         const scripts = newDoc.querySelectorAll('.main-content script');
         scripts.forEach(oldScript => {
-            // Skip external src scripts that are already loaded globally
             if (oldScript.src) return;
-
             const s = document.createElement('script');
             [...oldScript.attributes].forEach(a => s.setAttribute(a.name, a.value));
             s.textContent = oldScript.textContent;
-
             try {
                 document.head.appendChild(s);
                 document.head.removeChild(s);
@@ -88,12 +90,22 @@
 
     function _updateNav(url) {
         const path = url.split('?')[0];
+
+        // Profile sub-pages — keep Profile tab active
+        const PROFILE_SUB = ['/favorites', '/history', '/playlists', '/profile/edit', '/playlist/'];
+
         document.querySelectorAll('.nav-item').forEach(item => {
             const href = item.getAttribute('href');
-            const active =
+            let active =
                 href === path ||
                 (href === '/home' && (path === '/' || path === '/home')) ||
                 (href !== '/' && href !== '/home' && path.startsWith(href));
+
+            // Keep /profile highlighted for all its sub-pages
+            if (href === '/profile' && PROFILE_SUB.some(p => path.startsWith(p))) {
+                active = true;
+            }
+
             item.classList.toggle('active', active);
         });
     }
@@ -135,12 +147,9 @@
         navigateTo(action + (params ? '?' + params : ''));
     });
 
-    // Re-attach song card click handlers after SPA swap
     function _attachSongCards(container) {
         if (!container) container = document;
 
-        // Generic: any element with data-song-id that isn't a song-row
-        // (song-row clicks are handled by per-page scripts)
         container.querySelectorAll('.grid-item[data-song-id], .trending-card[data-song-id]').forEach(item => {
             const clone = item.cloneNode(true);
             item.parentNode.replaceChild(clone, item);
