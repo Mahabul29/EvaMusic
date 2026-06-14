@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
 
+{% block content %}
 <div class="profile-page" id="profilePage">
     <div class="profile-header">
         <div class="profile-avatar-section">
@@ -151,5 +153,6 @@
     {% endif %}
 </div>
 {% endblock %}
+
 
                 
