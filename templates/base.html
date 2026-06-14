@@ -29,6 +29,41 @@
             overflow-x: hidden;
         }
 
+        /* ── Back Header (shown on sub-pages automatically) ── */
+        .back-header {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .back-header.visible { display: flex; }
+        .back-btn {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-color);
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .back-btn:active { background: var(--hover-bg); }
+        .back-header-title {
+            font-size: 17px;
+            font-weight: 700;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Toast */
         .toast {
             position: fixed; bottom: 150px; left: 50%;
@@ -148,6 +183,15 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+
+    <!-- Back header — shown automatically on sub-pages via JS below -->
+    <div class="back-header" id="backHeader">
+        <button class="back-btn" id="backBtn" onclick="spaGoBack()">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="back-header-title" id="backHeaderTitle"></div>
+    </div>
+
     <div class="main-content">
         {% block content %}{% endblock %}
     </div>
@@ -204,8 +248,62 @@
     <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notification-panel.js') }}"></script>
 
+    <script>
+    // ── Sub-page back header logic ────────────────────────────────────────────
+    // Pages under /profile (favorites, history, playlists, playlist/*)
+    // show a back arrow that returns to /profile.
+    // Add any other sub-page paths to SUB_PAGES as needed.
+
+    const SUB_PAGES = {
+        '/favorites':  { title: 'My Favorites',       back: '/profile' },
+        '/history':    { title: 'Listening History',   back: '/profile' },
+        '/playlists':  { title: 'My Playlists',        back: '/profile' },
+        '/profile/edit': { title: 'Edit Profile',      back: '/profile' },
+    };
+
+    // Also match dynamic routes like /playlist/xyz
+    function _getSubPage(path) {
+        if (SUB_PAGES[path]) return SUB_PAGES[path];
+        if (path.startsWith('/playlist/')) return { title: 'Playlist', back: '/playlists' };
+        return null;
+    }
+
+    function _updateBackHeader(path) {
+        const header = document.getElementById('backHeader');
+        const titleEl = document.getElementById('backHeaderTitle');
+        if (!header || !titleEl) return;
+        const sub = _getSubPage(path);
+        if (sub) {
+            titleEl.textContent = sub.title;
+            header.dataset.backUrl = sub.back;
+            header.classList.add('visible');
+        } else {
+            header.classList.remove('visible');
+            header.dataset.backUrl = '';
+        }
+    }
+
+    function spaGoBack() {
+        const header = document.getElementById('backHeader');
+        const backUrl = header && header.dataset.backUrl;
+        if (backUrl) {
+            // Use SPA nav if available, else hard nav
+            if (window._spaNavigateTo) window._spaNavigateTo(backUrl);
+            else window.location.href = backUrl;
+        } else {
+            history.back();
+        }
+    }
+
+    // Run on initial page load
+    _updateBackHeader(window.location.pathname);
+
+    // Re-run after every SPA swap (spa-nav.js fires this custom event)
+    document.addEventListener('spa:navigated', function(e) {
+        _updateBackHeader(e.detail && e.detail.url ? e.detail.url.split('?')[0] : window.location.pathname);
+    });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
-    </html>
-
-    
+</html>
