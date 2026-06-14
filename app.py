@@ -40,14 +40,8 @@ def _call(url, timeout=20):
     return None
 
 def _extract_audio_url(data):
-    """
-    Robustly extract audio URL from any JioSaavn API response format.
-    Handles nested dicts, lists, and all known key names.
-    """
     if not data:
         return ""
-
-    # Known keys that may contain the audio URL
     URL_KEYS = ["url", "downloadUrl", "download_url", "media_url",
                 "audio_url", "stream_url", "song_url", "link"]
 
@@ -58,7 +52,6 @@ def _extract_audio_url(data):
             val = obj.get(key)
             if not val:
                 continue
-            # Some APIs return a list of quality options — pick highest
             if isinstance(val, list) and val:
                 entry = val[-1]
                 if isinstance(entry, dict):
@@ -69,12 +62,10 @@ def _extract_audio_url(data):
                 return val
         return ""
 
-    # 1. Try top-level
     url = _pick(data)
     if url:
         return url
 
-    # 2. Try common wrapper keys
     for wrapper in ["data", "song", "songs", "result"]:
         inner = data.get(wrapper)
         if isinstance(inner, dict):
@@ -89,14 +80,9 @@ def _extract_audio_url(data):
     return ""
 
 def _normalize_song(data):
-    """
-    Normalize any JioSaavn API song dict so the player always gets
-    consistent field names: id, title, artist, image, url, duration.
-    """
     if not data:
         return None
 
-    # Unwrap wrapper if present
     inner = data
     for wrapper in ["data", "song", "result"]:
         candidate = data.get(wrapper)
@@ -107,11 +93,10 @@ def _normalize_song(data):
             inner = candidate[0]
             break
 
-    audio_url = _extract_audio_url(data)  # try full data including wrappers
+    audio_url = _extract_audio_url(data)
     if not audio_url:
         audio_url = _extract_audio_url(inner)
 
-    # Image: may be a list of quality options
     image = inner.get("image") or inner.get("image_url") or inner.get("thumbnail") or ""
     if isinstance(image, list) and image:
         entry = image[-1]
@@ -124,22 +109,18 @@ def _normalize_song(data):
         "album":    inner.get("album") or inner.get("album_name") or "",
         "duration": inner.get("duration") or inner.get("length") or 0,
         "image":    image or "/static/images/default-album.png",
-        "url":      audio_url,  # always present as "url" so player JS finds it
+        "url":      audio_url,
     }
 
 def fetch_songs(query, limit=20):
     data = _call(get_search_url(query, limit))
     if isinstance(data, list) and data:
-        print(f"[SEARCH] '{query}' -> {len(data)} songs")
         return data
-    # Some APIs wrap results
     if isinstance(data, dict):
         for key in ["data", "results", "songs"]:
             inner = data.get(key)
             if isinstance(inner, list) and inner:
-                print(f"[SEARCH] '{query}' -> {len(inner)} songs (unwrapped)")
                 return inner
-    print(f"[SEARCH] No results for '{query}'")
     return []
 
 def fetch_trending(limit=20):
@@ -155,31 +136,18 @@ def fetch_trending(limit=20):
                 _LAST_GOOD_TRENDING = inner
                 return inner
     if _LAST_GOOD_TRENDING:
-        print("[TRENDING] API failed, serving cached results")
         return _LAST_GOOD_TRENDING
-    print("[TRENDING] API failed and no cache")
     return []
 
 def fetch_song(song_id):
-    """
-    Fetch a single song and normalize it.
-    Returns None only if the API call completely fails.
-    """
     data = _call(get_song_url(song_id))
     if not data:
-        print(f"[fetch_song] API returned nothing for {song_id}")
         return None
-
     song = _normalize_song(data)
     if not song:
-        print(f"[fetch_song] Could not normalize data for {song_id}: {data}")
         return None
-
     if not song["url"]:
-        print(f"[fetch_song] WARNING: No audio URL found for {song_id}. Raw keys: {list(data.keys())}")
-        # Still return the song so the bar shows metadata;
-        # player will show "No audio URL available" instead of crashing.
-
+        print(f"[fetch_song] WARNING: No audio URL for {song_id}")
     print(f"[fetch_song] OK: {song['title']} | url={bool(song['url'])}")
     return song
 
@@ -206,7 +174,6 @@ def fetch_artist_songs(artist_id, limit=20):
 @app.route('/')
 def index():
     songs = fetch_trending(12)
-    print(f"[HOME] {len(songs)} songs")
     return render_template('index.html', songs=songs, title="Home")
 
 @app.route('/home')
@@ -221,13 +188,11 @@ def search():
     if query:
         songs = fetch_songs(query, 30)
         db.save_search_query(get_user_id(), query)
-        print(f"[SEARCH] '{query}' -> {len(songs)} streamable")
     return render_template('search.html', songs=songs, query=query, title="Search")
 
 @app.route('/trending')
 def trending():
     songs = fetch_trending(24)
-    print(f"[TRENDING] {len(songs)} songs")
     return render_template('trending.html', songs=songs, title="Trending")
 
 @app.route('/library')
@@ -249,19 +214,14 @@ def player(song_id):
     song = fetch_song(song_id)
     if not song:
         song = {
-            "id":       song_id,
-            "title":    "Unknown Song",
-            "artist":   "Unknown Artist",
-            "album":    "Unknown Album",
-            "url":      "",
-            "image":    "/static/images/default-album.png",
-            "duration": 0,
+            "id": song_id, "title": "Unknown Song", "artist": "Unknown Artist",
+            "album": "", "url": "", "image": "/static/images/default-album.png", "duration": 0,
         }
     if song.get("id"):
         db.add_to_recently_played(get_user_id(), {
-            "song_id":  song.get("id"),
-            "title":    song.get("title", "Unknown"),
-            "artist":   song.get("artist", "Unknown"),
+            "song_id":   song.get("id"),
+            "title":     song.get("title", "Unknown"),
+            "artist":    song.get("artist", "Unknown"),
             "image_url": song.get("image", "")
         })
     return render_template('player.html', song=song, title=song.get("title", "Player"))
@@ -290,31 +250,23 @@ def profile():
     favorites = db.get_user_favorites(user_id)
     playlists = db.get_user_playlists(user_id)
     recent = db.get_recently_played(user_id, 5)
+    all_plays = db.get_recently_played(user_id, 9999)
 
     stats = {
         "total_favorites": len(favorites),
         "total_playlists": len(playlists),
-        "total_plays":     len(db.get_recently_played(user_id, 9999)),
-        "listening_hours": round(len(db.get_recently_played(user_id, 9999)) * 3.5 / 60, 1)
+        "total_plays":     len(all_plays),
+        "listening_hours": round(len(all_plays) * 3.5 / 60, 1)
     }
 
     user_doc = db.get_collection("users").find_one({"user_id": user_id})
-    if user_doc:
-        profile_data = {
-            "username":     user_doc.get("username", "EvaUser"),
-            "display_name": user_doc.get("username", "EvaUser"),
-            "bio":          "Music lover 🎵",
-            "avatar_url":   "/static/images/default-album.png",
-            "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
-        }
-    else:
-        profile_data = {
-            "username":     "EvaUser",
-            "display_name": "EvaUser",
-            "bio":          "Music lover 🎵",
-            "avatar_url":   "/static/images/default-album.png",
-            "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
-        }
+    profile_data = {
+        "username":     user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
+        "display_name": user_doc.get("username", "EvaUser") if user_doc else "EvaUser",
+        "bio":          "Music lover 🎵",
+        "avatar_url":   "/static/images/default-album.png",
+        "social_links": {"instagram": "", "twitter": "", "youtube": "", "spotify": ""}
+    }
 
     return render_template('profile.html',
                            title="Profile",
@@ -341,6 +293,21 @@ def edit_profile():
 def favorites():
     user_id = get_user_id()
     songs = db.get_user_favorites(user_id)
+
+    # ── KEY FIX: Fetch a fresh audio URL for every favorite ──────────────────
+    # JioSaavn CDN URLs expire after a few hours, so stored audio_url goes stale.
+    # We re-fetch fresh URLs server-side so the page always has working URLs.
+    # This runs in serial; for large lists the slight delay is acceptable.
+    for song in songs:
+        song_id = song.get("song_id", "")
+        if song_id:
+            fresh = fetch_song(song_id)
+            if fresh and fresh.get("url"):
+                song["audio_url"] = fresh["url"]
+                # Also update image in case it changed
+                if fresh.get("image"):
+                    song["image_url"] = fresh["image"]
+
     return render_template('favorites.html', songs=songs, title="My Favorites")
 
 @app.route('/history')
@@ -456,22 +423,15 @@ def api_debug():
         api_status = r.status_code
     except Exception as e:
         api_status = f"error: {e}"
-
     db_health = db.check_db_health()
-    return jsonify({
-        "api_base":   API_BASE_URL,
-        "api_status": api_status,
-        "db_health":  db_health
-    })
+    return jsonify({"api_base": API_BASE_URL, "api_status": api_status, "db_health": db_health})
 
-# ── DEBUG: inspect raw API response for any song ──────────────
 @app.route('/api/debug/song/<song_id>')
 def api_debug_song(song_id):
-    """Shows raw API response so you can see exactly what fields come back."""
     raw  = _call(get_song_url(song_id))
     norm = _normalize_song(raw) if raw else None
     return jsonify({
-        "raw":        raw,
+        "raw": raw,
         "normalized": norm,
         "audio_url_found": bool(norm and norm.get("url"))
     })
@@ -498,4 +458,4 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
-        
+    
