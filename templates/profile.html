@@ -10,8 +10,8 @@
             <div class="profile-avatar-wrapper">
                 <img src="{{ profile.avatar_url or '/static/icon-512.png' }}"
                      alt="{{ profile.display_name or profile.username }}"
-                     class="profile-avatar" id="profileAvatar"
-                     onerror="this.onerror=null; this.src='/static/icon-512.png';">
+                     class="profile-avatar" id="profileAvatar" data-profile-only="true"
+                     onerror="this.onerror=null; this.src='/static/images/default-album.png';">
                 <button class="avatar-edit-btn" onclick="location.href='/profile/edit'">
                     <i class="fas fa-camera"></i>
                 </button>
@@ -91,11 +91,11 @@
         </div>
         <div class="song-list">
             {% for song in recently_played[:6] %}
-            <div class="song-row" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '' }}" data-song-url="{{ song.audio_url or '' }}">
+            <div class="song-row" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '/static/images/default-album.png' }}" data-song-url="{{ song.audio_url or '' }}">
                 <div class="song-number">{{ loop.index }}</div>
-                <img src="{{ song.image_url or '/static/icon-512.png' }}"
+                <img src="{{ song.image_url or '/static/images/default-album.png' }}"
                      class="song-thumb" alt="{{ song.title }}"
-                     onerror="this.onerror=null; this.src='/static/icon-512.png';">
+                     onerror="this.onerror=null; this.src='/static/images/default-album.png';">
                 <div class="song-info">
                     <div class="song-title">{{ song.title }}</div>
                     <div class="song-artist">{{ song.artist }}</div>
@@ -117,11 +117,11 @@
         </div>
         <div class="song-grid">
             {% for song in favorites[:6] %}
-            <div class="song-card" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '' }}" data-song-url="{{ song.audio_url or '' }}">
+            <div class="song-card" data-song-id="{{ song.song_id }}" data-song-title="{{ song.title }}" data-song-artist="{{ song.artist }}" data-song-image="{{ song.image_url or '/static/images/default-album.png' }}" data-song-url="{{ song.audio_url or '' }}">
                 <div class="song-card-img-wrapper">
-                    <img src="{{ song.image_url or '/static/icon-512.png' }}"
+                    <img src="{{ song.image_url or '/static/images/default-album.png' }}"
                          alt="{{ song.title }}"
-                         onerror="this.onerror=null; this.src='/static/icon-512.png';">
+                         onerror="this.onerror=null; this.src='/static/images/default-album.png';">
                     <div class="play-overlay"><i class="fas fa-play"></i></div>
                 </div>
                 <div class="song-card-title">{{ song.title }}</div>
@@ -151,4 +151,5 @@
     {% endif %}
 </div>
 {% endblock %}
+
                 
