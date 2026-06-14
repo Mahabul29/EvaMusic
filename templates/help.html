@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.help-page { padding: 0 16px 80px; max-width: 600px; margin: 0 auto; }
+.help-header { padding: 20px 0; text-align: center; }
+.help-header h1 { font-size: 24px; font-weight: 700; }
+.help-header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+.help-section { margin-bottom: 24px; }
+.help-section-title {
+    font-size: 13px; font-weight: 600; color: var(--accent-color);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-left: 4px;
+}
+
+.faq-item {
+    background: var(--card-bg); border-radius: 12px;
+    margin-bottom: 8px; overflow: hidden;
+}
+.faq-question {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; cursor: pointer; font-size: 15px; font-weight: 500;
+    color: var(--text-color);
+}
+.faq-question i {
+    color: var(--text-secondary); font-size: 13px;
+    transition: transform 0.2s;
+}
+.faq-item.open .faq-question i { transform: rotate(180deg); }
+.faq-answer {
+    padding: 0 16px; max-height: 0; overflow: hidden;
+    font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+}
+.faq-item.open .faq-answer { padding: 0 16px 16px; max-height: 300px; }
+
+.contact-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px; background: var(--card-bg); border-radius: 12px;
+    margin-bottom: 8px; text-decoration: none; color: inherit;
+}
+.contact-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(29, 185, 84, 0.1); display: flex;
+    align-items: center; justify-content: center;
+    color: var(--accent-color); font-size: 16px; flex-shrink: 0;
+}
+.contact-text { display: flex; flex-direction: column; }
+.contact-title { font-size: 15px; font-weight: 500; color: var(--text-color); }
+.contact-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-page">
+    <div class="help-header">
+        <h1>Help & Support</h1>
+        <p>Find answers or get in touch with us</p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="help-section">
+        <div class="help-section-title">Frequently Asked Questions</div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>How do I create an account?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to Settings and tap "Sign Up" under the Account section. Pick a username (at least 3 characters) and a password (at least 6 characters), then you're all set.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>I forgot my password. What do I do?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Currently there's no automated password reset. Please contact support below with your username and we'll help you regain access.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>How do I change my password?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Log in, then go to Settings → Security → Change Password. You'll need to enter your current password followed by your new one.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>Will I lose my favorites if I sign up later?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                No. Any songs you've favorited as a guest are automatically carried over to your new account when you sign up.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>A song won't play or shows an error.</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Streaming links can occasionally expire or fail to load. Try going back and reopening the song, or switch your Music Server in Settings (HD1 / HD2) and try again.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                <span>How do I free up storage used by the app?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to Settings → Data & Storage → Clear Cache. This removes temporarily cached files without affecting your favorites, playlists, or account.
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="help-section">
+        <div class="help-section-title">Contact Us</div>
+
+        <a href="mailto:support@evamusic.app" class="contact-item">
+            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+            <div class="contact-text">
+                <span class="contact-title">Email Support</span>
+                <span class="contact-desc">support@evamusic.app</span>
+            </div>
+        </a>
+
+        <div class="contact-item" onclick="showToast('Live chat coming soon', 'info')" style="cursor: pointer;">
+            <div class="contact-icon"><i class="fas fa-comments"></i></div>
+            <div class="contact-text">
+                <span class="contact-title">Live Chat</span>
+                <span class="contact-desc">Coming soon</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFaq(el) {
+    const wasOpen = el.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(item => item.classList.remove('open'));
+    if (!wasOpen) el.classList.add('open');
+}
+</script>
+{% endblock %}
