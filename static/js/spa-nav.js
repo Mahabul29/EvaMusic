@@ -18,9 +18,6 @@
         });
     }
 
-    // FIX: Track executed scripts to prevent re-running
-    const executedScripts = new Set();
-
     async function navigateTo(url, pushState = true) {
         if (!url || url === '#') return;
         if (url === window.location.pathname + window.location.search) return;
@@ -45,7 +42,8 @@
             if (pushState) history.pushState({ url }, '', url);
 
             _updateNav(url);
-            // FIX: Only execute NEW scripts, skip already executed ones
+            // Always re-execute page scripts — page-specific functions
+            // (playSong, removeFavorite, etc.) must re-register on every swap
             _execScripts(curMain, newDoc);
             _attachSongCards(curMain);
 
@@ -67,36 +65,21 @@
         }
     }
 
-    // FIX: Safer script execution with error handling
     function _execScripts(container, newDoc) {
-        // Get scripts from the NEW page content, not the current container
+        // Always re-execute ALL inline scripts from the new page
+        // so page-specific functions re-register after every SPA swap
         const scripts = newDoc.querySelectorAll('.main-content script');
         scripts.forEach(oldScript => {
-            // Skip if this script has already been executed
-            const scriptKey = oldScript.textContent?.substring(0, 100) || '';
-            if (executedScripts.has(scriptKey)) return;
-            executedScripts.add(scriptKey);
+            // Skip external src scripts that are already loaded globally
+            if (oldScript.src) return;
 
             const s = document.createElement('script');
-            // Copy attributes
-            [...oldScript.attributes].forEach(a => {
-                if (a.name !== 'src' || a.value) {
-                    s.setAttribute(a.name, a.value);
-                }
-            });
-            
-            // Handle external scripts vs inline
-            if (oldScript.src) {
-                s.src = oldScript.src;
-            } else {
-                s.textContent = oldScript.textContent;
-            }
-            
-            // Execute safely
+            [...oldScript.attributes].forEach(a => s.setAttribute(a.name, a.value));
+            s.textContent = oldScript.textContent;
+
             try {
-                container.appendChild(s);
-                // Remove after execution to keep DOM clean
-                if (s.parentNode) s.parentNode.removeChild(s);
+                document.head.appendChild(s);
+                document.head.removeChild(s);
             } catch (e) {
                 console.warn('[SPA] Script execution failed:', e);
             }
@@ -128,8 +111,17 @@
         navigateTo(href);
     }, true);
 
+    // Push initial state so popstate fires correctly on first back press
+    history.replaceState(
+        { url: window.location.pathname + window.location.search },
+        '',
+        window.location.pathname + window.location.search
+    );
+
     window.addEventListener('popstate', function (e) {
-        const url = e.state?.url || window.location.pathname + window.location.search;
+        const url = (e.state && e.state.url)
+            ? e.state.url
+            : window.location.pathname + window.location.search;
         navigateTo(url, false);
     });
 
@@ -147,49 +139,24 @@
     function _attachSongCards(container) {
         if (!container) container = document;
 
-        container.querySelectorAll('.grid-item[data-song-id]').forEach(item => {
+        // Generic: any element with data-song-id that isn't a song-row
+        // (song-row clicks are handled by per-page scripts)
+        container.querySelectorAll('.grid-item[data-song-id], .trending-card[data-song-id]').forEach(item => {
             const clone = item.cloneNode(true);
             item.parentNode.replaceChild(clone, item);
             clone.addEventListener('click', function(e) {
                 if (e.target.closest('.queue-item-remove') ||
                     e.target.closest('.queue-item-drag')) return;
                 e.preventDefault();
-                const songData = {
+                const p = window.player || window.__evaPlayerInstance;
+                if (!p) { showToast('Player not ready', 'error'); return; }
+                p.playSong(this.dataset.songId, {
                     id:     this.dataset.songId,
                     title:  this.dataset.songTitle,
                     artist: this.dataset.songArtist,
                     image:  this.dataset.songImage,
                     url:    this.dataset.songUrl || ''
-                };
-                if (window.player && typeof window.player.playSong === 'function') {
-                    window.player.playSong(songData.id, songData);
-                } else if (typeof playSong === 'function') {
-                    playSong(songData.id, songData);
-                } else {
-                    showToast('Player not ready', 'error');
-                }
-            });
-        });
-
-        container.querySelectorAll('.trending-card[data-song-id]').forEach(item => {
-            const clone = item.cloneNode(true);
-            item.parentNode.replaceChild(clone, item);
-            clone.addEventListener('click', function(e) {
-                e.preventDefault();
-                const songData = {
-                    id:     this.dataset.songId,
-                    title:  this.dataset.songTitle,
-                    artist: this.dataset.songArtist,
-                    image:  this.dataset.songImage,
-                    url:    this.dataset.songUrl || ''
-                };
-                if (window.player && typeof window.player.playSong === 'function') {
-                    window.player.playSong(songData.id, songData);
-                } else if (typeof playSong === 'function') {
-                    playSong(songData.id, songData);
-                } else {
-                    showToast('Player not ready', 'error');
-                }
+                });
             });
         });
 
@@ -200,20 +167,16 @@
                 e.stopPropagation();
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                if (typeof handleLikeClick === 'function') {
-                    handleLikeClick(e, this);
-                }
+                if (typeof handleLikeClick === 'function') handleLikeClick(e, this);
                 return false;
             });
         });
 
-        if (typeof initHeartStates === 'function') {
-            initHeartStates();
-        }
+        if (typeof initHeartStates === 'function') initHeartStates();
     }
 
     _updateNav(window.location.pathname);
     _attachSongCards(document.querySelector('.main-content'));
     console.log('[SPA] Navigation initialized');
 })();
-        
+                    
