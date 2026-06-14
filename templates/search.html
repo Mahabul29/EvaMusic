@@ -92,7 +92,8 @@
          data-song-artist="{{ song.artist | e }}"
          data-song-image="{{ song.image | e }}"
          data-song-url="{{ song.url | e }}"
-         onclick="searchPlaySong(this, {{ song | tojson }})">
+         data-song='{{ song | tojson | e }}'
+         onclick="searchPlaySong(this)">
         <div class="song-number">{{ loop.index }}</div>
         <img src="{{ song.image }}" alt="{{ song.title }}" class="song-thumb"
              onerror="this.src='/static/images/default-album.png'">
@@ -103,7 +104,7 @@
         <div class="song-actions" onclick="event.stopPropagation()">
             {% if song.url %}
             <button class="btn-icon" id="fav-{{ song.id }}"
-                    onclick="window.player.toggleFavorite({{ song | tojson }}, this)">
+                    onclick="window.player && window.player.toggleFavorite(JSON.parse(this.closest('.song-row').dataset.song), this)">
                 <i class="far fa-heart"></i>
             </button>
             {% else %}
@@ -122,23 +123,38 @@
 </div>
 
 <script>
-async function searchPlaySong(rowEl, songData) {
+async function searchPlaySong(rowEl) {
+    if (!window.player) { console.error('[Search] window.player not ready'); return; }
     if (rowEl.classList.contains('loading')) return;
+
+    // Safely parse song data from data attribute — avoids quote-breaking inline JS
+    let songData;
+    try {
+        songData = JSON.parse(rowEl.dataset.song);
+    } catch(e) {
+        console.error('[Search] Failed to parse song data:', e);
+        return;
+    }
+
     document.querySelectorAll('.song-row.playing').forEach(r => r.classList.remove('playing'));
     rowEl.classList.add('playing');
 
+    // Song already has a URL — play directly
     if (songData.url) {
         window.player.playSong(songData.id, songData);
         _refreshSearchQueue(songData.id);
         return;
     }
 
+    // No URL — fetch fresh from API
     rowEl.classList.add('loading');
     try {
         const res   = await fetch('/api/song/' + songData.id);
         const fresh = await res.json();
         if (fresh && fresh.url) {
             rowEl.dataset.songUrl = fresh.url;
+            // Update the stored data-song with fresh url so queue refresh picks it up
+            rowEl.dataset.song = JSON.stringify({ ...songData, ...fresh });
             const merged = { ...songData, ...fresh };
             window.player.playSong(merged.id, merged);
             _refreshSearchQueue(merged.id);
@@ -157,11 +173,18 @@ async function searchPlaySong(rowEl, songData) {
 function _refreshSearchQueue(activeId) {
     const rows  = document.querySelectorAll('#searchResults .song-row');
     const queue = [];
-    rows.forEach(row => queue.push({
-        id: row.dataset.songId, title: row.dataset.songTitle,
-        artist: row.dataset.songArtist, image: row.dataset.songImage,
-        url: row.dataset.songUrl || ''
-    }));
+    rows.forEach(row => {
+        try {
+            const s = JSON.parse(row.dataset.song || '{}');
+            queue.push({
+                id:     row.dataset.songId    || s.id     || '',
+                title:  row.dataset.songTitle || s.title  || '',
+                artist: row.dataset.songArtist|| s.artist || '',
+                image:  row.dataset.songImage || s.image  || '',
+                url:    row.dataset.songUrl   || s.url    || ''
+            });
+        } catch(e) {}
+    });
     if (queue.length) {
         const idx = queue.findIndex(s => s.id === activeId);
         window.player.queue        = queue;
@@ -169,6 +192,7 @@ function _refreshSearchQueue(activeId) {
     }
 }
 
+// Refresh player queue if already active on this page
 if (window.__evaPlayerInstance) window.__evaPlayerInstance.refreshQueueFromDOM();
 </script>
 {% endblock %}
