@@ -8,9 +8,9 @@ Updated on every play, like, skip, and playlist-add event.
 import json
 import os
 from datetime import datetime, timezone
-from collections import Counter
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+# Data lives inside /workspace/data/ — same folder database.py uses
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
@@ -36,14 +36,14 @@ def _save(name, data):
 
 def _default_profile():
     return {
-        "artists":       {},   # artist_name  → play count
-        "genres":        {},   # genre        → score
-        "languages":     {},   # language     → count
-        "moods":         {},   # mood tag     → count
-        "tempo":         {},   # "fast"/"slow"/"medium" → count
-        "liked_songs":   [],   # song_ids explicitly liked / added to playlist
-        "skipped_songs": [],   # song_ids user skipped quickly (< 10 s)
-        "played_songs":  {},   # song_id → total play count
+        "artists":       {},
+        "genres":        {},
+        "languages":     {},
+        "moods":         {},
+        "tempo":         {},
+        "liked_songs":   [],
+        "skipped_songs": [],
+        "played_songs":  {},
         "total_plays":   0,
         "total_skips":   0,
         "last_updated":  None,
@@ -51,7 +51,6 @@ def _default_profile():
 
 
 def get_taste_profile(user_id: str) -> dict:
-    """Return the full taste profile for a user."""
     data = _load("taste_profiles")
     return data.get(user_id, _default_profile())
 
@@ -64,17 +63,11 @@ def _save_profile(user_id: str, profile: dict):
 
 
 # ═══════════════════════════════════════════════════════════════
-# EVENT HANDLERS  (call these from app.py)
+# EVENT HANDLERS
 # ═══════════════════════════════════════════════════════════════
 
 def on_song_played(user_id: str, song: dict, listen_seconds: int = 60):
-    """
-    Call every time a user plays a song.
-    song dict should have: song_id, title, artist, genre, language, mood, tempo
-    listen_seconds = how long they actually listened before moving on.
-    """
-    profile = get_taste_profile(user_id)
-
+    profile  = get_taste_profile(user_id)
     song_id  = song.get("song_id") or song.get("id", "")
     artist   = song.get("artist", "Unknown")
     genre    = song.get("genre", "")
@@ -83,16 +76,11 @@ def on_song_played(user_id: str, song: dict, listen_seconds: int = 60):
     tempo    = song.get("tempo", "")
     duration = int(song.get("duration") or 180)
 
-    # Only count as a real play if they listened to > 30 % of the song
     real_play = listen_seconds >= max(30, duration * 0.30)
 
     if real_play:
         profile["total_plays"] += 1
-
-        # Artist weight
         profile["artists"][artist] = profile["artists"].get(artist, 0) + 1
-
-        # Genre, language, mood, tempo
         if genre:
             profile["genres"][genre] = profile["genres"].get(genre, 0) + 1
         if language:
@@ -101,8 +89,6 @@ def on_song_played(user_id: str, song: dict, listen_seconds: int = 60):
             profile["moods"][mood] = profile["moods"].get(mood, 0) + 1
         if tempo:
             profile["tempo"][tempo] = profile["tempo"].get(tempo, 0) + 1
-
-        # Per-song play count
         if song_id:
             profile["played_songs"][song_id] = profile["played_songs"].get(song_id, 0) + 1
 
@@ -111,12 +97,7 @@ def on_song_played(user_id: str, song: dict, listen_seconds: int = 60):
 
 
 def on_song_skipped(user_id: str, song: dict, listen_seconds: int = 5):
-    """
-    Call when user skips a song.
-    Songs skipped in < 10 s are recorded as strong dislikes.
-    """
     profile = get_taste_profile(user_id)
-
     song_id = song.get("song_id") or song.get("id", "")
     profile["total_skips"] += 1
 
@@ -124,19 +105,14 @@ def on_song_skipped(user_id: str, song: dict, listen_seconds: int = 5):
         skipped = profile.get("skipped_songs", [])
         if song_id not in skipped:
             skipped.append(song_id)
-        profile["skipped_songs"] = skipped[-200:]   # keep last 200
+        profile["skipped_songs"] = skipped[-200:]
 
     _save_profile(user_id, profile)
     return {"success": True}
 
 
 def on_song_liked(user_id: str, song: dict):
-    """
-    Call when user taps ❤️ or adds to playlist.
-    Gives a big positive boost to all attributes of this song.
-    """
-    profile = get_taste_profile(user_id)
-
+    profile  = get_taste_profile(user_id)
     song_id  = song.get("song_id") or song.get("id", "")
     artist   = song.get("artist", "Unknown")
     genre    = song.get("genre", "")
@@ -144,7 +120,7 @@ def on_song_liked(user_id: str, song: dict):
     mood     = song.get("mood", "")
     tempo    = song.get("tempo", "")
 
-    LIKE_BOOST = 5   # a like counts as 5 plays worth of signal
+    LIKE_BOOST = 5
 
     profile["artists"][artist] = profile["artists"].get(artist, 0) + LIKE_BOOST
     if genre:
@@ -170,7 +146,6 @@ def on_song_liked(user_id: str, song: dict):
 # ═══════════════════════════════════════════════════════════════
 
 def get_top_artists(user_id: str, limit: int = 10) -> list:
-    """Return [(artist_name, score), ...] sorted by score."""
     profile = get_taste_profile(user_id)
     artists = profile.get("artists", {})
     return sorted(artists.items(), key=lambda x: x[1], reverse=True)[:limit]
@@ -178,20 +153,19 @@ def get_top_artists(user_id: str, limit: int = 10) -> list:
 
 def get_top_genres(user_id: str, limit: int = 5) -> list:
     profile = get_taste_profile(user_id)
-    genres = profile.get("genres", {})
+    genres  = profile.get("genres", {})
     return sorted(genres.items(), key=lambda x: x[1], reverse=True)[:limit]
 
 
 def get_top_languages(user_id: str, limit: int = 5) -> list:
-    profile = get_taste_profile(user_id)
-    langs = profile.get("languages", {})
+    profile  = get_taste_profile(user_id)
+    langs    = profile.get("languages", {})
     return sorted(langs.items(), key=lambda x: x[1], reverse=True)[:limit]
 
 
 def get_preferred_mood(user_id: str) -> str:
-    """Return the mood the user listens to most."""
     profile = get_taste_profile(user_id)
-    moods = profile.get("moods", {})
+    moods   = profile.get("moods", {})
     if not moods:
         return "happy"
     return max(moods, key=moods.get)
@@ -199,14 +173,13 @@ def get_preferred_mood(user_id: str) -> str:
 
 def get_preferred_tempo(user_id: str) -> str:
     profile = get_taste_profile(user_id)
-    tempos = profile.get("tempo", {})
+    tempos  = profile.get("tempo", {})
     if not tempos:
         return "medium"
     return max(tempos, key=tempos.get)
 
 
 def get_disliked_songs(user_id: str) -> list:
-    """Songs the user repeatedly skips — avoid suggesting these."""
     profile = get_taste_profile(user_id)
     return profile.get("skipped_songs", [])
 
@@ -217,7 +190,6 @@ def get_liked_songs(user_id: str) -> list:
 
 
 def get_full_taste_summary(user_id: str) -> dict:
-    """One call to get everything useful for suggestions."""
     return {
         "top_artists":     get_top_artists(user_id, 10),
         "top_genres":      get_top_genres(user_id, 5),
@@ -228,3 +200,4 @@ def get_full_taste_summary(user_id: str) -> dict:
         "disliked_songs":  get_disliked_songs(user_id),
         "total_plays":     get_taste_profile(user_id).get("total_plays", 0),
     }
+    
