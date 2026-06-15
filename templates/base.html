@@ -178,17 +178,23 @@
         }
         .nav-queue-badge.show { display: flex; }
 
-        /* Swipe-up pill on mini bar */
+        /* Swipe-up arrow on mini bar */
         .music-bar-swipe-pill {
             position: absolute;
             top: 5px;
             left: 50%;
             transform: translateX(-50%);
-            width: 36px;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.22);
+            width: auto;
+            height: auto;
+            background: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             pointer-events: none;
+        }
+        .music-bar-swipe-pill i {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
         }
 
         /* Hide notification bell + injected arrow from mini bar */
@@ -220,8 +226,10 @@
 
     <!-- Bottom Mini Music Bar -->
     <div class="music-bar hidden" id="musicBar">
-        <!-- Swipe-up indicator pill at very top of bar -->
-        <div class="music-bar-swipe-pill" id="musicBarSwipePill"></div>
+        <!-- ↑ Swipe-up arrow indicator at very top of bar -->
+        <div class="music-bar-swipe-pill" id="musicBarSwipePill">
+            <i class="fas fa-chevron-up"></i>
+        </div>
         <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
         </div>
@@ -247,9 +255,10 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav">
+        <!-- CHANGED: fa-play-circle → fa-home, label Play → Home -->
         <a href="/home" class="nav-item" data-tab="play">
-            <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
-            <span class="nav-label">Play</span>
+            <div class="nav-icon"><i class="fas fa-home"></i></div>
+            <span class="nav-label">Home</span>
         </a>
         <a href="/search" class="nav-item" data-tab="search">
             <div class="nav-icon"><i class="fas fa-search"></i></div>
@@ -355,4 +364,4 @@
     {% block extra_js %}{% endblock %}
 </body>
     </html>
-        
+
