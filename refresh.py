@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, session
 
 import database as db
-from trackuser import on_song_skipped, on_song_played, get_disliked_songs
+from user.trackuser import on_song_skipped, on_song_played, get_disliked_songs
 
 refresh_bp = Blueprint("refresh", __name__)
 
@@ -199,4 +199,4 @@ def api_song_played():
         "played_at": datetime.now(timezone.utc).isoformat(),
     })
     return jsonify({"success": True})
-  
+        
