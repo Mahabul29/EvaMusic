@@ -266,23 +266,11 @@ function playSong(id, songData) {
     const row = document.getElementById(`row-${id}`);
     if (row) row.classList.add('playing');
 
-    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
-    document.getElementById('musicBarTitle').textContent = songData.title;
-    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
-    document.getElementById('musicBar').classList.remove('hidden');
-
-    const playIcon = document.getElementById('musicBarPlayIcon');
-    if (playIcon) {
-        playIcon.classList.remove('fa-play');
-        playIcon.classList.add('fa-pause');
+    // Delegate to the real player — this sets the audio src, fetches a
+    // fresh URL if needed, updates the bar/overlay UI, and starts playback.
+    if (window.player && typeof window.player.playSong === 'function') {
+        window.player.playSong(id, songData);
     }
-
-    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
-        window.EvaPlayer.play(songData);
-    }
-
-    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-    showToast(`Now playing: ${songData.title}`, 'success');
 }
 
 function playAll() {
@@ -291,10 +279,11 @@ function playAll() {
         showToast('No playable songs', 'error');
         return;
     }
-    playSong(playable[0].id, playable[0]);
-    if (window.EvaPlayer && typeof window.EvaPlayer.setQueue === 'function') {
-        window.EvaPlayer.setQueue(playable);
+    if (window.player) {
+        window.player.queue = playable;
+        window.player.currentIndex = 0;
     }
+    playSong(playable[0].id, playable[0]);
     showToast(`Playing ${playable.length} songs`, 'success');
 }
 
@@ -305,10 +294,11 @@ function playShuffle() {
         return;
     }
     const shuffled = [...playable].sort(() => Math.random() - 0.5);
-    playSong(shuffled[0].id, shuffled[0]);
-    if (window.EvaPlayer && typeof window.EvaPlayer.setQueue === 'function') {
-        window.EvaPlayer.setQueue(shuffled);
+    if (window.player) {
+        window.player.queue = shuffled;
+        window.player.currentIndex = 0;
     }
+    playSong(shuffled[0].id, shuffled[0]);
     showToast(`Shuffling ${shuffled.length} songs`, 'success');
 }
 
@@ -391,3 +381,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
