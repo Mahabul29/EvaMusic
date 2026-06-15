@@ -97,18 +97,17 @@ def _add_to_usuals(user_id: str, song_info: dict):
     if user_id not in usuals:
         usuals[user_id] = []
 
-    # Check if already in usuals
     existing_ids = {s.get("song_id") for s in usuals[user_id]}
     song_id = song_info.get("song_id", "")
 
     if song_id not in existing_ids:
         usuals[user_id].append({
-            "song_id": song_id,
-            "title": song_info.get("title", "Unknown"),
-            "artist": song_info.get("artist", "Unknown"),
+            "song_id":   song_id,
+            "title":     song_info.get("title", "Unknown"),
+            "artist":    song_info.get("artist", "Unknown"),
             "image_url": song_info.get("image_url", ""),
-            "language": song_info.get("language", "hindi"),
-            "added_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "language":  song_info.get("language", "hindi"),
+            "added_at":  __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
             "play_count": song_info.get("count", 5),
         })
         db._save("usuals", usuals)
@@ -120,15 +119,14 @@ def _add_to_trending_artists(user_id: str, artist_info: dict):
     if user_id not in trending:
         trending[user_id] = []
 
-    # Check if already in trending
     existing_ids = {a.get("name", "").lower() for a in trending[user_id]}
     artist_name = artist_info.get("name", "").lower()
 
     if artist_name not in existing_ids:
         trending[user_id].append({
-            "name": artist_info.get("name", "Unknown"),
+            "name":      artist_info.get("name", "Unknown"),
             "image_url": artist_info.get("image_url", ""),
-            "added_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "added_at":  __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
             "play_count": artist_info.get("count", 5),
         })
         db._save("trending_artists", trending)
@@ -142,8 +140,6 @@ def get_usuals(user_id: str, limit: int = 10):
     """Get songs that user has played > 5 times."""
     usuals = db._load("usuals")
     user_usuals = usuals.get(user_id, [])
-
-    # Sort by play count (highest first)
     user_usuals.sort(key=lambda x: x.get("play_count", 0), reverse=True)
     return user_usuals[:limit]
 
@@ -152,8 +148,6 @@ def get_trending_artists_for_user(user_id: str, limit: int = 10):
     """Get artists that user has played > 5 times."""
     trending = db._load("trending_artists")
     user_trending = trending.get(user_id, [])
-
-    # Sort by play count (highest first)
     user_trending.sort(key=lambda x: x.get("play_count", 0), reverse=True)
     return user_trending[:limit]
 
@@ -166,8 +160,6 @@ def get_top_played_songs(user_id: str, limit: int = 20):
     """Get most played songs by play count."""
     plays = db._load("play_counts")
     user_plays = plays.get(user_id, {})
-
-    # Sort by count
     sorted_songs = sorted(
         user_plays.values(),
         key=lambda x: x.get("count", 0),
@@ -180,8 +172,6 @@ def get_top_played_artists(user_id: str, limit: int = 10):
     """Get most played artists by play count."""
     artist_plays = db._load("artist_play_counts")
     user_artists = artist_plays.get(user_id, {})
-
-    # Sort by count
     sorted_artists = sorted(
         user_artists.values(),
         key=lambda x: x.get("count", 0),
@@ -196,20 +186,18 @@ def get_top_played_artists(user_id: str, limit: int = 10):
 
 def get_full_taste_summary(user_id: str) -> dict:
     """Complete taste profile including play counts."""
-    # Get existing taste data
     taste = _get_base_taste(user_id)
 
-    # Add play count data
-    top_songs = get_top_played_songs(user_id, 10)
-    top_artists = get_top_played_artists(user_id, 10)
-    usuals = get_usuals(user_id, 10)
+    top_songs        = get_top_played_songs(user_id, 10)
+    top_artists      = get_top_played_artists(user_id, 10)
+    usuals           = get_usuals(user_id, 10)
     trending_artists = get_trending_artists_for_user(user_id, 10)
 
-    taste["top_played_songs"] = top_songs
-    taste["top_played_artists"] = top_artists
-    taste["usuals"] = usuals
-    taste["trending_artists"] = trending_artists
-    taste["total_plays"] = sum(s.get("count", 0) for s in top_songs)
+    taste["top_played_songs"]    = top_songs
+    taste["top_played_artists"]  = top_artists
+    taste["usuals"]              = usuals
+    taste["trending_artists"]    = trending_artists
+    taste["total_plays"]         = sum(s.get("count", 0) for s in top_songs)
 
     return taste
 
@@ -218,12 +206,11 @@ def _get_base_taste(user_id: str) -> dict:
     """Get base taste from existing database."""
     try:
         favorites = db.get_user_favorites(user_id)
-        history = db.get_recently_played(user_id, 50)
+        history   = db.get_recently_played(user_id, 50)
 
-        # Count artists
         artist_counter = Counter()
-        genre_counter = Counter()
-        lang_counter = Counter()
+        genre_counter  = Counter()
+        lang_counter   = Counter()
 
         for item in favorites + history:
             artist = item.get("artist", "")
@@ -241,23 +228,73 @@ def _get_base_taste(user_id: str) -> dict:
                 lang_counter[lang] += 1
 
         return {
-            "top_artists": artist_counter.most_common(10),
-            "top_genres": genre_counter.most_common(5),
-            "top_languages": lang_counter.most_common(5),
-            "total_plays": len(history),
-            "liked_songs": [f.get("song_id") for f in favorites],
+            "top_artists":    artist_counter.most_common(10),
+            "top_genres":     genre_counter.most_common(5),
+            "top_languages":  lang_counter.most_common(5),
+            "total_plays":    len(history),
+            "liked_songs":    [f.get("song_id") for f in favorites],
             "disliked_songs": [],
         }
     except Exception as e:
         print(f"[TASTE ERROR] {e}")
         return {
-            "top_artists": [],
-            "top_genres": [],
-            "top_languages": [],
-            "total_plays": 0,
-            "liked_songs": [],
+            "top_artists":    [],
+            "top_genres":     [],
+            "top_languages":  [],
+            "total_plays":    0,
+            "liked_songs":    [],
             "disliked_songs": [],
         }
+
+
+# ═══════════════════════════════════════════════════════════════
+# SKIP & PLAYED TRACKING
+# ═══════════════════════════════════════════════════════════════
+
+def on_song_skipped(user_id: str, song_data: dict, listen_seconds: int = 3):
+    """
+    Called when a user skips a song.
+    Short listens (< 10s) are logged but don't count as a play.
+    """
+    if not user_id:
+        return
+
+    song_id = song_data.get("song_id") or song_data.get("id", "")
+    if not song_id:
+        return
+
+    skips = db._load("song_skips")
+    if user_id not in skips:
+        skips[user_id] = {}
+
+    if song_id not in skips[user_id]:
+        skips[user_id][song_id] = {
+            "count":      0,
+            "title":      song_data.get("title", "Unknown"),
+            "artist":     song_data.get("artist", "Unknown"),
+        }
+
+    skips[user_id][song_id]["count"] += 1
+    skips[user_id][song_id]["last_listen_seconds"] = listen_seconds
+    db._save("song_skips", skips)
+
+    print(f"[TRACKER] Skipped '{song_data.get('title', song_id)}' after {listen_seconds}s "
+          f"(total skips: {skips[user_id][song_id]['count']})")
+
+
+def on_song_played(user_id: str, song_data: dict, listen_seconds: int = 60):
+    """
+    Called when a song finishes or plays long enough to count.
+    Delegates to record_play so all play-count logic stays in one place.
+    """
+    if not user_id:
+        return
+
+    # Only count as a real play if the user listened for at least 15 seconds
+    if listen_seconds < 15:
+        return
+
+    record_play(user_id, song_data)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -286,3 +323,4 @@ def get_disliked_songs(user_id: str):
 def get_preferred_mood(user_id: str):
     """Get user's preferred mood."""
     return "happy"
+  
