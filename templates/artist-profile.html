@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Artist Profile — EvaMusic</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #181818;
+  --surface2: #222;
+  --border: #2a2a2a;
+  --accent: #1DB954;
+  --accent2: #1ed760;
+  --red: #ff4757;
+  --text: #fff;
+  --muted: #888;
+  --dim: #555;
+  --player-h: 64px;
+  --nav-h: 60px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: calc(var(--player-h) + var(--nav-h));
+  overflow-x: hidden;
+}
+
+/* ── Back header ── */
+.back-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  background: rgba(14,14,14,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s;
+}
+.back-header.scrolled { border-color: var(--border); }
+.back-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: none; color: var(--text);
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.back-btn:active { background: #333; }
+.back-title {
+  font-size: 16px; font-weight: 700;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transition: opacity 0.3s;
+}
+.back-title.visible { opacity: 1; }
+
+/* ── Hero banner ── */
+.hero {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0a2e18 0%, #1a1a2e 50%, #16213e 100%);
+}
+.hero-bg-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  filter: blur(2px);
+}
+.hero-fade {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 160px;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+}
+.hero-content {
+  position: absolute;
+  bottom: 24px; left: 20px; right: 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+.hero-avatar {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  flex-shrink: 0;
+  box-shadow: 0 8px 32px rgba(29,185,84,0.4);
+}
+.hero-text { flex: 1; min-width: 0; }
+.hero-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.hero-name {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hero-genre {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── Stats strip ── */
+.stats-strip {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0 20px;
+}
+.stat {
+  flex: 1;
+  padding: 16px 0;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.stat:last-child { border-right: none; }
+.stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+}
+.stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ── Action row ── */
+.actions {
+  display: flex;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  align-items: center;
+}
+.btn-play-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+  letter-spacing: 0.2px;
+}
+.btn-play-all:active { transform: scale(0.95); background: var(--accent2); }
+.btn-shuffle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.btn-shuffle:active { transform: scale(0.95); border-color: var(--accent); color: var(--accent); }
+.btn-follow {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-follow.following {
+  background: var(--accent);
+  color: #000;
+}
+.btn-follow:active { transform: scale(0.95); }
+
+/* ── Section heading ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 12px;
+}
+.section-head h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.section-head span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Song rows ── */
+.songs-list { padding: 0 12px 8px; }
+.song-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+  position: relative;
+}
+.song-row:hover,
+.song-row:active { background: var(--surface2); }
+.song-row.playing { background: rgba(29,185,84,0.07); }
+.song-row.playing .song-num { color: var(--accent); }
+.song-row.playing .song-title { color: var(--accent); }
+.song-num {
+  width: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dim);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.song-thumb {
+  width: 50px; height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.song-info { flex: 1; min-width: 0; }
+.song-title {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+.song-album {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.song-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.song-dur {
+  font-size: 12px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+.btn-heart {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, transform 0.15s;
+}
+.btn-heart:hover { color: var(--red); }
+.btn-heart.liked { color: var(--red); }
+.btn-heart:active { transform: scale(1.3); }
+
+/* Trending badge */
+.song-row[data-rank="1"] .song-num::before,
+.song-row[data-rank="2"] .song-num::before,
+.song-row[data-rank="3"] .song-num::before {
+  content: '';
+  position: absolute;
+  left: 10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 28px;
+  border-radius: 2px;
+}
+.song-row[data-rank="1"] .song-num::before { background: #FFD700; }
+.song-row[data-rank="2"] .song-num::before { background: #C0C0C0; }
+.song-row[data-rank="3"] .song-num::before { background: #CD7F32; }
+
+/* ── Albums strip ── */
+.albums-row {
+  display: flex;
+  gap: 14px;
+  padding: 0 20px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.albums-row::-webkit-scrollbar { display: none; }
+.album-card {
+  flex: 0 0 auto;
+  width: 130px;
+  cursor: pointer;
+}
+.album-thumb {
+  width: 130px; height: 130px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 8px;
+  transition: transform 0.2s;
+}
+.album-card:active .album-thumb { transform: scale(0.95); }
+.album-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.album-year {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Bio card ── */
+.bio-card {
+  margin: 8px 20px 20px;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+}
+.bio-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.bio-head i { color: var(--accent); font-size: 16px; }
+.bio-head span { font-size: 14px; font-weight: 700; }
+.bio-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.bio-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.bio-tag {
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ── Now playing bar ── */
+.music-bar {
+  position: fixed;
+  bottom: var(--nav-h);
+  left: 0; right: 0;
+  height: var(--player-h);
+  background: #1a1a1a;
+  border-top: 1px solid #282828;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  z-index: 300;
+}
+.bar-progress {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #2a2a2a;
+  cursor: pointer;
+}
+.bar-fill {
+  height: 100%;
+  width: 42%;
+  background: var(--accent);
+}
+.bar-thumb {
+  width: 44px; height: 44px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.bar-info { flex: 1; min-width: 0; }
+.bar-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-artist { font-size: 11px; color: var(--muted); }
+.bar-btns { display: flex; gap: 16px; flex-shrink: 0; }
+.bar-btn {
+  background: none; border: none;
+  color: var(--text); font-size: 18px;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.bar-btn.play { font-size: 22px; color: var(--accent); }
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: #141414;
+  border-top: 1px solid #1f1f1f;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 200;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 20px; line-height: 1; }
+.nav-label { font-size: 10px; font-weight: 500; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 140px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  background: #333;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Playing animation dots ── */
+.playing-dots {
+  display: none;
+  gap: 2px;
+  align-items: flex-end;
+  height: 14px;
+}
+.song-row.playing .playing-dots { display: flex; }
+.song-row.playing .song-num-plain { display: none; }
+.playing-dots span {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: bounce 0.8s ease infinite;
+}
+.playing-dots span:nth-child(1) { height: 8px; animation-delay: 0s; }
+.playing-dots span:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+.playing-dots span:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+@keyframes bounce {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+</style>
+</head>
+<body>
+
+<!-- Back header -->
+<div class="back-header" id="backHeader">
+  <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+  <div class="back-title" id="backTitle">Arijit Singh</div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <img class="hero-bg-img"
+       src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80"
+       alt="Artist background" onerror="this.style.display='none'">
+  <div class="hero-fade"></div>
+  <div class="hero-content">
+    <img class="hero-avatar"
+         src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&q=80"
+         alt="Arijit Singh" onerror="this.src='/static/images/default-album.png'">
+    <div class="hero-text">
+      <div class="hero-verified">
+        <i class="fas fa-check-circle"></i> Verified Artist
+      </div>
+      <div class="hero-name">Arijit Singh</div>
+      <div class="hero-genre">Bollywood · Romantic · Soul</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-strip">
+  <div class="stat">
+    <div class="stat-value">48.2M</div>
+    <div class="stat-label">Monthly</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">342</div>
+    <div class="stat-label">Songs</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">12.4M</div>
+    <div class="stat-label">Followers</div>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="actions">
+  <button class="btn-play-all" onclick="playAll()">
+    <i class="fas fa-play"></i> Play All
+  </button>
+  <button class="btn-shuffle" onclick="playShuffle()">
+    <i class="fas fa-random"></i> Shuffle
+  </button>
+  <button class="btn-follow" id="followBtn" onclick="toggleFollow(this)">
+    <i class="fas fa-plus"></i> Follow
+  </button>
+</div>
+
+<!-- Popular Songs -->
+<div class="section-head">
+  <h2>Popular</h2>
+  <span>10 tracks</span>
+</div>
+
+<div class="songs-list" id="songsList">
+
+  <!-- Song rows -->
+  <div class="song-row playing" data-rank="1" onclick="selectSong(this, 1)">
+    <div class="song-num">
+      <span class="song-num-plain">1</span>
+      <div class="playing-dots"><span></span><span></span><span></span></div>
+    </div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c19?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Tum Hi Ho</div>
+      <div class="song-album">Aashiqui 2 · 2013</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart liked" onclick="event.stopPropagation(); toggleHeart(this)"><i class="fas fa-heart"></i></button>
+      <div class="song-dur">4:22</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="2" onclick="selectSong(this, 2)">
+    <div class="song-num">
+      <span class="song-num-plain">2</span>
+      <div class="playing-dots"><span></span><span></span><span></span></div>
+    </div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Channa Mereya</div>
+      <div class="song-album">Ae Dil Hai Mushkil · 2016</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">4:49</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="3" onclick="selectSong(this, 3)">
+    <div class="song-num">
+      <span class="song-num-plain">3</span>
+      <div class="playing-dots"><span></span><span></span><span></span></div>
+    </div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Raabta</div>
+      <div class="song-album">Agent Sai Srinivas · 2015</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">3:58</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="4" onclick="selectSong(this, 4)">
+    <div class="song-num"><span class="song-num-plain">4</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Dilbaro</div>
+      <div class="song-album">Raazi · 2018</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">5:01</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="5" onclick="selectSong(this, 5)">
+    <div class="song-num"><span class="song-num-plain">5</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1508700929628-666bc8bd84ea?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Kalank Title Track</div>
+      <div class="song-album">Kalank · 2019</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart liked" onclick="event.stopPropagation(); toggleHeart(this)"><i class="fas fa-heart"></i></button>
+      <div class="song-dur">5:32</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="6" onclick="selectSong(this, 6)">
+    <div class="song-num"><span class="song-num-plain">6</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1619983081563-430f63602796?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Agar Tum Saath Ho</div>
+      <div class="song-album">Tamasha · 2015</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">5:41</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="7" onclick="selectSong(this, 7)">
+    <div class="song-num"><span class="song-num-plain">7</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1528489496900-d841974f5290?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Phir Le Aya Dil</div>
+      <div class="song-album">Barfi! · 2012</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">4:17</div>
+    </div>
+  </div>
+
+  <div class="song-row" data-rank="8" onclick="selectSong(this, 8)">
+    <div class="song-num"><span class="song-num-plain">8</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Gerua</div>
+      <div class="song-album">Dilwale · 2015</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">4:31</div>
+    </div>
+  </div>
+
+  <div class="song-row" onclick="selectSong(this, 9)">
+    <div class="song-num"><span class="song-num-plain">9</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1506157786151-b8491531f063?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Ae Dil Hai Mushkil</div>
+      <div class="song-album">Ae Dil Hai Mushkil · 2016</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">4:56</div>
+    </div>
+  </div>
+
+  <div class="song-row" onclick="selectSong(this, 10)">
+    <div class="song-num"><span class="song-num-plain">10</span><div class="playing-dots"><span></span><span></span><span></span></div></div>
+    <img class="song-thumb" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="song-info">
+      <div class="song-title">Soulmate</div>
+      <div class="song-album">Single · 2021</div>
+    </div>
+    <div class="song-meta">
+      <button class="btn-heart" onclick="event.stopPropagation(); toggleHeart(this)"><i class="far fa-heart"></i></button>
+      <div class="song-dur">3:44</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Albums -->
+<div class="section-head" style="padding-top:20px">
+  <h2>Albums</h2>
+  <span>See all</span>
+</div>
+<div class="albums-row">
+  <div class="album-card">
+    <img class="album-thumb" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c19?w=200&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="album-title">Aashiqui 2</div>
+    <div class="album-year">2013 · Soundtrack</div>
+  </div>
+  <div class="album-card">
+    <img class="album-thumb" src="https://images.unsplash.com/photo-1506157786151-b8491531f063?w=200&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="album-title">Ae Dil Hai Mushkil</div>
+    <div class="album-year">2016 · Soundtrack</div>
+  </div>
+  <div class="album-card">
+    <img class="album-thumb" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="album-title">Tamasha</div>
+    <div class="album-year">2015 · Soundtrack</div>
+  </div>
+  <div class="album-card">
+    <img class="album-thumb" src="https://images.unsplash.com/photo-1619983081563-430f63602796?w=200&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="album-title">Kalank</div>
+    <div class="album-year">2019 · Soundtrack</div>
+  </div>
+  <div class="album-card">
+    <img class="album-thumb" src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=200&q=80" alt="" onerror="this.src='/static/images/default-album.png'">
+    <div class="album-title">Raazi</div>
+    <div class="album-year">2018 · Soundtrack</div>
+  </div>
+</div>
+
+<!-- Bio -->
+<div class="section-head" style="padding-top:20px">
+  <h2>About</h2>
+</div>
+<div class="bio-card">
+  <div class="bio-head">
+    <i class="fas fa-user-circle"></i>
+    <span>Artist Bio</span>
+  </div>
+  <div class="bio-text">
+    Arijit Singh is one of India's most celebrated playback singers, known for his soulful voice and emotive delivery. With over a decade in the industry, he has lent his voice to hundreds of Bollywood hits and become the defining sound of modern Hindi romantic music.
+  </div>
+  <div class="bio-tags">
+    <span class="bio-tag">Bollywood</span>
+    <span class="bio-tag">Romantic</span>
+    <span class="bio-tag">Hindi</span>
+    <span class="bio-tag">Bengali</span>
+    <span class="bio-tag">Ghazal</span>
+    <span class="bio-tag">Sufi</span>
+  </div>
+</div>
+
+<!-- Music bar -->
+<div class="music-bar" id="musicBar">
+  <div class="bar-progress"><div class="bar-fill" id="barFill"></div></div>
+  <img class="bar-thumb" id="barThumb"
+       src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c19?w=100&q=80" alt="">
+  <div class="bar-info">
+    <div class="bar-title" id="barTitle">Tum Hi Ho</div>
+    <div class="bar-artist" id="barArtist">Arijit Singh</div>
+  </div>
+  <div class="bar-btns">
+    <button class="bar-btn"><i class="fas fa-step-backward"></i></button>
+    <button class="bar-btn play" id="playBtn" onclick="togglePlay()">
+      <i class="fas fa-pause" id="playIcon"></i>
+    </button>
+    <button class="bar-btn"><i class="fas fa-step-forward"></i></button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <a href="#" class="nav-item active">
+    <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
+    <span class="nav-label">Play</span>
+  </a>
+  <a href="#" class="nav-item">
+    <div class="nav-icon"><i class="fas fa-search"></i></div>
+    <span class="nav-label">Search</span>
+  </a>
+  <a href="#" class="nav-item">
+    <div class="nav-icon"><i class="fas fa-user"></i></div>
+    <span class="nav-label">Profile</span>
+  </a>
+  <a href="#" class="nav-item">
+    <div class="nav-icon"><i class="fas fa-cog"></i></div>
+    <span class="nav-label">Settings</span>
+  </a>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+let isPlaying = true;
+let currentRow = document.querySelector('.song-row.playing');
+let isFollowing = false;
+
+// ── Back header scroll reveal ──
+const backHeader = document.getElementById('backHeader');
+const backTitle  = document.getElementById('backTitle');
+window.addEventListener('scroll', function() {
+  const scrolled = window.scrollY > 160;
+  backHeader.classList.toggle('scrolled', scrolled);
+  backTitle.classList.toggle('visible', scrolled);
+}, { passive: true });
+
+// ── Song selection ──
+function selectSong(row, num) {
+  if (currentRow) currentRow.classList.remove('playing');
+  row.classList.add('playing');
+  currentRow = row;
+
+  const title  = row.querySelector('.song-title').textContent;
+  const album  = row.querySelector('.song-album').textContent;
+  const thumb  = row.querySelector('.song-thumb').src;
+
+  document.getElementById('barTitle').textContent  = title;
+  document.getElementById('barArtist').textContent = album.split('·')[0].trim();
+  document.getElementById('barThumb').src          = thumb;
+
+  isPlaying = true;
+  document.getElementById('playIcon').className = 'fas fa-pause';
+  document.getElementById('barFill').style.width = '0%';
+  animateProgress();
+
+  showToast('Now playing: ' + title);
+}
+
+// ── Play / pause ──
+function togglePlay() {
+  isPlaying = !isPlaying;
+  document.getElementById('playIcon').className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+}
+
+function playAll() {
+  selectSong(document.querySelector('.song-row[data-rank="1"]'), 1);
+  showToast('Playing all songs');
+}
+function playShuffle() {
+  const rows = document.querySelectorAll('.song-row');
+  const rand = rows[Math.floor(Math.random() * rows.length)];
+  rand.click();
+  showToast('Shuffling songs');
+}
+
+// ── Follow ──
+function toggleFollow(btn) {
+  isFollowing = !isFollowing;
+  if (isFollowing) {
+    btn.innerHTML = '<i class="fas fa-check"></i> Following';
+    btn.classList.add('following');
+    showToast('Following Arijit Singh');
+  } else {
+    btn.innerHTML = '<i class="fas fa-plus"></i> Follow';
+    btn.classList.remove('following');
+    showToast('Unfollowed');
+  }
+}
+
+// ── Heart ──
+function toggleHeart(btn) {
+  btn.classList.toggle('liked');
+  const icon = btn.querySelector('i');
+  if (btn.classList.contains('liked')) {
+    icon.className = 'fas fa-heart';
+    btn.style.transform = 'scale(1.4)';
+    setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    showToast('❤️ Added to favorites');
+  } else {
+    icon.className = 'far fa-heart';
+    showToast('💔 Removed from favorites');
+  }
+}
+
+// ── Progress sim ──
+let prog = 0, rafId;
+function animateProgress() {
+  cancelAnimationFrame(rafId);
+  prog = 0;
+  function tick() {
+    if (!isPlaying) { rafId = requestAnimationFrame(tick); return; }
+    prog += 0.015;
+    if (prog > 100) prog = 0;
+    document.getElementById('barFill').style.width = prog + '%';
+    rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+animateProgress();
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
