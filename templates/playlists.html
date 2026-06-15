@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header { padding: 20px; text-align: center; }
+.page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.page-header p { color: var(--text-secondary); font-size: 14px; }
+
+.create-btn-wrap { padding: 0 16px 16px; }
+.create-btn {
+    width: 100%; padding: 14px; background: var(--accent-color);
+    border: none; border-radius: 12px; color: #000;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.create-btn:active { opacity: 0.8; }
+
+.playlist-list { padding: 0 16px 80px; display: flex; flex-direction: column; gap: 10px; }
+.playlist-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--card-bg); border-radius: 12px;
+    padding: 14px; cursor: pointer; transition: transform 0.2s;
+}
+.playlist-item:active { transform: scale(0.98); }
+.playlist-cover {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-color), #0e7a34);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+}
+.playlist-info { flex: 1; min-width: 0; }
+.playlist-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.playlist-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.playlist-arrow { color: var(--text-secondary); font-size: 14px; }
+.delete-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: transparent; border: none; color: #ff4757;
+    font-size: 15px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+}
+.delete-btn:active { transform: scale(0.85); }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.empty-state i { font-size: 48px; margin-bottom: 16px; display: block; color: var(--accent-color); }
+.empty-state p { font-size: 15px; margin-bottom: 6px; }
+
+/* Create modal */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+    background: var(--card-bg); width: 100%; max-width: 600px;
+    border-radius: 20px 20px 0 0; padding: 20px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-sheet { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
+.modal-input {
+    width: 100%; padding: 14px 16px; background: var(--hover-bg);
+    border: 1.5px solid var(--border-color); border-radius: 12px;
+    color: var(--text-color); font-size: 15px; outline: none;
+    box-sizing: border-box; margin-bottom: 10px;
+}
+.modal-input:focus { border-color: var(--accent-color); }
+.modal-input::placeholder { color: var(--text-secondary); }
+.modal-submit {
+    width: 100%; padding: 14px; background: var(--accent-color);
+    border: none; border-radius: 12px; color: #000;
+    font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 4px;
+}
+.modal-submit:active { opacity: 0.8; }
+.modal-cancel {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: var(--hover-bg); border: none; border-radius: 12px;
+    color: var(--text-color); font-size: 16px; cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-list" style="color:var(--accent-color)"></i> My Playlists</h1>
+    <p id="playlistCount">{{ playlists|length }} playlist{% if playlists|length != 1 %}s{% endif %}</p>
+</div>
+
+<div class="create-btn-wrap">
+    <button class="create-btn" onclick="openCreateModal()">
+        <i class="fas fa-plus"></i> Create New Playlist
+    </button>
+</div>
+
+{% if playlists %}
+<div class="playlist-list" id="playlistList">
+    {% for pl in playlists %}
+    <div class="playlist-item" id="pl-{{ pl.playlist_id }}" onclick="location.href='/playlist/{{ pl.playlist_id }}'">
+        <div class="playlist-cover">🎵</div>
+        <div class="playlist-info">
+            <div class="playlist-name">{{ pl.name }}</div>
+            <div class="playlist-meta">{{ (pl.songs or [])|length }} song{% if (pl.songs or [])|length != 1 %}s{% endif %}</div>
+        </div>
+        <button class="delete-btn" onclick="deletePlaylist(event, '{{ pl.playlist_id }}')" title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+        <i class="fas fa-chevron-right playlist-arrow"></i>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" id="emptyState">
+    <i class="fas fa-music"></i>
+    <p>No playlists yet.</p>
+    <small>Create your first playlist above!</small>
+</div>
+{% endif %}
+
+<!-- Create Playlist Modal -->
+<div class="modal-overlay" id="createModal" onclick="closeCreateModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">New Playlist</div>
+        <input type="text" class="modal-input" id="playlistName" placeholder="Playlist name" maxlength="50">
+        <input type="text" class="modal-input" id="playlistDesc" placeholder="Description (optional)" maxlength="100">
+        <button class="modal-submit" onclick="createPlaylist()">
+            <i class="fas fa-plus"></i> Create
+        </button>
+        <button class="modal-cancel" onclick="closeCreateModal()">Cancel</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+    document.getElementById('playlistName').focus();
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCreateModal(e) {
+    if (!e || e.target.id === 'createModal') {
+        document.getElementById('createModal').classList.remove('active');
+        document.body.style.overflow = '';
+        document.getElementById('playlistName').value = '';
+        document.getElementById('playlistDesc').value = '';
+    }
+}
+
+async function createPlaylist() {
+    const name = document.getElementById('playlistName').value.trim();
+    const desc = document.getElementById('playlistDesc').value.trim();
+    if (!name) { showToast('Enter a playlist name', 'error'); return; }
+
+    try {
+        const res  = await fetch('/api/playlist/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description: desc })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Playlist created!', 'success');
+            closeCreateModal();
+            setTimeout(() => location.reload(), 600);
+        } else {
+            showToast(data.message || 'Failed', 'error');
+        }
+    } catch(e) {
+        showToast('Network error', 'error');
+    }
+}
+
+async function deletePlaylist(event, playlistId) {
+    event.stopPropagation();
+    if (!confirm('Delete this playlist?')) return;
+    try {
+        const res  = await fetch('/api/playlist/' + playlistId + '/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            const el = document.getElementById('pl-' + playlistId);
+            if (el) {
+                el.style.transition = 'all 0.3s';
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(40px)';
+                setTimeout(() => {
+                    el.remove();
+                    const count = document.querySelectorAll('.playlist-item').length;
+                    document.getElementById('playlistCount').textContent =
+                        count + ' playlist' + (count !== 1 ? 's' : '');
+                    if (count === 0) location.reload();
+                }, 300);
+            }
+            showToast('Playlist deleted', 'info');
+        } else {
+            showToast('Could not delete', 'error');
+        }
+    } catch(e) {
+        showToast('Network error', 'error');
+    }
+}
+
+// Enter key to create
+document.getElementById('playlistName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createPlaylist();
+});
+</script>
+{% endblock %}
