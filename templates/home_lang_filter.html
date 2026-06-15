@@ -1,0 +1,196 @@
+{{!-- ════════════════════════════════════════════════════
+     ADD THIS ENTIRE <script> BLOCK TO YOUR home.html
+     (paste just before the closing </body> tag)
+════════════════════════════════════════════════════ --}}
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MUSIC LANGUAGE FILTER  –  EvaMusic home.html
+// ═══════════════════════════════════════════════════════
+// HOW IT WORKS:
+//   1. On page load, reads saved language from localStorage.
+//   2. Sends it as ?lang=Hindi to your existing JioSaavn / API
+//      calls so the server returns the right language songs.
+//   3. Listens for changes made in Settings – no page reload
+//      needed; sections refresh automatically.
+//
+// REQUIREMENTS ON YOUR BACKEND:
+//   Your API endpoints (e.g. /api/trending, /api/artists,
+//   /api/recommendations) must accept a `lang` query param
+//   and forward it to JioSaavn.  Example:
+//     GET /api/trending?lang=Hindi
+//     GET /api/artists?lang=Hindi
+//   JioSaavn supports: hindi, english, punjabi, tamil,
+//   telugu, marathi, gujarati, bengali, kannada, malayalam,
+//   urdu  (lowercase).
+// ═══════════════════════════════════════════════════════
+
+const LangFilter = (() => {
+
+    // Map display name → JioSaavn API value
+    const LANG_MAP = {
+        'All':       null,          // no filter – show everything
+        'Hindi':     'hindi',
+        'English':   'english',
+        'Punjabi':   'punjabi',
+        'Tamil':     'tamil',
+        'Telugu':    'telugu',
+        'Marathi':   'marathi',
+        'Gujarati':  'gujarati',
+        'Bengali':   'bengali',
+        'Kannada':   'kannada',
+        'Malayalam': 'malayalam',
+        'Urdu':      'urdu',
+    };
+
+    function getSavedLang() {
+        try {
+            return JSON.parse(localStorage.getItem('evamusic_musicLanguage')) || 'All';
+        } catch { return 'All'; }
+    }
+
+    // Build query string – returns '' for All, '?lang=hindi' otherwise
+    function langParam(lang) {
+        const api = LANG_MAP[lang];
+        return api ? `?lang=${api}` : '';
+    }
+
+    // ── SECTION LOADERS ────────────────────────────────
+    // These call YOUR existing endpoints.
+    // Replace the fetch URLs with your real ones if different.
+
+    async function loadTrending(lang) {
+        const section = document.getElementById('section-trending');
+        if (!section) return;
+        try {
+            section.style.opacity = '0.4';
+            const res = await fetch(`/api/trending${langParam(lang)}`);
+            const data = await res.json();
+            renderSongCards(section, data.songs || data.data || []);
+        } catch (e) {
+            console.warn('Trending load failed', e);
+        } finally {
+            section.style.opacity = '1';
+        }
+    }
+
+    async function loadArtists(lang) {
+        const section = document.getElementById('section-artists');
+        if (!section) return;
+        try {
+            section.style.opacity = '0.4';
+            const res = await fetch(`/api/artists${langParam(lang)}`);
+            const data = await res.json();
+            renderArtistCards(section, data.artists || data.data || []);
+        } catch (e) {
+            console.warn('Artists load failed', e);
+        } finally {
+            section.style.opacity = '1';
+        }
+    }
+
+    async function loadRecommended(lang) {
+        const section = document.getElementById('section-recommended');
+        if (!section) return;
+        try {
+            section.style.opacity = '0.4';
+            const res = await fetch(`/api/recommendations${langParam(lang)}`);
+            const data = await res.json();
+            renderSongCards(section, data.songs || data.data || []);
+        } catch (e) {
+            console.warn('Recommendations load failed', e);
+        } finally {
+            section.style.opacity = '1';
+        }
+    }
+
+    // ── RENDERERS ──────────────────────────────────────
+    // These match the card HTML already in your home.html.
+    // Adjust the field names (song.title, song.image, etc.)
+    // to match what your API actually returns.
+
+    function renderSongCards(container, songs) {
+        if (!songs.length) return;
+        container.innerHTML = songs.map(song => `
+            <div class="song-card" onclick="playSong('${song.id}')">
+                <div class="song-thumb">
+                    <img src="${song.image || song.thumbnail || ''}" alt="${song.title || song.name}" loading="lazy">
+                    <button class="play-btn"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="song-info">
+                    <div class="song-title">${song.title || song.name}</div>
+                    <div class="song-artist">${song.artist || song.primaryArtists || ''}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderArtistCards(container, artists) {
+        if (!artists.length) return;
+        container.innerHTML = artists.map(a => `
+            <div class="artist-card" onclick="location.href='/artist/${a.id}'">
+                <div class="artist-image">
+                    <img src="${a.image || a.thumbnail || ''}" alt="${a.name}" loading="lazy">
+                </div>
+                <div class="artist-name">${a.name}</div>
+                <div class="artist-role">Trending</div>
+            </div>
+        `).join('');
+    }
+
+    // ── PUBLIC: apply language to all sections ─────────
+    function apply(lang) {
+        loadTrending(lang);
+        loadArtists(lang);
+        loadRecommended(lang);
+
+        // Update any visible language badge on the home page
+        const badge = document.getElementById('home-lang-badge');
+        if (badge) badge.textContent = lang === 'All' ? '' : lang;
+    }
+
+    // ── LISTEN for Settings changes (same browser) ─────
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'evamusic_langChanged') {
+            try {
+                const { lang } = JSON.parse(e.newValue);
+                apply(lang);
+            } catch {}
+        }
+    });
+
+    // ── INIT on page load ──────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        apply(getSavedLang());
+    });
+
+    return { apply, getSavedLang };
+})();
+</script>
+
+
+{{!-- ════════════════════════════════════════════════════
+     ADD THESE IDs TO YOUR EXISTING home.html SECTIONS
+     so the filter script can find and update them.
+
+     Find your existing trending section container and add:
+       id="section-trending"
+
+     Find your artists row container and add:
+       id="section-artists"
+
+     Find your "Your Usuals" / recommended container and add:
+       id="section-recommended"
+
+     EXAMPLE – your current HTML probably looks like:
+       <div class="songs-scroll-row">  ← add  id="section-trending"
+         <div class="song-card">…</div>
+       </div>
+
+     OPTIONAL – add a language badge near the section title:
+       <span id="home-lang-badge" style="
+           font-size:12px; color:var(--accent-color);
+           background:rgba(29,185,84,0.15); padding:2px 8px;
+           border-radius:10px; margin-left:8px;
+       "></span>
+════════════════════════════════════════════════════ --}}
