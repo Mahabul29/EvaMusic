@@ -178,25 +178,27 @@
         }
         .nav-queue-badge.show { display: flex; }
 
-        /* Bar up-arrow */
-        #evaBarArrow {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.07);
-            border: none;
-            color: rgba(255,255,255,0.6);
-            font-size: 13px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
-            transition: background 0.2s;
+        /* Swipe-up pill on mini bar */
+        .music-bar-swipe-pill {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.22);
+            pointer-events: none;
         }
-        #evaBarArrow:active { background: rgba(255,255,255,0.18); color: #fff; }
-        @keyframes evaPulse {
-            0%,100% { transform: translateY(0); opacity: 0.6; }
-            50%      { transform: translateY(-3px); opacity: 1; }
-        }
-        #evaBarArrow i { animation: evaPulse 2s ease-in-out infinite; }
+
+        /* Hide notification bell + injected arrow from mini bar */
+        #musicBar .notification-btn,
+        #musicBar [id*="notif"],
+        #musicBar [class*="notif"],
+        #musicBar .fa-bell,
+        #musicBar button[onclick*="notif"],
+        #musicBar button[onclick*="Notif"],
+        #evaBarArrow { display: none !important; }
     </style>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
@@ -218,6 +220,8 @@
 
     <!-- Bottom Mini Music Bar -->
     <div class="music-bar hidden" id="musicBar">
+        <!-- Swipe-up indicator pill at very top of bar -->
+        <div class="music-bar-swipe-pill" id="musicBarSwipePill"></div>
         <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
             <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
         </div>
@@ -228,11 +232,6 @@
             <div class="music-bar-title"  id="musicBarTitle">Select a song</div>
             <div class="music-bar-artist" id="musicBarArtist">-</div>
         </div>
-        <!-- Up arrow — opens full player sheet -->
-        <button id="evaBarArrow" title="Open player" onclick="window.EvaAnim&&window.EvaAnim.open()">
-            <i class="fas fa-chevron-up"></i>
-        </button>
-
         <div class="music-bar-btns">
             <button class="music-bar-btn" onclick="barPrev()" title="Previous">
                 <i class="fas fa-step-backward"></i>
@@ -273,6 +272,29 @@
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notification-panel.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/recommended-artists.js') }}"></script>
+
+    <script>
+    // Remove bell + arrow from mini bar — clean player bar
+    (function() {
+        function _cleanBar() {
+            const bar = document.getElementById('musicBar');
+            if (!bar) return;
+            // Remove any button containing fa-bell
+            bar.querySelectorAll('button, a').forEach(el => {
+                if (el.querySelector('.fa-bell') ||
+                    el.id === 'evaBarArrow' ||
+                    (el.onclick && el.onclick.toString().includes('notif'))) {
+                    el.remove();
+                }
+            });
+        }
+        // Run immediately + after a short delay (for dynamically injected elements)
+        document.addEventListener('DOMContentLoaded', _cleanBar);
+        setTimeout(_cleanBar, 500);
+        setTimeout(_cleanBar, 1500);
+    })();
+    </script>
 
     <script>
     // ── Sub-page back header logic ────────────────────────────────────────────
@@ -332,5 +354,5 @@
 
     {% block extra_js %}{% endblock %}
 </body>
-            </html>
-            
+    </html>
+        
