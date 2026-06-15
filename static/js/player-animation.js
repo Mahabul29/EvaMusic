@@ -28,7 +28,6 @@
   function init() {
     _injectStyles();
     _buildSheet();
-    _bindBarArrow();
     _bindSwipeOnBar();
     console.log('[EvaAnim] Pull-up animation engine ready');
   }
@@ -39,28 +38,11 @@
     const s = document.createElement('style');
     s.id = '__evaAnimStyles';
     s.textContent = `
-      /* ── Bar pull-up arrow ── */
-      #evaBarArrow {
-        width: 36px; height: 36px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.07);
-        border: none;
-        color: rgba(255,255,255,0.6);
-        font-size: 14px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        transition: background 0.2s, color 0.2s;
-        -webkit-tap-highlight-color: transparent;
+      /* ── Album art always square — never circular ── */
+      #npAlbumArt {
+        border-radius: 16px !important;
+        animation: none !important;
       }
-      #evaBarArrow:active { background: rgba(255,255,255,0.16); color: #fff; }
-
-      /* Arrow pulse animation */
-      @keyframes evaPulse {
-        0%, 100% { transform: translateY(0);   opacity: 0.6; }
-        50%       { transform: translateY(-3px); opacity: 1; }
-      }
-      #evaBarArrow i { animation: evaPulse 2s ease-in-out infinite; }
 
       /* ── Full-screen sheet wrapper ── */
       #evaPlayerSheet {
@@ -134,19 +116,6 @@
         animation: evaSheetBounce 0.45s ease forwards;
       }
 
-      /* Vinyl spin on album art inside overlay */
-      @keyframes evaSpin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
-      }
-      #npAlbumArt.spinning {
-        border-radius: 50% !important;
-        animation: evaSpin 8s linear infinite;
-      }
-      #npAlbumArt.paused-spin {
-        animation-play-state: paused;
-      }
-
       /* Wave bars in music bar when playing */
       .eva-wave {
         display: inline-flex;
@@ -201,39 +170,6 @@
     handle.addEventListener('mousedown',   _onDragStart);
 
     console.log('[EvaAnim] Sheet built');
-  }
-
-  // ── Add the ↑ arrow button to the existing music bar ────────
-  function _bindBarArrow() {
-    // Wait for the bar to exist (SPA may delay this)
-    const attempt = () => {
-      const bar = document.getElementById('musicBar');
-      if (!bar) { setTimeout(attempt, 200); return; }
-      if (document.getElementById('evaBarArrow')) return; // already added
-
-      const btn = document.createElement('button');
-      btn.id = 'evaBarArrow';
-      btn.title = 'Open player';
-      btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (window.player && window.player.currentSong) {
-          openSheet();
-        }
-      });
-
-      // Insert as FIRST child of bar (before the progress strip, after any fixed children)
-      // Actually insert before the first .music-bar-btns child or just prepend to bar
-      const btns = bar.querySelector('.music-bar-btns');
-      if (btns) {
-        bar.insertBefore(btn, btns);
-      } else {
-        bar.appendChild(btn);
-      }
-
-      console.log('[EvaAnim] Bar arrow injected');
-    };
-    attempt();
   }
 
   // ── Swipe-up gesture on the mini bar itself ──────────────────
@@ -302,9 +238,6 @@
         _sheet.classList.add('bounce');
         setTimeout(() => _sheet.classList.remove('bounce'), 500);
       }, 380);
-
-      // Start vinyl spin if song playing
-      _syncVinyl();
     });
 
     // Sync UI state in overlay
@@ -324,10 +257,6 @@
     _sheet.classList.remove('open', 'bounce', 'dragging');
     _isOpen = false;
     document.body.style.overflow = '';
-
-    // Stop vinyl spin
-    const art = document.getElementById('npAlbumArt');
-    if (art) art.classList.remove('spinning', 'paused-spin');
 
     setTimeout(() => {
       if (!_isOpen) {
@@ -351,34 +280,11 @@
     console.log('[EvaAnim] Sheet closed');
   }
 
-  // ── Vinyl spin sync ──────────────────────────────────────────
-  function _syncVinyl() {
-    const art = document.getElementById('npAlbumArt');
-    if (!art || !window.player) return;
-    if (window.player.isPlaying) {
-      art.classList.add('spinning');
-      art.classList.remove('paused-spin');
-    } else {
-      art.classList.add('paused-spin');
-    }
-  }
-
-  // Hook into player play/pause to sync vinyl
+  // Hook into player play/pause to sync wave bars
   document.addEventListener('eva:playstate', (e) => {
-    _syncVinyl();
+    const wave = document.querySelector('.eva-wave');
+    if (wave && window.player) wave.classList.toggle('playing', window.player.isPlaying);
   });
-
-  // Monkey-patch _syncPlayIcons to also update vinyl
-  const _origSync = EvaPlayer && EvaPlayer.prototype && EvaPlayer.prototype._syncPlayIcons;
-  if (_origSync) {
-    EvaPlayer.prototype._syncPlayIcons = function(playing) {
-      _origSync.call(this, playing);
-      if (_isOpen) _syncVinyl();
-      // Sync wave bars in mini bar
-      const wave = document.querySelector('.eva-wave');
-      if (wave) wave.classList.toggle('playing', playing);
-    };
-  }
 
   // ── Drag gestures ────────────────────────────────────────────
   let _dragStartTime = 0;
@@ -464,3 +370,4 @@
   }
 
 })();
+      
