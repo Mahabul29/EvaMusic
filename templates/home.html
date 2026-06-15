@@ -16,18 +16,33 @@
     gap: 10px;
 }
 .home-logo-icon {
-    width: 36px; height: 36px;
-    background: var(--accent-color);
+    width: 42px; height: 42px;
     border-radius: 50%;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    color: white;
+    flex-shrink: 0;
+}
+.home-logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.home-logo-text-wrap {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
 }
 .home-logo-text {
     font-size: 22px;
     font-weight: 700;
+}
+.home-logo-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 0.3px;
 }
 .home-top-btns {
     display: flex;
@@ -138,18 +153,22 @@
 <div class="home-page">
     <div class="home-top">
         <div class="home-logo">
-            <div class="home-logo-icon"><i class="fas fa-music"></i></div>
-            <span class="home-logo-text">EvaMusic</span>
+            <div class="home-logo-icon">
+                <img src="/static/icon-192.png" alt="EvaMusic Logo" onerror="this.parentElement.innerHTML='<i class=\'fas fa-music\' style=\'color:white;font-size:20px\'></i>'; this.parentElement.style.background='var(--accent-color)';">
+            </div>
+            <div class="home-logo-text-wrap">
+                <span class="home-logo-text">EvaMusic</span>
+                <span class="home-logo-sub">Make Your Day</span>
+            </div>
         </div>
         <div class="home-top-btns">
-            <button class="home-top-btn" onclick="navigateTo('/search')"><i class="fas fa-search"></i></button>
-            <button class="home-top-btn" onclick="navigateTo('/settings')"><i class="fas fa-cog"></i></button>
+            <button class="home-top-btn" onclick="if(typeof navigateTo==='function'){navigateTo('/search')}else{window.location.href='/search'}" title="Search"><i class="fas fa-search"></i></button>
+            <button class="home-top-btn" onclick="if(typeof navigateTo==='function'){navigateTo('/settings')}else{window.location.href='/settings'}" title="Settings"><i class="fas fa-cog"></i></button>
         </div>
     </div>
 
     <div class="home-tabs">
         <button class="home-tab active">Music</button>
-        <button class="home-tab" onclick="showToast('Podcasts coming soon', 'info')">Podcasts</button>
     </div>
 
     <!-- ↓ Anchor: recommended-artists.js injects the Artists For You section right after this -->
@@ -222,4 +241,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
     
