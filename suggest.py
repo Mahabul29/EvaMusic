@@ -8,7 +8,7 @@ Generates personalised song suggestions based on:
 
 import random
 
-from trackuser import (
+from user.trackuser import (
     get_full_taste_summary,
     get_disliked_songs,
     get_liked_songs,
