@@ -1,6 +1,8 @@
 """
-EvaMusic - Simple File-Based Database (no MongoDB needed)
-Stores favorites, history, playlists, users in JSON files.
+EvaMusic — database.py  (updated)
+All original functions preserved.
+New: toggle_favorite and add_song_to_playlist now also
+     call the taste tracker so likes/playlist-adds improve suggestions.
 """
 
 import json
@@ -28,6 +30,16 @@ def _save(name, data):
     with open(path, "w") as f:
         json.dump(data, f, indent=2, default=str)
 
+
+# ── Lazy import of taste tracker to avoid circular imports ─────
+def _taste():
+    try:
+        from user.trackuser import on_song_liked
+        return on_song_liked
+    except ImportError:
+        return None
+
+
 # ═══════════════════════════════════════════════════════════════
 # FAVORITES
 # ═══════════════════════════════════════════════════════════════
@@ -40,19 +52,28 @@ def add_to_favorites(user_id, song_data):
         return {"success": False, "message": "Song already in favorites"}
 
     user_favs.append({
-        "song_id": song_data.get("song_id"),
-        "title": song_data.get("title"),
-        "artist": song_data.get("artist"),
-        "album": song_data.get("album"),
-        "duration": song_data.get("duration"),
+        "song_id":   song_data.get("song_id"),
+        "title":     song_data.get("title"),
+        "artist":    song_data.get("artist"),
+        "album":     song_data.get("album"),
+        "duration":  song_data.get("duration"),
         "image_url": song_data.get("image_url"),
         "audio_url": song_data.get("audio_url"),
-        "source": song_data.get("source", "jiosaavn"),
-        "added_at": datetime.now(timezone.utc).isoformat()
+        "source":    song_data.get("source", "jiosaavn"),
+        "added_at":  datetime.now(timezone.utc).isoformat()
     })
 
     data[user_id] = user_favs
     _save("favorites", data)
+
+    # ★ Update taste profile — a like is the strongest signal
+    on_liked = _taste()
+    if on_liked:
+        try:
+            on_liked(user_id, song_data)
+        except Exception:
+            pass
+
     return {"success": True, "message": "Added to favorites"}
 
 
@@ -89,7 +110,7 @@ def toggle_favorite(user_id, song_data):
         result["action"] = "removed"
         return result
     else:
-        result = add_to_favorites(user_id, song_data)
+        result = add_to_favorites(user_id, song_data)   # ← taste hook inside
         result["action"] = "added"
         return result
 
@@ -105,9 +126,9 @@ def add_to_recently_played(user_id, song_data):
     user_history = [h for h in user_history if h.get("song_id") != song_data.get("song_id")]
 
     user_history.insert(0, {
-        "song_id": song_data.get("song_id"),
-        "title": song_data.get("title"),
-        "artist": song_data.get("artist"),
+        "song_id":   song_data.get("song_id"),
+        "title":     song_data.get("title"),
+        "artist":    song_data.get("artist"),
         "image_url": song_data.get("image_url"),
         "played_at": datetime.now(timezone.utc).isoformat()
     })
@@ -134,12 +155,12 @@ def create_playlist(user_id, name, description=""):
 
     playlist = {
         "playlist_id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "name": name,
+        "user_id":     user_id,
+        "name":        name,
         "description": description,
-        "songs": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "songs":       [],
+        "created_at":  datetime.now(timezone.utc).isoformat(),
+        "updated_at":  datetime.now(timezone.utc).isoformat()
     }
     user_playlists.append(playlist)
     data[user_id] = user_playlists
@@ -156,6 +177,15 @@ def add_song_to_playlist(user_id, playlist_id, song_data):
             pl["songs"].append(song_data)
             pl["updated_at"] = datetime.now(timezone.utc).isoformat()
             _save("playlists", data)
+
+            # ★ Adding to a playlist = implicit like signal
+            on_liked = _taste()
+            if on_liked:
+                try:
+                    on_liked(user_id, song_data)
+                except Exception:
+                    pass
+
             return {"success": True, "message": "Song added to playlist"}
     return {"success": False, "message": "Playlist not found"}
 
@@ -178,7 +208,7 @@ def save_search_query(user_id, query):
     user_history = [h for h in user_history if h.get("query") != query]
 
     user_history.insert(0, {
-        "query": query,
+        "query":       query,
         "searched_at": datetime.now(timezone.utc).isoformat()
     })
 
@@ -198,20 +228,19 @@ def get_search_history(user_id, limit=10):
 # ═══════════════════════════════════════════════════════════════
 
 def create_user(user_id, username, email=None):
-    """Create a lightweight guest user record (no password)."""
     data = _load("users")
     if user_id in data:
         return {"success": False, "message": "User already exists"}
 
     data[user_id] = {
-        "user_id": user_id,
-        "username": username,
-        "email": email,
+        "user_id":       user_id,
+        "username":      username,
+        "email":         email,
         "password_hash": None,
-        "is_guest": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "last_active": datetime.now(timezone.utc).isoformat(),
-        "preferences": {"theme": "dark", "language": "en", "notifications": True}
+        "is_guest":      True,
+        "created_at":    datetime.now(timezone.utc).isoformat(),
+        "last_active":   datetime.now(timezone.utc).isoformat(),
+        "preferences":   {"theme": "dark", "language": "en", "notifications": True}
     }
     _save("users", data)
     return {"success": True, "message": "User created"}
@@ -225,7 +254,6 @@ def update_user_activity(user_id):
 
 
 def get_collection(name):
-    """Compatibility shim for direct collection access."""
     return _CollectionShim(name)
 
 
@@ -247,25 +275,19 @@ class _CollectionShim:
 
 
 # ═══════════════════════════════════════════════════════════════
-# AUTHENTICATION (username + password, file-based)
+# AUTHENTICATION
 # ═══════════════════════════════════════════════════════════════
-#
-# Users are stored in users.json, keyed by user_id (uuid).
-# usernames.json maps lowercase username -> user_id for fast lookups
-# and to enforce case-insensitive uniqueness.
 
 def _username_key(username):
     return (username or "").strip().lower()
 
 
 def get_user_by_username(username):
-    """Return the user record for a given username, or None."""
     users = _load("users")
     uname_index = _load("usernames")
     user_id = uname_index.get(_username_key(username))
     if user_id and user_id in users:
         return users[user_id]
-    # Fallback scan (covers users/usernames created before index existed)
     for uid, u in users.items():
         if _username_key(u.get("username")) == _username_key(username):
             return u
@@ -277,14 +299,6 @@ def username_exists(username):
 
 
 def create_account(user_id, username, password, email=None):
-    """
-    Create a new account with a username + hashed password.
-
-    `user_id` is the caller's existing session user_id. If that id
-    already has a (guest) record, it is upgraded in place so any
-    favorites/playlists/history already stored under it carry over
-    automatically (they're keyed by user_id).
-    """
     username = (username or "").strip()
     if not username:
         return {"success": False, "message": "Username is required"}
@@ -301,38 +315,31 @@ def create_account(user_id, username, password, email=None):
 
     if user_id in users:
         record = users[user_id]
-        record["username"] = username
-        record["email"] = email
+        record["username"]      = username
+        record["email"]         = email
         record["password_hash"] = generate_password_hash(password)
-        record["is_guest"] = False
-        record["updated_at"] = now
+        record["is_guest"]      = False
+        record["updated_at"]    = now
     else:
         record = {
-            "user_id": user_id,
-            "username": username,
-            "email": email,
+            "user_id":       user_id,
+            "username":      username,
+            "email":         email,
             "password_hash": generate_password_hash(password),
-            "is_guest": False,
-            "created_at": now,
-            "last_active": now,
-            "preferences": {"theme": "dark", "language": "en", "notifications": True}
+            "is_guest":      False,
+            "created_at":    now,
+            "last_active":   now,
+            "preferences":   {"theme": "dark", "language": "en", "notifications": True}
         }
         users[user_id] = record
 
     uname_index[_username_key(username)] = user_id
-
     _save("users", users)
     _save("usernames", uname_index)
-
     return {"success": True, "message": "Account created", "user_id": user_id, "username": username}
 
 
 def verify_login(username, password):
-    """
-    Check username/password.
-    Returns {"success": True, "user_id": ..., "username": ...} on success,
-    or {"success": False, "message": ...} on failure.
-    """
     user = get_user_by_username(username)
     if not user:
         return {"success": False, "message": "Invalid username or password"}
@@ -346,9 +353,8 @@ def verify_login(username, password):
 
 
 def change_password(user_id, old_password, new_password):
-    """Change a logged-in user's password after verifying the old one."""
     users = _load("users")
-    user = users.get(user_id)
+    user  = users.get(user_id)
     if not user:
         return {"success": False, "message": "Account not found"}
 
@@ -360,29 +366,23 @@ def change_password(user_id, old_password, new_password):
         return {"success": False, "message": "New password must be at least 6 characters"}
 
     if check_password_hash(pw_hash, new_password):
-        return {"success": False, "message": "New password must be different from the current password"}
+        return {"success": False, "message": "New password must be different from current"}
 
     user["password_hash"] = generate_password_hash(new_password)
-    user["updated_at"] = datetime.now(timezone.utc).isoformat()
+    user["updated_at"]    = datetime.now(timezone.utc).isoformat()
     _save("users", users)
     return {"success": True, "message": "Password updated successfully"}
 
 
 def merge_guest_data(guest_user_id, target_user_id):
-    """
-    Merge favorites/playlists/history/search-history from a guest user_id
-    into target_user_id. Used when logging into an existing account from
-    a guest session whose data lives under a different user_id.
-    No-op if the ids are the same (the common signup case).
-    """
     if guest_user_id == target_user_id:
         return
 
     for store_name, merge_strategy in [
-        ("favorites", "list_unique_song_id"),
-        ("playlists", "list_extend"),
+        ("favorites",       "list_unique_song_id"),
+        ("playlists",       "list_extend"),
         ("recently_played", "list_prepend_unique_song_id"),
-        ("search_history", "list_prepend_unique_query"),
+        ("search_history",  "list_prepend_unique_query"),
     ]:
         data = _load(store_name)
         guest_items = data.get(guest_user_id, [])
@@ -411,7 +411,7 @@ def merge_guest_data(guest_user_id, target_user_id):
                     target_items.append(item)
                     existing_queries.add(item.get("query"))
             target_items = target_items[:20]
-        else:  # list_extend (playlists)
+        else:
             target_items.extend(guest_items)
 
         data[target_user_id] = target_items
@@ -433,7 +433,6 @@ def check_db_health():
 
 
 def init_db():
-    """No-op for file-based DB — files are created on first write."""
     print("✅ File-based database ready (no MongoDB needed)")
     return True
         
