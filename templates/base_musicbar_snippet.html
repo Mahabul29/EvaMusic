@@ -1,0 +1,75 @@
+<!-- ═══════════════════════════════════════════════════════
+  REPLACE the entire .music-bar block in your base.html
+  with this updated version.
+  Changes:
+    • musicBarArtist now holds a tappable <a> (handled by JS)
+    • musicBarDetail — new line: "Album Name · 4:22"
+  ═══════════════════════════════════════════════════════ -->
+
+<!-- CSS addition — paste inside the <style> block in base.html -->
+<style>
+/*
+  ADD these rules alongside the existing .music-bar-* rules in base.html
+*/
+.music-bar-artist {
+    /* keep existing rules — add below: */
+    cursor: pointer;
+}
+.music-bar-artist a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.music-bar-detail {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+    line-height: 1.2;
+}
+/* Make the info block taller to fit 3 lines */
+.music-bar-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+}
+</style>
+
+
+<!-- HTML — replace the existing .music-bar div in base.html -->
+<div class="music-bar hidden" id="musicBar">
+    <div class="music-bar-progress" id="musicBarProgress" onclick="barSeek(event)">
+        <div class="music-bar-progress-fill" id="musicBarProgressFill"></div>
+    </div>
+    <img src="/static/icon-512.png" alt=""
+         class="music-bar-thumb" id="musicBarThumb"
+         onclick="expandPlayer(event)">
+    <div class="music-bar-info" onclick="expandPlayer(event)">
+        <div class="music-bar-title"  id="musicBarTitle">Select a song</div>
+        <!-- Artist: JS will inject a tappable <a> inside this div -->
+        <div class="music-bar-artist" id="musicBarArtist">-</div>
+        <!-- NEW: Album · Duration detail line -->
+        <div class="music-bar-detail" id="musicBarDetail"></div>
+    </div>
+    <div class="music-bar-btns">
+        <button class="music-bar-btn" onclick="barPrev()" title="Previous">
+            <i class="fas fa-step-backward"></i>
+        </button>
+        <button class="music-bar-btn play-btn" onclick="barTogglePlay()" title="Play/Pause">
+            <i class="fas fa-play" id="musicBarPlayIcon"></i>
+        </button>
+        <button class="music-bar-btn" onclick="barNext()" title="Next">
+            <i class="fas fa-step-forward"></i>
+        </button>
+    </div>
+</div>
