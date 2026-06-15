@@ -181,7 +181,7 @@
         /* Swipe-up arrow on mini bar */
         .music-bar-swipe-pill {
             position: absolute;
-            top: 5px;
+            top: 4px;
             left: 50%;
             transform: translateX(-50%);
             width: auto;
@@ -193,18 +193,9 @@
             pointer-events: none;
         }
         .music-bar-swipe-pill i {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.45);
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.55);
         }
-
-        /* Hide notification bell + injected arrow from mini bar */
-        #musicBar .notification-btn,
-        #musicBar [id*="notif"],
-        #musicBar [class*="notif"],
-        #musicBar .fa-bell,
-        #musicBar button[onclick*="notif"],
-        #musicBar button[onclick*="Notif"],
-        #evaBarArrow { display: none !important; }
     </style>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
@@ -280,30 +271,7 @@
     <script src="{{ url_for('static', filename='js/spa-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/notification-panel.js') }}"></script>
     <script src="{{ url_for('static', filename='js/recommended-artists.js') }}"></script>
-
-    <script>
-    // Remove bell + arrow from mini bar — clean player bar
-    (function() {
-        function _cleanBar() {
-            const bar = document.getElementById('musicBar');
-            if (!bar) return;
-            // Remove any button containing fa-bell
-            bar.querySelectorAll('button, a').forEach(el => {
-                if (el.querySelector('.fa-bell') ||
-                    el.id === 'evaBarArrow' ||
-                    (el.onclick && el.onclick.toString().includes('notif'))) {
-                    el.remove();
-                }
-            });
-        }
-        // Run immediately + after a short delay (for dynamically injected elements)
-        document.addEventListener('DOMContentLoaded', _cleanBar);
-        setTimeout(_cleanBar, 500);
-        setTimeout(_cleanBar, 1500);
-    })();
-    </script>
 
     <script>
     // ── Sub-page back header logic ────────────────────────────────────────────
@@ -363,5 +331,5 @@
 
     {% block extra_js %}{% endblock %}
 </body>
-    </html>
-
+            </html>
+    
