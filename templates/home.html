@@ -152,6 +152,9 @@
         <button class="home-tab" onclick="showToast('Podcasts coming soon', 'info')">Podcasts</button>
     </div>
 
+    <!-- ↓ Anchor: recommended-artists.js injects the Artists For You section right after this -->
+    <div id="recArtistsAnchor"></div>
+
     <h2 class="section-title">Your Usuals</h2>
     <div class="grid-row">
         {% for song in songs[:8] %}
@@ -196,8 +199,6 @@
 </div>
 
 <script>
-// Fallback: attach click handlers on direct page load
-// SPA navigation handles this via _attachSongCards() in spa-nav.js
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof _attachSongCards !== 'function') {
         document.querySelectorAll('.grid-item[data-song-id]').forEach(item => {
@@ -221,3 +222,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+    
