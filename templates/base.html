@@ -177,6 +177,26 @@
             line-height: 1;
         }
         .nav-queue-badge.show { display: flex; }
+
+        /* Bar up-arrow */
+        #evaBarArrow {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+        }
+        #evaBarArrow:active { background: rgba(255,255,255,0.18); color: #fff; }
+        @keyframes evaPulse {
+            0%,100% { transform: translateY(0); opacity: 0.6; }
+            50%      { transform: translateY(-3px); opacity: 1; }
+        }
+        #evaBarArrow i { animation: evaPulse 2s ease-in-out infinite; }
     </style>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
@@ -208,6 +228,11 @@
             <div class="music-bar-title"  id="musicBarTitle">Select a song</div>
             <div class="music-bar-artist" id="musicBarArtist">-</div>
         </div>
+        <!-- Up arrow — opens full player sheet -->
+        <button id="evaBarArrow" title="Open player" onclick="window.EvaAnim&&window.EvaAnim.open()">
+            <i class="fas fa-chevron-up"></i>
+        </button>
+
         <div class="music-bar-btns">
             <button class="music-bar-btn" onclick="barPrev()" title="Previous">
                 <i class="fas fa-step-backward"></i>
@@ -243,6 +268,7 @@
 
     <!-- Load order: player engine -> SPA nav -> bottom nav -> profile page handlers -->
     <script src="{{ url_for('static', filename='js/pullup-player.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/player-animation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/spa-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bottom-nav.js') }}"></script>
     <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
@@ -306,4 +332,5 @@
 
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+            </html>
+            
