@@ -2,11 +2,6 @@
 EvaMusic — Smart Queue Refresh
 When a user skips a song it is removed from the active queue
 and does NOT appear in the next auto-loaded batch.
-
-Also handles:
-  • Auto-fetching the next page of suggestions when the queue runs low
-  • Persisting the skip state per session (no DB write needed — session-level)
-  • Exposing Flask API endpoints that the frontend calls
 """
 
 import json
@@ -15,9 +10,8 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, session
 
-# Internal imports
 import database as db
-from user.trackuser import on_song_skipped, on_song_played, get_disliked_songs
+from trackuser import on_song_skipped, on_song_played, get_disliked_songs
 
 refresh_bp = Blueprint("refresh", __name__)
 
@@ -31,7 +25,6 @@ _SESSION_SKIPPED_KEY = "eva_session_skips"
 
 
 def _get_queue() -> list:
-    """Return the current in-session queue."""
     return session.get(_SESSION_QUEUE_KEY, [])
 
 
@@ -48,7 +41,6 @@ def _add_session_skip(song_id: str):
     skips = list(_get_session_skips())
     if song_id not in skips:
         skips.append(song_id)
-    # Keep last 200 session skips
     session[_SESSION_SKIPPED_KEY] = skips[-200:]
     session.modified = True
 
@@ -58,11 +50,7 @@ def _add_session_skip(song_id: str):
 # ═══════════════════════════════════════════════════════════════
 
 def set_queue(songs: list) -> dict:
-    """
-    Replace the active queue with a new song list.
-    Filters out any songs the user has already skipped this session.
-    """
-    skips = _get_session_skips()
+    skips    = _get_session_skips()
     filtered = [
         s for s in songs
         if (s.get("song_id") or s.get("id", "")) not in skips
@@ -72,37 +60,25 @@ def set_queue(songs: list) -> dict:
 
 
 def skip_current_song(user_id: str, song: dict, listen_seconds: int = 3) -> dict:
-    """
-    Called when user taps the skip / next button.
-    • Removes the song from the active queue so it won't replay.
-    • Records the skip in the taste tracker.
-    • Returns the next song in queue (or None if empty).
-    """
     song_id = song.get("song_id") or song.get("id", "")
 
-    # Record skip in taste tracker
     if user_id and song_id:
         on_song_skipped(user_id, song, listen_seconds)
         _add_session_skip(song_id)
 
-    # Remove from queue
     queue = _get_queue()
     queue = [s for s in queue if (s.get("song_id") or s.get("id", "")) != song_id]
     _save_queue(queue)
 
     next_song = queue[0] if queue else None
     return {
-        "success":     True,
-        "next_song":   next_song,
-        "queue_left":  len(queue),
+        "success":    True,
+        "next_song":  next_song,
+        "queue_left": len(queue),
     }
 
 
 def get_next_song(user_id: str, current_song_id: str = None) -> dict:
-    """
-    Advance to the next song in the queue without marking the current one skipped.
-    Used for normal auto-advance (song ends naturally).
-    """
     queue = _get_queue()
 
     if current_song_id:
@@ -117,22 +93,16 @@ def get_next_song(user_id: str, current_song_id: str = None) -> dict:
 
 
 def peek_queue(limit: int = 5) -> list:
-    """Return upcoming songs without modifying the queue."""
     return _get_queue()[:limit]
 
 
 def clear_session_skips():
-    """Reset the skip memory for this session (e.g. on logout)."""
     session.pop(_SESSION_SKIPPED_KEY, None)
     session.pop(_SESSION_QUEUE_KEY, None)
     session.modified = True
 
 
 def refresh_queue_with_suggestions(user_id: str, candidate_songs: list) -> dict:
-    """
-    Refresh the queue using the suggestion engine, excluding skipped songs.
-    Call this when the queue drops below 3 songs.
-    """
     from suggest import get_suggestions_for_user
 
     skips     = _get_session_skips()
@@ -156,12 +126,11 @@ def refresh_queue_with_suggestions(user_id: str, candidate_songs: list) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════
-# FLASK API ENDPOINTS  (register blueprint in app.py)
+# FLASK API ENDPOINTS
 # ═══════════════════════════════════════════════════════════════
 
 @refresh_bp.route("/api/queue/set", methods=["POST"])
 def api_set_queue():
-    """POST { songs: [...] }  — load a new queue."""
     data  = request.get_json(silent=True) or {}
     songs = data.get("songs", [])
     result = set_queue(songs)
@@ -170,35 +139,23 @@ def api_set_queue():
 
 @refresh_bp.route("/api/queue/skip", methods=["POST"])
 def api_skip_song():
-    """
-    POST { song_id, title, artist, ... , listen_seconds }
-    Skip current song and get the next one.
-    """
-    from app import get_user_id   # imported here to avoid circular imports
+    from app import get_user_id
     user_id        = get_user_id()
     data           = request.get_json(silent=True) or {}
     listen_seconds = int(data.get("listen_seconds", 3))
-
     result = skip_current_song(user_id, data, listen_seconds)
     return jsonify(result)
 
 
 @refresh_bp.route("/api/queue/next", methods=["POST"])
 def api_next_song():
-    """
-    POST { current_song_id }
-    Song ended naturally — advance without penalising.
-    """
     from app import get_user_id
     user_id         = get_user_id()
     data            = request.get_json(silent=True) or {}
     current_song_id = data.get("current_song_id", "")
+    result          = get_next_song(user_id, current_song_id)
 
-    result = get_next_song(user_id, current_song_id)
-
-    # Auto-refresh when queue is running low
     if result["queue_left"] < 3:
-        # We need trending songs to refill — frontend must pass them
         candidate_songs = data.get("candidates", [])
         if candidate_songs:
             refresh_queue_with_suggestions(user_id, candidate_songs)
@@ -208,17 +165,12 @@ def api_next_song():
 
 @refresh_bp.route("/api/queue/peek")
 def api_peek_queue():
-    """GET  — preview upcoming songs."""
     limit = request.args.get("limit", 5, type=int)
     return jsonify(peek_queue(limit))
 
 
 @refresh_bp.route("/api/queue/refresh", methods=["POST"])
 def api_refresh_queue():
-    """
-    POST { candidates: [...] }
-    Manually refresh the queue (e.g. user taps 'Refresh').
-    """
     from app import get_user_id
     user_id    = get_user_id()
     data       = request.get_json(silent=True) or {}
@@ -233,10 +185,6 @@ def api_refresh_queue():
 
 @refresh_bp.route("/api/queue/played", methods=["POST"])
 def api_song_played():
-    """
-    POST { song_id, title, artist, genre, language, mood, tempo, duration, listen_seconds }
-    Record that a song was actually listened to.
-    """
     from app import get_user_id
     user_id        = get_user_id()
     data           = request.get_json(silent=True) or {}
@@ -251,3 +199,4 @@ def api_song_played():
         "played_at": datetime.now(timezone.utc).isoformat(),
     })
     return jsonify({"success": True})
+  
