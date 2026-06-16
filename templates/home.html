@@ -1,33 +1,49 @@
-
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- ADD/REPLACE in your home.html JavaScript section -->
+<!-- REPLACE IN home.html - Inside the <script> tag -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <script>
-// REPLACE the loadBecauseYouLiked function with this:
+// REPLACE loadArtists() function:
+    async function loadArtists() {
+        const container = document.getElementById('section-artists');
+        if (!container) return;
+        container.innerHTML = renderSkeletonArtists(6);
+        try {
+            const res = await fetch(`/api/artists${langParam(currentLang)}&limit=10`);
+            const data = await res.json();
+            if (data && data.length > 0) {
+                container.innerHTML = data.map(renderArtistCard).join('');
+            } else {
+                container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>No artists found</p></div>`;
+            }
+        } catch (e) {
+            console.warn('Artists load failed', e);
+            container.innerHTML = renderSkeletonArtists(6);
+        }
+    }
+
+// REPLACE loadBecauseYouLiked() function:
     async function loadBecauseYouLiked() {
         const container = document.getElementById('section-because-liked');
         const head = document.getElementById('becauseYouLikedHead');
         if (!container || !head) return;
 
         try {
-            // Try to get suggestions based on taste
             const res = await fetch(`/api/suggestions${langParam(currentLang)}&limit=8`);
             const data = await res.json();
 
-            // FIXED: Show even with 1+ songs, not requiring 4
+            // FIXED: Show with 1+ songs (was requiring 4+)
             if (data && data.length > 0) {
                 head.style.display = 'flex';
                 container.style.display = 'flex';
                 container.innerHTML = data.map(renderSongCard).join('');
             } else {
-                // Fallback: show trending songs as "Recommended For You"
+                // Fallback for new users: show trending as "Recommended"
                 const res2 = await fetch(`/api/trending${langParam(currentLang)}&limit=8`);
                 const data2 = await res2.json();
                 if (data2 && data2.length > 0) {
                     head.style.display = 'flex';
                     container.style.display = 'flex';
-                    // Change title to show it's for new users
                     head.querySelector('.section-title').textContent = 'Recommended For You';
                     container.innerHTML = data2.map(renderSongCard).join('');
                 } else {
@@ -41,23 +57,29 @@
         }
     }
 
-// REPLACE the loadArtists function with this:
-    async function loadArtists() {
-        const container = document.getElementById('section-artists');
+// REPLACE loadRecommended() function:
+    async function loadRecommended() {
+        const container = document.getElementById('section-recommended');
         if (!container) return;
-        container.innerHTML = renderSkeletonArtists(6);
+        container.innerHTML = renderSkeletonSongs(5);
         try {
-            // Get taste-based artists from API
-            const res = await fetch(`/api/artists${langParam(currentLang)}&limit=10`);
+            // Try user's usuals first
+            const res = await fetch(`/api/usuals${langParam(currentLang)}&limit=10`);
             const data = await res.json();
             if (data && data.length > 0) {
-                container.innerHTML = data.map(renderArtistCard).join('');
+                container.innerHTML = data.map(renderSongCard).join('');
             } else {
-                container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>No artists found</p></div>`;
+                // New user: show random trending
+                const res2 = await fetch(`/api/trending${langParam(currentLang)}&limit=10`);
+                const data2 = await res2.json();
+                container.innerHTML = (data2 && data2.length > 0)
+                    ? data2.map(renderSongCard).join('')
+                    : `<div class="empty-state" style="width:100%;"><i class="fas fa-music"></i><p>Start listening to build your Usuals!</p></div>`;
             }
         } catch (e) {
-            console.warn('Artists load failed', e);
-            container.innerHTML = renderSkeletonArtists(6);
+            console.warn('Recommendations load failed', e);
+            container.innerHTML = renderSkeletonSongs(5);
         }
     }
-</script>
+                </script>
+                
