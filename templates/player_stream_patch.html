@@ -1,0 +1,61 @@
+<!--
+  ADD THIS SCRIPT BLOCK inside player.html, just before </body>
+  It auto-fetches the stream URL for local songs that have no audio URL.
+-->
+<script>
+(function() {
+    // song_url is set by Flask: {{ song.url | tojson }}
+    const songUrl   = {{ song.url | tojson }};
+    const songId    = {{ song.id | tojson }};
+    const songTitle = {{ song.title | tojson }};
+    const songArtist = {{ song.artist | tojson }};
+
+    if (!songUrl && songId) {
+        // Show a loading indicator
+        const loadingEl = document.getElementById('stream-loading');
+        if (loadingEl) loadingEl.style.display = 'block';
+
+        const params = new URLSearchParams({ title: songTitle, artist: songArtist });
+        fetch(`/api/stream/${encodeURIComponent(songId)}?${params}`)
+            .then(r => r.json())
+            .then(data => {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (data.url) {
+                    // Find the <audio> element and set its src
+                    const audio = document.querySelector('audio');
+                    if (audio) {
+                        audio.src = data.url;
+                        audio.load();
+                        audio.play().catch(() => {});
+                    }
+                    // Also update any JS player variable your player.html uses
+                    if (typeof setAudioSrc === 'function') setAudioSrc(data.url);
+                    if (typeof window.currentSongUrl !== 'undefined') window.currentSongUrl = data.url;
+
+                    // Update album art if we got a better image
+                    if (data.image) {
+                        const imgs = document.querySelectorAll('.player-image, .album-art, #albumArt, #song-image');
+                        imgs.forEach(img => { if (!img.src || img.src.includes('default')) img.src = data.image; });
+                    }
+                } else {
+                    // No stream found - show message
+                    const errEl = document.getElementById('stream-error');
+                    if (errEl) errEl.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                if (loadingEl) loadingEl.style.display = 'none';
+            });
+    }
+})();
+</script>
+
+<!--
+  ALSO ADD these two divs somewhere visible in your player.html UI:
+-->
+<div id="stream-loading" style="display:none; text-align:center; padding:12px; color:#1db954; font-size:14px;">
+    🔍 Finding stream...
+</div>
+<div id="stream-error" style="display:none; text-align:center; padding:12px; color:#f44336; font-size:14px;">
+    Stream not available for this song. Try searching it directly.
+</div>
