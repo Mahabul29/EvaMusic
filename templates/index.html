@@ -94,13 +94,14 @@
         {% for song in songs[:6] %}
         <!-- WRAPPER div - heart button is sibling of <a>, NOT child -->
         <div class="song-card-wrapper">
-            <!-- Clickable card -->
-            <a href="javascript:void(0)" class="trending-card" 
+            <!-- Clickable card - use onclick handler instead of href -->
+            <a href="#" class="trending-card" 
                data-song-id="{{ song.id }}"
                data-song-title="{{ song.title }}"
                data-song-artist="{{ song.artist }}"
                data-song-image="{{ song.image }}"
                data-song-url="{{ song.url }}"
+               onclick="event.preventDefault(); event.stopPropagation(); playSong('{{ song.id }}', {{ song|tojson }}); return false;"
 >
                 <div class="trending-image">
                     <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
@@ -238,5 +239,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-    
-                        
