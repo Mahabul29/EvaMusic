@@ -26,85 +26,133 @@ def get_user_id():
         session['user_id'] = str(uuid.uuid4())[:8]
     return session['user_id']
 
-def _call(url):
+def is_logged_in():
+    return bool(session.get('logged_in'))
+
+def _call(url, timeout=12):
     try:
-        r = requests.get(url, headers=HEADERS, timeout=12)
+        r = requests.get(url, headers=HEADERS, timeout=timeout)
         if r.status_code == 200:
             return r.json()
     except Exception as e:
-        print(f"[API EXCEPTION] URL {url}: {e}")
+        print(f"[API ERROR] {url}: {e}")
     return None
 
-def _clean_string(s):
-    if not s: return ""
-    s = html.unescape(s) if hasattr(html, 'unescape') else s
-    s = re.sub(r'&\w+;', '', s)
-    return s.strip()
+def _extract_audio_url(data):
+    if not data:
+        return ""
+    URL_KEYS = ["url", "downloadUrl", "download_url", "media_url",
+                "audio_url", "stream_url", "song_url", "link"]
 
-def _normalize_song(s):
-    if not s: return None
-    
-    media_urls = s.get("download_url") or s.get("downloadUrl") or []
-    audio_url = ""
-    if isinstance(media_urls, list) and media_urls:
-        best = [m for m in media_urls if isinstance(m, dict) and "320" in str(m.get("quality", ""))]
-        if not best:
-            best = [m for m in media_urls if isinstance(m, dict) and "160" in str(m.get("quality", ""))]
-        if not best:
-            best = media_urls
-        if best and isinstance(best[0], dict):
-            audio_url = best[0].get("url") or best[0].get("link") or ""
-            
-    images = s.get("image") or []
-    image_url = "/static/images/default-album.png"
-    if isinstance(images, list) and images:
-        best_img = [i for i in images if isinstance(i, dict) and "500" in str(i.get("quality", ""))]
-        if not best_img:
-            best_img = images
-        if best_img and isinstance(best_img[0], dict):
-            image_url = best_img[0].get("url") or best_img[0].get("link") or image_url
+    def _pick(obj):
+        if not isinstance(obj, dict):
+            return ""
+        for key in URL_KEYS:
+            val = obj.get(key)
+            if not val:
+                continue
+            if isinstance(val, list) and val:
+                entry = val[-1]
+                if isinstance(entry, dict):
+                    return entry.get("url") or entry.get("link") or ""
+                if isinstance(entry, str):
+                    return entry
+            if isinstance(val, str) and val.startswith("http"):
+                return val
+        return ""
 
-    artists_data = s.get("artists") or {}
-    primary_list = artists_data.get("primary") or []
-    artist_names = [a.get("name") for a in primary_list if isinstance(a, dict) and a.get("name")]
-    if not artist_names:
-        artist_names = [s.get("artist")] if s.get("artist") else ["Unknown Artist"]
-    artist_str = ", ".join(filter(None, artist_names))
+    url = _pick(data)
+    if url:
+        return url
 
-    title = s.get("name") or s.get("title") or "Unknown Song"
-    album_data = s.get("album") or {}
-    album_name = album_data.get("name") if isinstance(album_data, dict) else s.get("album") or ""
+    for wrapper in ["data", "song", "songs", "result"]:
+        inner = data.get(wrapper)
+        if isinstance(inner, dict):
+            url = _pick(inner)
+            if url:
+                return url
+        elif isinstance(inner, list) and inner:
+            url = _pick(inner[0])
+            if url:
+                return url
+    return ""
+
+def _normalize_song(data):
+    if not data:
+        return None
+
+    inner = data
+    for wrapper in ["data", "song", "result"]:
+        candidate = data.get(wrapper)
+        if isinstance(candidate, dict):
+            inner = candidate
+            break
+        elif isinstance(candidate, list) and candidate:
+            inner = candidate[0]
+            break
+
+    audio_url = _extract_audio_url(data)
+    if not audio_url:
+        audio_url = _extract_audio_url(inner)
+
+    image = inner.get("image") or inner.get("image_url") or inner.get("thumbnail") or ""
+    if isinstance(image, list) and image:
+        entry = image[-1]
+        image = entry.get("url") or entry.get("link") or (entry if isinstance(entry, str) else "") or ""
+
+    # Safe text cleanup
+    title = inner.get("title") or inner.get("name") or inner.get("song") or "Unknown Song"
+    artist = inner.get("artist") or inner.get("primaryArtists") or inner.get("singers") or "Unknown Artist"
+    album = inner.get("album") or inner.get("album_name") or ""
+
+    if isinstance(title, str): title = html.unescape(title)
+    if isinstance(artist, str): artist = html.unescape(artist)
+    if isinstance(album, str): album = html.unescape(album)
 
     return {
-        "id":        str(s.get("id", "")),
-        "title":     _clean_string(title),
-        "artist":    _clean_string(artist_str),
-        "album":     _clean_string(album_name),
-        "image":     image_url,
-        "url":       audio_url,
-        "duration":  int(s.get("duration") or 0)
+        "id":       str(inner.get("id") or inner.get("song_id") or data.get("id") or ""),
+        "title":    title,
+        "artist":   artist,
+        "album":    album,
+        "duration": int(inner.get("duration") or inner.get("length") or 0),
+        "image":    image or "/static/images/default-album.png",
+        "url":      audio_url,
     }
 
-# Helper to fetch general music arrays safely for background requests
-def _get_cached_trending_pool():
-    trending_api_url = get_trending_url(limit=40)
-    raw_trending = _call(trending_api_url)
-    if raw_trending and isinstance(raw_trending, dict):
-        data_node = raw_trending.get("data") or raw_trending.get("results") or []
-        if isinstance(data_node, dict):
-            data_node = data_node.get("songs") or data_node.get("trending") or []
-        if isinstance(data_node, list):
-            songs = [_normalize_song(x) for x in data_node if x]
-            return [x for x in songs if x and x.get("url")]
+def fetch_songs(query, limit=20):
+    data = _call(get_search_url(query, limit))
+    if isinstance(data, list) and data:
+        return data
+    if isinstance(data, dict):
+        for key in ["data", "results", "songs"]:
+            inner = data.get(key)
+            if isinstance(inner, list) and inner:
+                return inner
     return []
+
+def fetch_trending(limit=20):
+    data = _call(get_trending_url(limit))
+    if isinstance(data, list) and data:
+        return data
+    if isinstance(data, dict):
+        for key in ["data", "results", "songs", "trending"]:
+            inner = data.get(key)
+            if isinstance(inner, list) and inner:
+                return inner
+    return []
+
+# ── PAGE ROUTES ────────────────────────────────────────────────
 
 @app.route('/')
 @app.route('/home')
 def home():
-    user_id = get_user_id()
-    selected_languages = session.get('selected_languages', ['hindi', 'english'])
-
-    trending_songs = _get_cached_trending_pool()
+    raw_trending = fetch_trending(40)
+    trending_songs = []
+    if raw_trending:
+        for item in raw_trending:
+            norm = _normalize_song(item)
+            if norm and norm.get("url"):
+                trending_songs.append(norm)
 
     homepage_data = {
         "trending": trending_songs[:12],
@@ -113,6 +161,7 @@ def home():
         "personalized": False
     }
 
+    selected_languages = session.get('selected_languages', ['hindi', 'english'])
     taste_summary = {
         'top_artists': [],
         'top_languages': [(l.title(), 1) for l in selected_languages],
@@ -128,84 +177,68 @@ def home():
         selected_languages=selected_languages
     )
 
-# ═══════════════════════════════════════════════════════════════
-# FRONTEND RECOVERY ENDPOINTS (PREVENTS JAVASCRIPT WHITE SCREENS)
-# ═══════════════════════════════════════════════════════════════
-
-@app.route('/api/artists')
-def api_fallback_artists():
-    return jsonify([])  # Prevents crash if 'loadArtists()' expects data array
-
-@app.route('/api/suggestions')
-def api_fallback_suggestions():
-    # Returns basic trending tracks so section-because-liked fills with content instead of failing
-    return jsonify(_get_cached_trending_pool()[:8])
-
-@app.route('/api/usuals')
-def api_fallback_usuals():
-    return jsonify([])  # Instructs new layout to slide straight to trending fallback cards
-
-# ═══════════════════════════════════════════════════════════════
-# STANDARD APP ROUTINGS
-# ═══════════════════════════════════════════════════════════════
-
 @app.route('/search')
 def search():
     query = request.args.get('q', '').strip()
-    user_id = get_user_id()
     songs = []
-    
     if query:
-        db.add_to_search_history(user_id, query)
-        raw = _call(get_search_url(query))
-        if raw and isinstance(raw, dict):
-            data_node = raw.get("data") or raw.get("results") or []
-            if isinstance(data_node, dict):
-                data_node = data_node.get("songs") or []
-            if isinstance(data_node, list):
-                songs = [_normalize_song(x) for x in data_node if x]
-                songs = [x for x in songs if x and x.get("url")]
+        raw_results = fetch_songs(query, 30)
+        for item in raw_results:
+            norm = _normalize_song(item)
+            if norm and norm.get("url"):
+                songs.append(norm)
+        db.save_search_query(get_user_id(), query)
+    return render_template('search.html', songs=songs, query=query, title="Search")
 
-    return render_template('index.html', songs=songs, query=query, title=f"Results for '{query}'")
+# ── BACKEND FALLBACKS FOR JAVASCRIPT FETCH CALLS ───────────────
+
+@app.route('/api/artists')
+def api_fallback_artists():
+    return jsonify([])
+
+@app.route('/api/suggestions')
+def api_fallback_suggestions():
+    raw_trending = fetch_trending(10)
+    songs = []
+    if raw_trending:
+        for item in raw_trending:
+            norm = _normalize_song(item)
+            if norm and norm.get("url"):
+                songs.append(norm)
+    return jsonify(songs)
+
+@app.route('/api/usuals')
+def api_fallback_usuals():
+    return jsonify([])
+
+# ── PLAYER / CONTENT ROUTES ────────────────────────────────────
+
+@app.route('/player/<song_id>')
+def player(song_id):
+    data = _call(get_song_url(song_id))
+    song = _normalize_song(data) if data else None
+    if not song:
+        song = {
+            "id": song_id, "title": "Unknown Song", "artist": "Unknown Artist",
+            "album": "", "url": "", "image": "/static/images/default-album.png", "duration": 0,
+        }
+    if song.get("id"):
+        db.add_to_recently_played(get_user_id(), {
+            "song_id":   song.get("id"),
+            "title":     song.get("title", "Unknown"),
+            "artist":    song.get("artist", "Unknown"),
+            "image_url": song.get("image", "")
+        })
+    return render_template('player.html', song=song, title=song.get("title", "Player"))
+
+# ── AUTH & MAINTENANCE ROUTES ──────────────────────────────────
 
 @app.route('/api/languages', methods=['POST'])
 def save_languages():
     data = request.get_json(silent=True) or {}
     langs = data.get('languages', ['hindi'])
-    if not isinstance(langs, list) or not langs:
-        langs = ['hindi']
     session['selected_languages'] = [str(l).lower() for l in langs]
     return jsonify({"success": True})
-
-@app.route('/api/favorites/toggle', methods=['POST'])
-def api_toggle_favorite():
-    user_id = get_user_id()
-    song_data = request.get_json(silent=True) or {}
-    if not song_data.get('id'):
-        return jsonify({"success": False, "message": "Missing song ID"}), 400
-    res = db.toggle_favorite(user_id, song_data)
-    return jsonify(res)
-
-@app.route('/api/history/add', methods=['POST'])
-def api_add_history():
-    user_id = get_user_id()
-    song_data = request.get_json(silent=True) or {}
-    if not song_data.get('id'):
-        return jsonify({"success": False}), 400
-    db.add_to_history(user_id, song_data)
-    return jsonify({"success": True})
-
-@app.route('/api/history/clear', methods=['POST'])
-def api_clear_history():
-    db.clear_history(get_user_id())
-    return jsonify({"success": True})
-
-@app.route('/api/account/delete', methods=['POST'])
-def api_delete_account():
-    user_id = get_user_id()
-    db.clear_history(user_id)
-    session.clear()
-    return jsonify({"success": True, "message": "Account deleted"})
 
 @app.route('/api/debug')
 def api_debug():
@@ -227,7 +260,7 @@ def not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({"error": "Internal server crash suppressed"}), 500
+    return jsonify({"error": "Internal recovery routing activated"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
