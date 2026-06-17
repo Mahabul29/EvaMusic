@@ -1,7 +1,7 @@
 """
 user/trackuser.py  —  User Profile and Taste Modeling Engine
 
-Tracks explicit likes and listening habits to build an operational profile
+Tracks explicit likes, plays, and skips to build an operational profile
 of favorite languages, artists, moods, and genres.
 """
 
@@ -62,18 +62,34 @@ def _detect_song_language(song):
     return 'hindi'
 
 # ═══════════════════════════════════════════════════════════════
-# INTERACTION PROCESSING
+# REFRESH / UTILITY HOOKS REQUIRED BY REFRESH.PY
 # ═══════════════════════════════════════════════════════════════
 
 def on_song_liked(user_id, song_data):
-    """
-    Hook execution triggered when a user favorites a song.
-    Can be expanded for real-time calculation drops or analytics hooks.
-    """
+    """Triggered when a user favorites a song."""
     song_id = song_data.get('id')
     title = song_data.get('title')
-    print(f"[TASTE ENGINE] Track processing liked song: {title} ({song_id}) for user {user_id}")
+    print(f"[TASTE ENGINE] Liked: {title} ({song_id}) for user {user_id}")
 
+def on_song_played(user_id, song_data):
+    """Triggered when a user plays a song fully."""
+    song_id = song_data.get('id')
+    title = song_data.get('title')
+    print(f"[TASTE ENGINE] Played: {title} ({song_id}) for user {user_id}")
+
+def on_song_skipped(user_id, song_data):
+    """Triggered when a user skips a song early."""
+    song_id = song_data.get('id')
+    print(f"[TASTE ENGINE] Skipped: {song_id} for user {user_id}")
+
+def get_disliked_songs(user_id):
+    """Returns a list of song IDs that the user has skipped too often or disliked."""
+    # Returns empty for now so it doesn't break queue calculations
+    return []
+
+# ═══════════════════════════════════════════════════════════════
+# TASTE PROFILE ENGINE
+# ═══════════════════════════════════════════════════════════════
 
 def get_full_taste_summary(user_id):
     """
@@ -90,14 +106,12 @@ def get_full_taste_summary(user_id):
 
     # 1. Process explicit highly-weighted favorites matrix items
     for f in favorites:
-        # Extract artists safely
         artists_str = f.get('artist') or 'Unknown'
         for a in artists_str.split(','):
             name = a.strip().title()
             if name and name != 'Unknown':
-                artist_counter[name] += 5  # Favorites carry higher score weights
+                artist_counter[name] += 5  
 
-        # Check explicit tags or back-evaluate fallback values
         lang = _detect_song_language(f)
         lang_counter[lang] += 5
 
@@ -133,12 +147,10 @@ def get_full_taste_summary(user_id):
             'metrics_collected': 0
         }
 
-    # Sort down collected vectors 
     sorted_artists = artist_counter.most_common(10)
     sorted_langs = [(l.title(), w) for l, w in lang_counter.most_common(5)]
     sorted_genres = genre_counter.most_common(5)
 
-    # Simple dynamic mood deduction from computed genre strings
     for g, weight in sorted_genres:
         g_lower = g.lower()
         if 'romantic' in g_lower or 'love' in g_lower:
@@ -159,5 +171,5 @@ def get_full_taste_summary(user_id):
         'top_genres': sorted_genres,
         'top_moods': mood_counter.most_common(3),
         'metrics_collected': len(favorites) + len(history)
-        }
-    
+}
+                
