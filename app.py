@@ -1,14 +1,13 @@
 import os
 import requests
 import uuid
-import re
 import html
-from flask import Flask, render_template, jsonify, request, send_from_directory, session
+from flask import Flask, render_template, jsonify, request, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
 import database as db
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
 db.init_db()
@@ -100,7 +99,6 @@ def _normalize_song(data):
         entry = image[-1]
         image = entry.get("url") or entry.get("link") or (entry if isinstance(entry, str) else "") or ""
 
-    # Safe text cleanup
     title = inner.get("title") or inner.get("name") or inner.get("song") or "Unknown Song"
     artist = inner.get("artist") or inner.get("primaryArtists") or inner.get("singers") or "Unknown Artist"
     album = inner.get("album") or inner.get("album_name") or ""
@@ -250,18 +248,19 @@ def api_debug():
     db_health = db.check_db_health()
     return jsonify({"api_base": API_BASE_URL, "api_status": api_status, "db_health": db_health})
 
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory('static', filename)
+# ── ERROR HANDLERS ─────────────────────────────────────────────
 
 @app.errorhandler(404)
 def not_found(e):
-    return render_template('index.html', songs=[], title="Not Found"), 404
+    return render_template('home.html', songs=[], title="Not Found"), 404
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({"error": "Internal recovery routing activated"}), 500
+    return jsonify({"error": "Internal server error"}), 500
+
+# ── MAIN ───────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
-    
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
+            
