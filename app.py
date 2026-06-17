@@ -85,24 +85,26 @@ def _normalize_song(s):
         "duration":  int(s.get("duration") or 0)
     }
 
+# Helper to fetch general music arrays safely for background requests
+def _get_cached_trending_pool():
+    trending_api_url = get_trending_url(limit=40)
+    raw_trending = _call(trending_api_url)
+    if raw_trending and isinstance(raw_trending, dict):
+        data_node = raw_trending.get("data") or raw_trending.get("results") or []
+        if isinstance(data_node, dict):
+            data_node = data_node.get("songs") or data_node.get("trending") or []
+        if isinstance(data_node, list):
+            songs = [_normalize_song(x) for x in data_node if x]
+            return [x for x in songs if x and x.get("url")]
+    return []
+
 @app.route('/')
 @app.route('/home')
 def home():
     user_id = get_user_id()
     selected_languages = session.get('selected_languages', ['hindi', 'english'])
 
-    # FIXED: Calling get_trending_url with an integer limit, not language strings
-    trending_api_url = get_trending_url(limit=50)
-    raw_trending = _call(trending_api_url)
-    
-    trending_songs = []
-    if raw_trending and isinstance(raw_trending, dict):
-        data_node = raw_trending.get("data") or raw_trending.get("results") or []
-        if isinstance(data_node, dict):
-            data_node = data_node.get("songs") or data_node.get("trending") or []
-        if isinstance(data_node, list):
-            trending_songs = [_normalize_song(x) for x in data_node if x]
-            trending_songs = [x for x in trending_songs if x and x.get("url")]
+    trending_songs = _get_cached_trending_pool()
 
     homepage_data = {
         "trending": trending_songs[:12],
@@ -125,6 +127,27 @@ def home():
         taste=taste_summary,
         selected_languages=selected_languages
     )
+
+# ═══════════════════════════════════════════════════════════════
+# FRONTEND RECOVERY ENDPOINTS (PREVENTS JAVASCRIPT WHITE SCREENS)
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/api/artists')
+def api_fallback_artists():
+    return jsonify([])  # Prevents crash if 'loadArtists()' expects data array
+
+@app.route('/api/suggestions')
+def api_fallback_suggestions():
+    # Returns basic trending tracks so section-because-liked fills with content instead of failing
+    return jsonify(_get_cached_trending_pool()[:8])
+
+@app.route('/api/usuals')
+def api_fallback_usuals():
+    return jsonify([])  # Instructs new layout to slide straight to trending fallback cards
+
+# ═══════════════════════════════════════════════════════════════
+# STANDARD APP ROUTINGS
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/search')
 def search():
