@@ -1,288 +1,163 @@
 """
-user/trackuser.py  —  EvaMusic taste tracking & user profile engine
+user/trackuser.py  —  User Profile and Taste Modeling Engine
 
-What changed:
-- on_song_liked() now actually updates taste profile (was 'pass')
-- on_song_played() now updates taste profile on every play
-- on_song_skipped() — NEW: tracks skipped songs
-- get_disliked_songs() — NEW: returns list of disliked song IDs
-- get_preferred_mood() now reads from real taste data (was hardcoded "happy")
-- _update_taste_profile() tracks artists, genres, languages, moods, tempos
-- Taste profiles stored in JSON file (no database dependency)
+Tracks explicit likes and listening habits to build an operational profile
+of favorite languages, artists, moods, and genres.
 """
 
-import os
-import json
 from collections import Counter
+import database as db
 
-# Taste profile storage path
-TASTE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-TASTE_FILE = os.path.join(TASTE_DIR, 'taste_profiles.json')
+# ═══════════════════════════════════════════════════════════════
+# TRACKING RULES & DICTIONARIES
+# ═══════════════════════════════════════════════════════════════
 
-# Ensure data directory exists
-os.makedirs(TASTE_DIR, exist_ok=True)
+LANG_INDICATORS = {
+    'hindi':     ['hindi', 'bollywood', 'हिंदी'],
+    'english':   ['english', 'pop', 'rock', 'edm', 'hip-hop', 'r&b'],
+    'punjabi':   ['punjabi', 'bhangra', 'ਪੰਜਾਬੀ'],
+    'tamil':     ['tamil', 'kollywood', 'தமிழ்'],
+    'telugu':    ['telugu', 'tollywood', 'తెలుగు'],
+    'marathi':   ['marathi', 'मराठी'],
+    'gujarati':  ['gujarati', 'ગુજરાતી'],
+    'bengali':   ['bengali', 'bangla', 'বাংলা'],
+    'kannada':   ['kannada', 'sandalwood', 'ಕನ್ನಡ'],
+    'malayalam': ['malayalam', 'mollywood', 'മലയാളം'],
+    'urdu':      ['urdu', 'اردو', 'ghazal', 'qawwali'],
+}
 
+ARTIST_LANG_MAP = {
+    'arijit singh': 'hindi', 'shreya ghoshal': 'hindi', 'sonu nigam': 'hindi',
+    'jubin nautiyal': 'hindi', 'neha kakkar': 'hindi', 'atif aslam': 'hindi',
+    'armaan malik': 'hindi', 'vishal mishra': 'hindi', 'pritam': 'hindi',
+    'a.r. rahman': 'hindi', 'shankar ehsaan loy': 'hindi', 'badshah': 'hindi',
+    'guru randhawa': 'hindi', 'jass manak': 'hindi', 'darshan raval': 'hindi',
+    'diljit dosanjh': 'punjabi', 'sidhu moose wala': 'punjabi',
+    'karan aujla': 'punjabi', 'ap dhillon': 'punjabi', 'shubh': 'punjabi',
+    'taylor swift': 'english', 'ed sheeran': 'english', 'drake': 'english',
+    'the weeknd': 'english', 'ariana grande': 'english', 'justin bieber': 'english',
+    'anirudh ravichander': 'tamil', 'yuvan shankar raja': 'tamil',
+    's. thaman': 'telugu', 'devi sri prasad': 'telugu',
+    'anupam roy': 'bengali', 'jeet gannguli': 'bengali',
+    'ajay-atul': 'marathi', 'nusrat fateh ali khan': 'urdu'
+}
 
-def _load_taste_profiles():
-    """Load all taste profiles from JSON file."""
-    if not os.path.exists(TASTE_FILE):
-        return {}
-    try:
-        with open(TASTE_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {}
+def _detect_song_language(song):
+    """Identifies the operational language profile of a song metadata block."""
+    artist = (song.get('artist') or '').lower()
+    for artist_name, lang in ARTIST_LANG_MAP.items():
+        if artist_name in artist or artist in artist_name:
+            return lang
 
+    title = (song.get('title') or song.get('name') or '').lower()
+    for lang, indicators in LANG_INDICATORS.items():
+        for indicator in indicators:
+            if indicator in title or indicator in artist:
+                return lang
 
-def _save_taste_profiles(profiles):
-    """Save all taste profiles to JSON file."""
-    try:
-        with open(TASTE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(profiles, f, indent=2, ensure_ascii=False)
-        return True
-    except IOError as e:
-        print(f"[TASTE] Save error: {e}")
-        return False
+    lang_field = (song.get('language') or '').lower()
+    if lang_field and lang_field in LANG_INDICATORS:
+        return lang_field
 
+    return 'hindi'
 
-def get_taste_profile(user_id):
-    """Get a single user's taste profile."""
-    profiles = _load_taste_profiles()
-    return profiles.get(user_id, {})
-
-
-def save_taste_profile(user_id, taste_data):
-    """Save a single user's taste profile."""
-    profiles = _load_taste_profiles()
-    profiles[user_id] = taste_data
-    return _save_taste_profiles(profiles)
-
-
-def _update_taste_profile(user_id, song_data):
-    """
-    Update the user's taste profile when they interact with a song
-    (play, like, or search).
-    """
-    # Load existing taste profile
-    taste = get_taste_profile(user_id) or {}
-
-    # Initialize counters if not present
-    if 'artists' not in taste:
-        taste['artists'] = {}
-    if 'genres' not in taste:
-        taste['genres'] = {}
-    if 'languages' not in taste:
-        taste['languages'] = {}
-    if 'moods' not in taste:
-        taste['moods'] = {}
-    if 'tempos' not in taste:
-        taste['tempos'] = {}
-    if 'play_count' not in taste:
-        taste['play_count'] = 0
-    if 'skipped' not in taste:
-        taste['skipped'] = []
-    if 'disliked' not in taste:
-        taste['disliked'] = []
-
-    # Increment total play count
-    taste['play_count'] = taste.get('play_count', 0) + 1
-
-    # Update artists
-    artist = song_data.get('artist', 'Unknown')
-    if artist and artist != 'Unknown':
-        artists = taste['artists']
-        artists[artist] = artists.get(artist, 0) + 1
-        taste['artists'] = artists
-
-    # Update genres
-    genre = song_data.get('genre', '')
-    if genre and genre != 'Unknown' and genre != '':
-        genres = taste['genres']
-        genres[genre] = genres.get(genre, 0) + 1
-        taste['genres'] = genres
-
-    # Update languages
-    language = song_data.get('language', '')
-    if language and language != 'Unknown' and language != '':
-        langs = taste['languages']
-        langs[language] = langs.get(language, 0) + 1
-        taste['languages'] = langs
-
-    # Update moods
-    mood = song_data.get('mood', '')
-    if mood and mood != 'Unknown' and mood != '':
-        moods = taste['moods']
-        moods[mood] = moods.get(mood, 0) + 1
-        taste['moods'] = moods
-
-    # Update tempos
-    tempo = song_data.get('tempo', '')
-    if tempo and tempo != 'Unknown' and tempo != '':
-        tempos = taste['tempos']
-        tempos[tempo] = tempos.get(tempo, 0) + 1
-        taste['tempos'] = tempos
-
-    # Save updated taste profile
-    save_taste_profile(user_id, taste)
-
-    return taste
-
+# ═══════════════════════════════════════════════════════════════
+# INTERACTION PROCESSING
+# ═══════════════════════════════════════════════════════════════
 
 def on_song_liked(user_id, song_data):
     """
-    Called when a user likes/favorites a song.
-    Updates taste profile with the song's metadata.
+    Hook execution triggered when a user favorites a song.
+    Can be expanded for real-time calculation drops or analytics hooks.
     """
-    # Update taste profile with this song's data
-    _update_taste_profile(user_id, song_data)
-
-    # Also increment a 'like' counter
-    taste = get_taste_profile(user_id) or {}
-    if 'likes' not in taste:
-        taste['likes'] = 0
-    taste['likes'] = taste.get('likes', 0) + 1
-    save_taste_profile(user_id, taste)
-
-    return {"success": True, "message": "Taste profile updated"}
-
-
-def on_song_played(user_id, song_data, listen_seconds=60):
-    """
-    Called when a user plays a song.
-    Updates taste profile with the song's metadata.
-    listen_seconds: how long user listened (default 60 sec)
-    """
-    # Only count as a full play if listened for at least 30 seconds
-    if listen_seconds >= 30:
-        return _update_taste_profile(user_id, song_data)
-    return get_taste_profile(user_id) or {}
-
-
-def on_song_skipped(user_id, song_data, listen_seconds=3):
-    """
-    Called when a user skips a song.
-    Tracks skipped songs so they don't get recommended again.
-    listen_seconds: how long user listened before skipping (default 3 sec)
-    """
-    taste = get_taste_profile(user_id) or {}
-
-    if 'skipped' not in taste:
-        taste['skipped'] = []
-
-    song_id = song_data.get('song_id') or song_data.get('id')
-    if song_id and song_id not in taste['skipped']:
-        taste['skipped'].append(song_id)
-        # Keep only last 100 skipped songs
-        if len(taste['skipped']) > 100:
-            taste['skipped'] = taste['skipped'][-100:]
-
-    # Track skip count per artist
-    artist = song_data.get('artist', 'Unknown')
-    if artist and artist != 'Unknown':
-        if 'skip_artists' not in taste:
-            taste['skip_artists'] = {}
-        taste['skip_artists'][artist] = taste['skip_artists'].get(artist, 0) + 1
-
-    save_taste_profile(user_id, taste)
-    return {"success": True, "message": "Skip recorded"}
-
-
-def get_disliked_songs(user_id):
-    """
-    Get list of song IDs that the user has skipped/disliked.
-    Used by recommendation engine to filter out unwanted songs.
-    """
-    taste = get_taste_profile(user_id) or {}
-    return taste.get('skipped', [])
+    song_id = song_data.get('id')
+    title = song_data.get('title')
+    print(f"[TASTE ENGINE] Track processing liked song: {title} ({song_id}) for user {user_id}")
 
 
 def get_full_taste_summary(user_id):
     """
-    Return a formatted summary of the user's taste profile.
-    Includes top artists, genres, languages, moods, tempos.
+    Queries history log buffers and explicit favorite tables to return
+    a sorted summary matrix of user music preferences.
     """
-    taste = get_taste_profile(user_id) or {}
+    favorites = db.get_user_favorites(user_id)
+    history = db.get_recently_played(user_id, limit=50)
 
-    # Get top items sorted by count
-    def get_top_items(data_dict, limit=5):
-        if not data_dict:
-            return []
-        sorted_items = sorted(data_dict.items(), key=lambda x: x[1], reverse=True)
-        return sorted_items[:limit]
+    artist_counter = Counter()
+    lang_counter = Counter()
+    genre_counter = Counter()
+    mood_counter = Counter()
 
-    summary = {
-        'top_artists': get_top_items(taste.get('artists', {}), 10),
-        'top_genres': get_top_items(taste.get('genres', {}), 5),
-        'top_languages': get_top_items(taste.get('languages', {}), 5),
-        'top_moods': get_top_items(taste.get('moods', {}), 5),
-        'top_tempos': get_top_items(taste.get('tempos', {}), 5),
-        'total_plays': taste.get('play_count', 0),
-        'total_likes': taste.get('likes', 0),
-        'total_skipped': len(taste.get('skipped', [])),
-    }
+    # 1. Process explicit highly-weighted favorites matrix items
+    for f in favorites:
+        # Extract artists safely
+        artists_str = f.get('artist') or 'Unknown'
+        for a in artists_str.split(','):
+            name = a.strip().title()
+            if name and name != 'Unknown':
+                artist_counter[name] += 5  # Favorites carry higher score weights
 
-    return summary
+        # Check explicit tags or back-evaluate fallback values
+        lang = _detect_song_language(f)
+        lang_counter[lang] += 5
 
+        genre = f.get('genre') or f.get('album') or ''
+        if genre and len(genre) > 2:
+            genre_counter[genre.title()] += 3
 
-def get_preferred_mood(user_id):
-    """
-    Get the user's most preferred mood based on their taste profile.
-    Returns the top mood or 'happy' as fallback.
-    """
-    taste = get_taste_profile(user_id) or {}
-    moods = taste.get('moods', {})
+    # 2. Process implicit streaming playback events (lower scalar weight)
+    for h in history:
+        artists_str = h.get('artist') or 'Unknown'
+        for a in artists_str.split(','):
+            name = a.strip().title()
+            if name and name != 'Unknown':
+                artist_counter[name] += 1
 
-    if not moods:
-        return 'happy'  # Default fallback for new users
+        lang = _detect_song_language({
+            'title': h.get('title'),
+            'artist': h.get('artist')
+        })
+        lang_counter[lang] += 1
 
-    # Return the most played mood
-    top_mood = max(moods.items(), key=lambda x: x[1])[0]
-    return top_mood
+        genre = h.get('genre') or h.get('album') or ''
+        if genre and len(genre) > 2:
+            genre_counter[genre.title()] += 1
 
+    # 3. Handle default empty states beautifully
+    if not artist_counter and not lang_counter:
+        return {
+            'top_artists': [],
+            'top_languages': [('Hindi', 1)],
+            'top_genres': [],
+            'top_moods': [('Happy', 1)],
+            'metrics_collected': 0
+        }
 
-def get_preferred_language(user_id):
-    """
-    Get the user's most preferred language based on their taste profile.
-    """
-    taste = get_taste_profile(user_id) or {}
-    languages = taste.get('languages', {})
+    # Sort down collected vectors 
+    sorted_artists = artist_counter.most_common(10)
+    sorted_langs = [(l.title(), w) for l, w in lang_counter.most_common(5)]
+    sorted_genres = genre_counter.most_common(5)
 
-    if not languages:
-        return 'hindi'  # Default fallback
+    # Simple dynamic mood deduction from computed genre strings
+    for g, weight in sorted_genres:
+        g_lower = g.lower()
+        if 'romantic' in g_lower or 'love' in g_lower:
+            mood_counter['Romantic'] += weight
+        elif 'sad' in g_lower or 'broken' in g_lower or 'pain' in g_lower:
+            mood_counter['Melancholic'] += weight
+        elif 'dance' in g_lower or 'party' in g_lower or 'hip hop' in g_lower:
+            mood_counter['Energetic'] += weight
+        else:
+            mood_counter['Chill'] += 1
 
-    top_lang = max(languages.items(), key=lambda x: x[1])[0]
-    return top_lang
+    if not mood_counter:
+        mood_counter['Chill'] = 1
 
-
-def get_preferred_artists(user_id, limit=5):
-    """
-    Get the user's most preferred artists.
-    """
-    taste = get_taste_profile(user_id) or {}
-    artists = taste.get('artists', {})
-
-    if not artists:
-        return []
-
-    sorted_artists = sorted(artists.items(), key=lambda x: x[1], reverse=True)
-    return [a[0] for a in sorted_artists[:limit]]
-
-
-def reset_taste_profile(user_id):
-    """
-    Reset the user's taste profile to empty.
-    """
-    empty_profile = {
-        'artists': {},
-        'genres': {},
-        'languages': {},
-        'moods': {},
-        'tempos': {},
-        'play_count': 0,
-        'likes': 0,
-        'skipped': [],
-        'disliked': [],
-        'skip_artists': {},
-    }
-    save_taste_profile(user_id, empty_profile)
-    return {"success": True, "message": "Taste profile reset"}
+    return {
+        'top_artists': sorted_artists,
+        'top_languages': sorted_langs,
+        'top_genres': sorted_genres,
+        'top_moods': mood_counter.most_common(3),
+        'metrics_collected': len(favorites) + len(history)
+        }
+    
