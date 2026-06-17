@@ -2,11 +2,8 @@
 suggest.py  —  EvaMusic smart recommendation engine
 
 What changed:
-- Added get_similar_songs() — finds songs by same artist/language/genre
-- Added get_similar_artists() — finds related artists
-- get_because_you_liked() now shows even if no liked songs (uses play history)
-- Better scoring for new users
-- COMPLETELY SELF-CONTAINED — no imports from app.py to avoid circular imports
+- Added fetch_songs_func parameters to eliminate circular dependencies with app.py.
+- Handled empty trending pool arrays defensively to avoid indexing or random sample failures.
 """
 
 import random
@@ -150,11 +147,8 @@ def _normalize_song_local(data):
 # MAIN FUNCTIONS
 # ═══════════════════════════════════════════════════════════════
 
-def get_similar_songs(song, limit=10):
+def get_similar_songs(song, fetch_songs_func, limit=10):
     """Find songs similar to the given song by artist, language, or genre."""
-    # Import app functions ONLY inside this function (lazy import)
-    from app import fetch_songs
-
     artist = (song.get('artist') or song.get('primaryArtists') or '').lower()
     title = (song.get('title') or song.get('name') or '').lower()
     lang = _detect_song_language_local(song)
@@ -165,7 +159,7 @@ def get_similar_songs(song, limit=10):
     # 1. Search by artist name
     if artist and artist != 'unknown':
         try:
-            raw = fetch_songs(artist.split(',')[0].strip(), limit * 2)
+            raw = fetch_songs_func(artist.split(',')[0].strip(), limit * 2)
             for s in raw:
                 norm = _normalize_song_local(s)
                 if norm and str(norm.get('id', '')) not in seen_ids:
@@ -178,7 +172,7 @@ def get_similar_songs(song, limit=10):
     if len(results) < limit:
         for indicator in LANG_INDICATORS.get(lang, []):
             try:
-                raw = fetch_songs(indicator, limit)
+                raw = fetch_songs_func(indicator, limit)
                 for s in raw:
                     norm = _normalize_song_local(s)
                     if norm and str(norm.get('id', '')) not in seen_ids:
@@ -240,7 +234,7 @@ def get_similar_artists(artist_name, limit=5):
     return similar
 
 
-def get_because_you_liked(user_id, trending_pool, limit=10):
+def get_because_you_liked(user_id, trending_pool, fetch_songs_func, limit=10):
     """Show songs similar to what the user liked or played."""
     import database as db
     from user.trackuser import get_full_taste_summary
@@ -257,7 +251,7 @@ def get_because_you_liked(user_id, trending_pool, limit=10):
         return random.sample(trending_pool, min(limit, len(trending_pool))) if trending_pool else []
 
     seed = random.choice(liked_songs)
-    similar = get_similar_songs(seed, limit=limit * 2)
+    similar = get_similar_songs(seed, fetch_songs_func, limit=limit * 2)
 
     top_artists = [a[0].lower() for a in taste.get('top_artists', [])[:3]]
     top_langs = [l[0].lower() for l in taste.get('top_languages', [])[:2]]
@@ -350,8 +344,8 @@ def get_suggestions_for_user(user_id, song_pool, limit=20):
     return [s[1] for s in scored[:limit]]
 
 
-def build_homepage_sections(user_id, trending_pool):
-    """Build all smart homepage sections."""
+def build_homepage_sections(user_id, trending_pool, fetch_songs_func):
+    """Build all smart homepage sections safely."""
     import database as db
     from user.trackuser import get_full_taste_summary
 
@@ -362,7 +356,7 @@ def build_homepage_sections(user_id, trending_pool):
     sections['for_you'] = get_suggestions_for_user(user_id, trending_pool, limit=20)
 
     # 2. Because You Liked
-    sections['because_you_liked'] = get_because_you_liked(user_id, trending_pool, limit=10)
+    sections['because_you_liked'] = get_because_you_liked(user_id, trending_pool, fetch_songs_func, limit=10)
 
     # 3. Your Artists
     top_artists = taste.get('top_artists', [])[:10]
@@ -378,8 +372,8 @@ def build_homepage_sections(user_id, trending_pool):
         })
     sections['your_artists'] = artist_cards
 
-    # 4. Trending Now
-    sections['trending'] = trending_pool[:10]
+    # 4. Trending Now (safely bounded)
+    sections['trending'] = trending_pool[:10] if trending_pool else []
 
     # 5. Your Usuals
     history = db.get_recently_played(user_id, 50)
@@ -411,6 +405,6 @@ def build_homepage_sections(user_id, trending_pool):
     if not taste.get('top_artists'):
         sections['recommended'] = random.sample(trending_pool, min(10, len(trending_pool))) if trending_pool else []
     else:
-        sections['recommended'] = sections['for_you'][:10]
+        sections['recommended'] = sections['for_you'][:10] if sections.get('for_you') else []
 
     return sections
