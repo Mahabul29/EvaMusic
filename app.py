@@ -2,6 +2,7 @@ import os
 import requests
 import uuid
 import re
+import html
 from flask import Flask, render_template, jsonify, request, send_from_directory, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
@@ -12,30 +13,12 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-somethin
 
 db.init_db()
 
-_LAST_GOOD_TRENDING = []
-_LAST_GOOD_TRENDING_LANG = {}  
-_LAST_TRENDING_FETCH_TIME = 0  
-
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     ),
     "Accept": "application/json",
-}
-
-LANG_INDICATORS = {
-    'hindi':     ['hindi', 'bollywood', 'हिंदी'],
-    'english':   ['english', 'pop', 'rock', 'edm', 'hip-hop', 'r&b'],
-    'punjabi':   ['punjabi', 'bhangra', 'ਪੰਜਾਬੀ'],
-    'tamil':     ['tamil', 'kollywood', 'தமிழ்'],
-    'telugu':    ['telugu', 'tollywood', 'తెలుగు'],
-    'marathi':   ['marathi', 'मराठी'],
-    'gujarati':  ['gujarati', 'ગુજરાતી'],
-    'bengali':   ['bengali', 'bangla', 'বাংলা'],
-    'kannada':   ['kannada', 'sandalwood', 'ಕನ್ನಡ'],
-    'malayalam': ['malayalam', 'mollywood', 'മലയാളം'],
-    'urdu':      ['urdu', 'اردو', 'ghazal', 'qawwali'],
 }
 
 def get_user_id():
@@ -102,32 +85,17 @@ def _normalize_song(s):
         "duration":  int(s.get("duration") or 0)
     }
 
-def _detect_languages(songs_list):
-    if not songs_list: return ['hindi']
-    langs = set()
-    for s in songs_list:
-        txt = f"{s.get('title','')} {s.get('artist','')}".lower()
-        found = False
-        for k, indicators in LANG_INDICATORS.items():
-            for ind in indicators:
-                if ind in txt:
-                    langs.add(k)
-                    found = True
-                    break
-        if not found:
-            langs.add('hindi')
-    return list(langs) if langs else ['hindi']
-
 @app.route('/')
 @app.route('/home')
 def home():
     user_id = get_user_id()
     selected_languages = session.get('selected_languages', ['hindi', 'english'])
-    lang_query = ",".join(selected_languages)
 
-    raw_trending = _call(get_trending_url(lang_query))
-    trending_songs = []
+    # FIXED: Calling get_trending_url with an integer limit, not language strings
+    trending_api_url = get_trending_url(limit=50)
+    raw_trending = _call(trending_api_url)
     
+    trending_songs = []
     if raw_trending and isinstance(raw_trending, dict):
         data_node = raw_trending.get("data") or raw_trending.get("results") or []
         if isinstance(data_node, dict):
@@ -240,4 +208,4 @@ def server_error(e):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
-                                   
+    
