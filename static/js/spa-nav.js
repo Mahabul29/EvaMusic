@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 // EvaMusic SPA Navigation — keeps audio alive, injects page styles on swap
-// ═══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 
 (function () {
     'use strict';
@@ -47,6 +47,12 @@
             // (playSong, removeFavorite, etc.) must re-register on every swap
             _execScripts(curMain, newDoc);
             _attachSongCards(curMain);
+
+            // CRITICAL: Re-initialize page-specific loaders for Home page
+            if ((url === '/home' || url === '/') && typeof initPageLoaders === 'function') {
+                console.log('[SPA] Re-initializing home page loaders');
+                initPageLoaders();
+            }
 
             // Refresh player state
             if (window.__evaPlayerInstance) {
@@ -188,4 +194,3 @@
     _attachSongCards(document.querySelector('.main-content'));
     console.log('[SPA] Navigation initialized');
 })();
-                    
