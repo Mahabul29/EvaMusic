@@ -1,175 +1,99 @@
 """
 user/trackuser.py  —  User Profile and Taste Modeling Engine
-
-Tracks explicit likes, plays, and skips to build an operational profile
-of favorite languages, artists, moods, and genres.
+Adjusted positional argument tracking limits to prevent runtime errors.
 """
 
+import os
+import json
 from collections import Counter
-import database as db
+
+TASTE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+TASTE_FILE = os.path.join(TASTE_DIR, 'taste_profiles.json')
+os.makedirs(TASTE_DIR, exist_ok=True)
+
+def _load_taste_profiles():
+    if not os.path.exists(TASTE_FILE):
+        return {}
+    try:
+        with open(TASTE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_taste_profiles(profiles):
+    try:
+        with open(TASTE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(profiles, f, indent=2)
+    except Exception:
+        pass
 
 # ═══════════════════════════════════════════════════════════════
-# TRACKING RULES & DICTIONARIES
-# ═══════════════════════════════════════════════════════════════
-
-LANG_INDICATORS = {
-    'hindi':     ['hindi', 'bollywood', 'हिंदी'],
-    'english':   ['english', 'pop', 'rock', 'edm', 'hip-hop', 'r&b'],
-    'punjabi':   ['punjabi', 'bhangra', 'ਪੰਜਾਬੀ'],
-    'tamil':     ['tamil', 'kollywood', 'தமிழ்'],
-    'telugu':    ['telugu', 'tollywood', 'తెలుగు'],
-    'marathi':   ['marathi', 'मराठी'],
-    'gujarati':  ['gujarati', 'ગુજરાતી'],
-    'bengali':   ['bengali', 'bangla', 'বাংলা'],
-    'kannada':   ['kannada', 'sandalwood', 'ಕನ್ನಡ'],
-    'malayalam': ['malayalam', 'mollywood', 'മലയാളം'],
-    'urdu':      ['urdu', 'اردو', 'ghazal', 'qawwali'],
-}
-
-ARTIST_LANG_MAP = {
-    'arijit singh': 'hindi', 'shreya ghoshal': 'hindi', 'sonu nigam': 'hindi',
-    'jubin nautiyal': 'hindi', 'neha kakkar': 'hindi', 'atif aslam': 'hindi',
-    'armaan malik': 'hindi', 'vishal mishra': 'hindi', 'pritam': 'hindi',
-    'a.r. rahman': 'hindi', 'shankar ehsaan loy': 'hindi', 'badshah': 'hindi',
-    'guru randhawa': 'hindi', 'jass manak': 'hindi', 'darshan raval': 'hindi',
-    'diljit dosanjh': 'punjabi', 'sidhu moose wala': 'punjabi',
-    'karan aujla': 'punjabi', 'ap dhillon': 'punjabi', 'shubh': 'punjabi',
-    'taylor swift': 'english', 'ed sheeran': 'english', 'drake': 'english',
-    'the weeknd': 'english', 'ariana grande': 'english', 'justin bieber': 'english',
-    'anirudh ravichander': 'tamil', 'yuvan shankar raja': 'tamil',
-    's. thaman': 'telugu', 'devi sri prasad': 'telugu',
-    'anupam roy': 'bengali', 'jeet gannguli': 'bengali',
-    'ajay-atul': 'marathi', 'nusrat fateh ali khan': 'urdu'
-}
-
-def _detect_song_language(song):
-    """Identifies the operational language profile of a song metadata block."""
-    artist = (song.get('artist') or '').lower()
-    for artist_name, lang in ARTIST_LANG_MAP.items():
-        if artist_name in artist or artist in artist_name:
-            return lang
-
-    title = (song.get('title') or song.get('name') or '').lower()
-    for lang, indicators in LANG_INDICATORS.items():
-        for indicator in indicators:
-            if indicator in title or indicator in artist:
-                return lang
-
-    lang_field = (song.get('language') or '').lower()
-    if lang_field and lang_field in LANG_INDICATORS:
-        return lang_field
-
-    return 'hindi'
-
-# ═══════════════════════════════════════════════════════════════
-# REFRESH / UTILITY HOOKS REQUIRED BY REFRESH.PY
+# SIGNATURE HOOKS FOR REFRESH.PY
 # ═══════════════════════════════════════════════════════════════
 
 def on_song_liked(user_id, song_data):
-    """Triggered when a user favorites a song."""
-    song_id = song_data.get('id')
-    title = song_data.get('title')
-    print(f"[TASTE ENGINE] Liked: {title} ({song_id}) for user {user_id}")
+    profiles = _load_taste_profiles()
+    if user_id not in profiles:
+        profiles[user_id] = {"artists": {}, "languages": {}, "genres": {}, "skips": []}
+    
+    artist = (song_data.get('artist') or 'Unknown').split(',')[0].strip()
+    artists_map = profiles[user_id].setdefault("artists", {})
+    artists_map[artist] = artists_map.get(artist, 0) + 5
+    _save_taste_profiles(profiles)
 
-def on_song_played(user_id, song_data):
-    """Triggered when a user plays a song fully."""
-    song_id = song_data.get('id')
-    title = song_data.get('title')
-    print(f"[TASTE ENGINE] Played: {title} ({song_id}) for user {user_id}")
+def on_song_played(user_id, song_data, listen_seconds=60):
+    profiles = _load_taste_profiles()
+    if user_id not in profiles:
+        profiles[user_id] = {"artists": {}, "languages": {}, "genres": {}, "skips": []}
+        
+    artist = (song_data.get('artist') or 'Unknown').split(',')[0].strip()
+    artists_map = profiles[user_id].setdefault("artists", {})
+    artists_map[artist] = artists_map.get(artist, 0) + 1
+    _save_taste_profiles(profiles)
 
-def on_song_skipped(user_id, song_data):
-    """Triggered when a user skips a song early."""
-    song_id = song_data.get('id')
-    print(f"[TASTE ENGINE] Skipped: {song_id} for user {user_id}")
+def on_song_skipped(user_id, song_data, listen_seconds=3):
+    profiles = _load_taste_profiles()
+    if user_id not in profiles:
+        profiles[user_id] = {"artists": {}, "languages": {}, "genres": {}, "skips": []}
+        
+    skips_list = profiles[user_id].setdefault("skips", [])
+    sid = str(song_data.get('id') or song_data.get('song_id', ''))
+    if sid and sid not in skips_list:
+        skips_list.append(sid)
+    _save_taste_profiles(profiles)
 
 def get_disliked_songs(user_id):
-    """Returns a list of song IDs that the user has skipped too often or disliked."""
-    # Returns empty for now so it doesn't break queue calculations
+    profiles = _load_taste_profiles()
+    if user_id in profiles:
+        return profiles[user_id].get("skips", [])
     return []
 
 # ═══════════════════════════════════════════════════════════════
-# TASTE PROFILE ENGINE
+# ANALYTICS DISPLAY GENERATION
 # ═══════════════════════════════════════════════════════════════
 
 def get_full_taste_summary(user_id):
-    """
-    Queries history log buffers and explicit favorite tables to return
-    a sorted summary matrix of user music preferences.
-    """
-    favorites = db.get_user_favorites(user_id)
-    history = db.get_recently_played(user_id, limit=50)
-
-    artist_counter = Counter()
-    lang_counter = Counter()
-    genre_counter = Counter()
-    mood_counter = Counter()
-
-    # 1. Process explicit highly-weighted favorites matrix items
-    for f in favorites:
-        artists_str = f.get('artist') or 'Unknown'
-        for a in artists_str.split(','):
-            name = a.strip().title()
-            if name and name != 'Unknown':
-                artist_counter[name] += 5  
-
-        lang = _detect_song_language(f)
-        lang_counter[lang] += 5
-
-        genre = f.get('genre') or f.get('album') or ''
-        if genre and len(genre) > 2:
-            genre_counter[genre.title()] += 3
-
-    # 2. Process implicit streaming playback events (lower scalar weight)
-    for h in history:
-        artists_str = h.get('artist') or 'Unknown'
-        for a in artists_str.split(','):
-            name = a.strip().title()
-            if name and name != 'Unknown':
-                artist_counter[name] += 1
-
-        lang = _detect_song_language({
-            'title': h.get('title'),
-            'artist': h.get('artist')
-        })
-        lang_counter[lang] += 1
-
-        genre = h.get('genre') or h.get('album') or ''
-        if genre and len(genre) > 2:
-            genre_counter[genre.title()] += 1
-
-    # 3. Handle default empty states beautifully
-    if not artist_counter and not lang_counter:
+    profiles = _load_taste_profiles()
+    user_p = profiles.get(user_id, {})
+    
+    artists = sorted(user_p.get("artists", {}).items(), key=lambda x: x[1], reverse=True)
+    languages = sorted(user_p.get("languages", {}).items(), key=lambda x: x[1], reverse=True)
+    genres = sorted(user_p.get("genres", {}).items(), key=lambda x: x[1], reverse=True)
+    
+    if not artists:
         return {
             'top_artists': [],
             'top_languages': [('Hindi', 1)],
             'top_genres': [],
-            'top_moods': [('Happy', 1)],
+            'top_moods': [('Chill', 1)],
             'metrics_collected': 0
         }
-
-    sorted_artists = artist_counter.most_common(10)
-    sorted_langs = [(l.title(), w) for l, w in lang_counter.most_common(5)]
-    sorted_genres = genre_counter.most_common(5)
-
-    for g, weight in sorted_genres:
-        g_lower = g.lower()
-        if 'romantic' in g_lower or 'love' in g_lower:
-            mood_counter['Romantic'] += weight
-        elif 'sad' in g_lower or 'broken' in g_lower or 'pain' in g_lower:
-            mood_counter['Melancholic'] += weight
-        elif 'dance' in g_lower or 'party' in g_lower or 'hip hop' in g_lower:
-            mood_counter['Energetic'] += weight
-        else:
-            mood_counter['Chill'] += 1
-
-    if not mood_counter:
-        mood_counter['Chill'] = 1
-
+        
     return {
-        'top_artists': sorted_artists,
-        'top_languages': sorted_langs,
-        'top_genres': sorted_genres,
-        'top_moods': mood_counter.most_common(3),
-        'metrics_collected': len(favorites) + len(history)
-}
-                
+        'top_artists': artists[:5],
+        'top_languages': languages[:3] if languages else [('Hindi', 1)],
+        'top_genres': genres[:3],
+        'top_moods': [('Chill', 1)],
+        'metrics_collected': len(artists)
+    }
+    
