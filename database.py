@@ -131,4 +131,4 @@ def add_to_search_history(user_id, query):
 
 def check_db_health():
     return {"status": "healthy", "connected": True, "type": "file_json"}
-                                      
+    
