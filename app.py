@@ -6,10 +6,12 @@ from flask import Flask, render_template, jsonify, request, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
 import database as db
+from routes import profile_bp
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
+app.register_blueprint(profile_bp)
 db.init_db()
 
 HEADERS = {
@@ -397,3 +399,4 @@ def api_stats():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+        
