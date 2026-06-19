@@ -1,241 +1,397 @@
 {% extends "base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% block title %}EvaMusic — Discover Music{% endblock %}
 
 {% block extra_css %}
 <style>
-.hero-section{padding:30px 20px;text-align:center;background:linear-gradient(180deg,rgba(29,185,84,0.08)0%,transparent 100%)}
-.hero-section h1{font-size:32px;font-weight:800;background:linear-gradient(135deg,#1DB954,#1ed760);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero-section p{color:var(--text-secondary);margin-bottom:20px}
-.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--accent-color);color:white;border-radius:24px;text-decoration:none;font-weight:600}
-.lang-filters{display:flex;gap:10px;padding:16px 20px;overflow-x:auto;scrollbar-width:none}
-.lang-filters::-webkit-scrollbar{display:none}
-.lang-chip{padding:8px 18px;border-radius:20px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);font-size:14px;text-decoration:none;white-space:nowrap}
-.lang-chip.active,.lang-chip:hover{background:var(--accent-color);border-color:var(--accent-color);color:white}
-.trending-section{padding:20px}
-.trending-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.trending-header h2{font-size:28px;font-weight:800}
-.trending-header p{color:var(--text-secondary);margin-left:auto;font-size:14px}
-.trending-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.hero-section {
+    padding: 30px 20px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(29,185,84,0.08) 0%, transparent 100%);
+}
+.hero-section h1 {
+    font-size: 34px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #1DB954, #1ed760);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+.hero-section p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 15px;
+}
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--accent-color);
+    color: #000;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    transition: transform 0.15s;
+}
+.btn-primary:active { transform: scale(0.96); }
 
-/* Card wrapper - contains both card and heart button */
-.song-card-wrapper{position:relative;background:var(--card-bg);border-radius:16px;overflow:hidden}
+.lang-filters {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.lang-filters::-webkit-scrollbar { display: none; }
+.lang-chip {
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+.lang-chip.active,
+.lang-chip:active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #000;
+    font-weight: 700;
+}
 
-.trending-card{background:var(--card-bg);border-radius:16px;overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text-color);display:block}
-.trending-card:active{transform:scale(0.97)}
-.trending-image{position:relative;height:180px;overflow:hidden}
-.trending-image img{width:100%;height:100%;object-fit:cover}
-.trending-play{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
-.trending-play i{font-size:48px;color:white}
-.trending-card:hover .trending-play,.trending-card:active .trending-play{opacity:1}
-.trending-info{padding:12px}
-.trending-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trending-artist{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trending-section { padding: 0 16px 20px; }
+.trending-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-top: 8px;
+}
+.trending-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+}
+.trending-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
 
-/* Heart button - OUTSIDE the <a> tag */
+/* Card wrapper */
+.song-card-wrapper {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.trending-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-color);
+    display: block;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s;
+}
+.trending-card:active { transform: scale(0.97); }
+
+.trending-image {
+    position: relative;
+    height: 160px;
+    overflow: hidden;
+    background: var(--hover-bg);
+}
+.trending-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.trending-play {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.trending-play i { font-size: 44px; color: white; }
+.trending-card:active .trending-play { opacity: 1; }
+
+.trending-info { padding: 10px 12px 12px; }
+.trending-title {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+}
+.trending-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Heart button */
 .heart-btn-standalone {
-    position:absolute;
-    top:8px;
-    right:8px;
-    width:40px;
-    height:40px;
-    border-radius:50%;
-    background:rgba(0,0,0,0.7);
-    border:2px solid rgba(255,255,255,0.3);
-    color:white;
-    font-size:18px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:all 0.2s;
-    z-index:20;
-    backdrop-filter:blur(4px);
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
 }
-.heart-btn-standalone:hover {
-    background:rgba(29,185,84,0.9);
-    border-color:#1DB954;
-    transform:scale(1.15);
-}
-.heart-btn-standalone:active {
-    transform:scale(0.95);
-}
+.heart-btn-standalone:active { transform: scale(0.92); }
 .heart-btn-standalone.liked {
-    background:rgba(255,71,87,0.9);
-    border-color:#ff4757;
-    color:white;
+    background: rgba(239,68,68,0.9);
+    border-color: #ef4444;
 }
-.heart-btn-standalone .far.fa-heart,
-.heart-btn-standalone .fas.fa-heart {
-    pointer-events:none;
+
+/* Empty / loading state */
+.empty-grid-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
 }
+.empty-grid-msg i { font-size: 40px; opacity: 0.25; margin-bottom: 12px; display: block; }
+
+/* Skeleton */
+.skeleton-wrapper { background: var(--card-bg); border-radius: 16px; overflow: hidden; }
+.skeleton {
+    background: linear-gradient(90deg, var(--card-bg) 25%, var(--hover-bg) 50%, var(--card-bg) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.sk-img  { height: 160px; }
+.sk-line { height: 13px; border-radius: 6px; margin: 10px 12px 6px; }
+.sk-line.short { width: 60%; margin-bottom: 12px; }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- Hero -->
 <div class="hero-section">
     <h1>EvaMusic</h1>
     <p>Millions of songs. Free forever.</p>
-    <a href="/trending" class="btn-primary"><i class="fas fa-fire"></i> Explore Trending</a>
+    <a href="/home" class="btn-primary"><i class="fas fa-headphones"></i> Start Listening</a>
 </div>
+
+<!-- Language chips -->
 <div class="lang-filters">
-    <a href="/home" class="lang-chip active">All</a>
-    <a href="/search?q=hindi" class="lang-chip">Hindi</a>
+    <a href="/home"           class="lang-chip active">All</a>
+    <a href="/search?q=hindi"   class="lang-chip">Hindi</a>
     <a href="/search?q=bengali" class="lang-chip">Bengali</a>
     <a href="/search?q=english" class="lang-chip">English</a>
     <a href="/search?q=punjabi" class="lang-chip">Punjabi</a>
-    <a href="/search?q=tamil" class="lang-chip">Tamil</a>
+    <a href="/search?q=tamil"   class="lang-chip">Tamil</a>
+    <a href="/search?q=telugu"  class="lang-chip">Telugu</a>
 </div>
+
+<!-- Trending Grid -->
 <section class="trending-section">
     <div class="trending-header">
-        <i class="fas fa-fire" style="color:#ff6b35;font-size:28px"></i>
-        <div><h2>Trending</h2><p>Hot songs right now</p></div>
+        <i class="fas fa-fire" style="color:#ff6b35;font-size:26px"></i>
+        <h2>Trending Now</h2>
     </div>
-    <div class="trending-grid">
-        {% for song in songs[:6] %}
-        <!-- WRAPPER div - heart button is sibling of <a>, NOT child -->
-        <div class="song-card-wrapper">
-            <!-- Clickable card - use onclick handler instead of href -->
-            <a href="#" class="trending-card" 
-               data-song-id="{{ song.id }}"
-               data-song-title="{{ song.title }}"
-               data-song-artist="{{ song.artist }}"
-               data-song-image="{{ song.image }}"
-               data-song-url="{{ song.url }}"
-               onclick="event.preventDefault(); event.stopPropagation(); playSong('{{ song.id }}', {{ song|tojson }}); return false;"
->
-                <div class="trending-image">
-                    <img src="{{ song.image }}" alt="{{ song.title }}" loading="lazy" onerror="this.src='/static/images/default-album.png'">
-                    <div class="trending-play"><i class="fas fa-play-circle"></i></div>
-                </div>
-                <div class="trending-info">
-                    <h3 class="trending-title">{{ song.title }}</h3>
-                    <p class="trending-artist">{{ song.artist }}</p>
-                </div>
-            </a>
-            <!-- Heart button - OUTSIDE the <a> tag, same level -->
-            <button class="heart-btn-standalone" type="button" 
-                    data-song-id="{{ song.id }}"
-                    data-song-data='{{ song|tojson }}'
-                    onclick="handleLikeClick(event, this);"
-                    title="Add to favorites">
-                <i class="far fa-heart"></i>
-            </button>
-        </div>
-        {% endfor %}
+
+    <div class="trending-grid" id="trendingGrid">
+        {% if songs %}
+            {% for song in songs[:6] %}
+            <div class="song-card-wrapper">
+                <a href="#" class="trending-card"
+                   data-song-id="{{ song.id }}"
+                   onclick="event.preventDefault(); _indexPlay('{{ song.id }}', {{ song|tojson }}); return false;">
+                    <div class="trending-image">
+                        <img src="{{ song.image }}"
+                             alt="{{ song.title }}"
+                             loading="lazy"
+                             onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+                        <div class="trending-play"><i class="fas fa-play-circle"></i></div>
+                    </div>
+                    <div class="trending-info">
+                        <div class="trending-title">{{ song.title }}</div>
+                        <div class="trending-artist">{{ song.artist }}</div>
+                    </div>
+                </a>
+                <button class="heart-btn-standalone"
+                        type="button"
+                        data-song-id="{{ song.id }}"
+                        data-song-data='{{ song|tojson }}'
+                        onclick="handleLikeClick(event, this)"
+                        title="Add to favorites">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Skeletons shown while JS loads trending -->
+            {% for i in range(6) %}
+            <div class="skeleton-wrapper">
+                <div class="skeleton sk-img"></div>
+                <div class="skeleton sk-line"></div>
+                <div class="skeleton sk-line short"></div>
+            </div>
+            {% endfor %}
+        {% endif %}
     </div>
 </section>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function playSong(id, songData) {
-    document.getElementById('musicBarThumb').src = songData.image || '/static/images/default-album.png';
-    document.getElementById('musicBarTitle').textContent = songData.title;
-    document.getElementById('musicBarArtist').textContent = songData.artist || '-';
-    document.getElementById('musicBar').classList.remove('hidden');
-    
-    const playIcon = document.getElementById('musicBarPlayIcon');
-    if (playIcon) {
-        playIcon.classList.remove('fa-play');
-        playIcon.classList.add('fa-pause');
+// ── Play via the global EvaPlayer instance ────────────────────────────────────
+function _indexPlay(songId, songData) {
+    if (window.player && typeof window.player.playSong === 'function') {
+        window.player.playSong(songId, songData);
+    } else {
+        // Fallback: update music bar manually
+        const thumb  = document.getElementById('musicBarThumb');
+        const title  = document.getElementById('musicBarTitle');
+        const artist = document.getElementById('musicBarArtist');
+        const bar    = document.getElementById('musicBar');
+        if (thumb)  thumb.src          = songData.image  || '/static/images/default-album.png';
+        if (title)  title.textContent  = songData.title  || 'Unknown';
+        if (artist) artist.textContent = songData.artist || '-';
+        if (bar)    bar.classList.remove('hidden');
+        showToast('▶ ' + (songData.title || 'Playing'), 'success');
     }
-    
-    if (window.EvaPlayer && typeof window.EvaPlayer.play === 'function') {
-        window.EvaPlayer.play(songData);
-    }
-    
-    localStorage.setItem('evamusic_currentSong', JSON.stringify(songData));
-    showToast(`Now playing: ${songData.title}`, 'success');
 }
 
-// FIXED: Proper event handling - stops ALL propagation
+// ── Like / Unlike ─────────────────────────────────────────────────────────────
 async function handleLikeClick(event, btn) {
-    // CRITICAL: Stop the click from reaching the card
     event.stopPropagation();
     event.preventDefault();
     event.stopImmediatePropagation();
-    
+
     const songData = JSON.parse(btn.dataset.songData);
-    const songId = songData.id;
     const icon = btn.querySelector('i');
-    
-    // Visual feedback
+
     btn.style.transform = 'scale(1.3)';
-    setTimeout(() => btn.style.transform = 'scale(1)', 200);
-    
+    setTimeout(() => btn.style.transform = '', 200);
+
     try {
         const res = await fetch('/api/favorite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                song_id: songId,
-                title: songData.title || 'Unknown',
-                artist: songData.artist || 'Unknown',
-                album: songData.album || '',
-                duration: songData.duration || '',
-                image_url: songData.image || '',
-                audio_url: songData.url || '',
+                song_id:   songData.id       || '',
+                title:     songData.title    || 'Unknown',
+                artist:    songData.artist   || 'Unknown',
+                album:     songData.album    || '',
+                duration:  songData.duration || 0,
+                image_url: songData.image    || '',
+                audio_url: songData.url      || '',
                 source: 'jiosaavn'
             })
         });
-        
         const data = await res.json();
-        
         if (data.success) {
-            if (data.action === 'added') {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                btn.classList.add('liked');
-                showToast('❤️ Added to favorites', 'success');
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                btn.classList.remove('liked');
-                showToast('💔 Removed from favorites', 'info');
-            }
-        } else {
-            showToast(data.message || 'Failed', 'error');
+            const added = data.action === 'added';
+            icon.className = added ? 'fas fa-heart' : 'far fa-heart';
+            btn.classList.toggle('liked', added);
+            showToast(added ? '❤️ Added to favorites' : '💔 Removed', added ? 'success' : 'info');
         }
     } catch (e) {
-        console.error('Like error:', e);
         showToast('Network error', 'error');
     }
-    
-    return false; // Extra safety
+    return false;
 }
 
+// ── Restore heart states from API ─────────────────────────────────────────────
 async function initHeartStates() {
     try {
-        const res = await fetch('/api/favorites');
-        const favorites = await res.json();
-        const favIds = new Set(favorites.map(f => f.song_id));
-        
+        const res  = await fetch('/api/favorites');
+        const favs = await res.json();
+        const ids  = new Set(favs.map(f => f.song_id || f.id));
         document.querySelectorAll('.heart-btn-standalone').forEach(btn => {
-            const songData = JSON.parse(btn.dataset.songData);
-            if (favIds.has(songData.id)) {
-                const icon = btn.querySelector('i');
-                icon.classList.remove('far');
-                icon.classList.add('fas');
+            const sd = JSON.parse(btn.dataset.songData || '{}');
+            if (ids.has(sd.id)) {
+                btn.querySelector('i').className = 'fas fa-heart';
                 btn.classList.add('liked');
             }
         });
+    } catch (e) { /* not critical */ }
+}
+
+// ── Load trending via API if page had no server songs ─────────────────────────
+async function loadTrendingIfEmpty() {
+    const grid = document.getElementById('trendingGrid');
+    if (!grid) return;
+    // If real cards already rendered by Jinja, skip
+    if (grid.querySelectorAll('.song-card-wrapper').length > 0) {
+        initHeartStates();
+        return;
+    }
+    try {
+        const res   = await fetch('/api/trending?limit=6');
+        const songs = await res.json();
+        if (!songs || !songs.length) return;
+
+        grid.innerHTML = songs.map(song => `
+            <div class="song-card-wrapper">
+                <a href="#" class="trending-card"
+                   data-song-id="${song.id}"
+                   onclick="event.preventDefault(); _indexPlay('${song.id}', ${JSON.stringify(song).replace(/'/g,"&#39;")}); return false;">
+                    <div class="trending-image">
+                        <img src="${song.image || '/static/images/default-album.png'}"
+                             alt="${song.title || ''}"
+                             loading="lazy"
+                             onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+                        <div class="trending-play"><i class="fas fa-play-circle"></i></div>
+                    </div>
+                    <div class="trending-info">
+                        <div class="trending-title">${song.title || 'Unknown'}</div>
+                        <div class="trending-artist">${song.artist || ''}</div>
+                    </div>
+                </a>
+                <button class="heart-btn-standalone" type="button"
+                        data-song-id="${song.id}"
+                        data-song-data='${JSON.stringify(song).replace(/'/g,"&#39;")}'
+                        onclick="handleLikeClick(event, this)"
+                        title="Add to favorites">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>`).join('');
+
+        initHeartStates();
     } catch (e) {
-        console.log('Could not load favorite states');
+        console.warn('Trending load failed', e);
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const lastSong = localStorage.getItem('evamusic_currentSong');
-    if (lastSong) {
-        try {
-            const song = JSON.parse(lastSong);
-            document.getElementById('musicBarThumb').src = song.image || '/static/images/default-album.png';
-            document.getElementById('musicBarTitle').textContent = song.title;
-            document.getElementById('musicBarArtist').textContent = song.artist || '-';
-            document.getElementById('musicBar').classList.remove('hidden');
-        } catch(e) {}
-    }
-    initHeartStates();
-});
+document.addEventListener('DOMContentLoaded', loadTrendingIfEmpty);
 </script>
 {% endblock %}
+    
