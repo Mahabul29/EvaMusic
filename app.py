@@ -6,11 +6,15 @@ from flask import Flask, render_template, jsonify, request, session
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
 import database as db
+from routes import profile_bp   # ← register the blueprint
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
 db.init_db()
+
+# Register blueprint (provides /profile, /settings, /favorites, /history)
+app.register_blueprint(profile_bp)
 
 HEADERS = {
     "User-Agent": (
@@ -185,7 +189,6 @@ def search():
             norm = _normalize_song(item)
             if norm and norm.get("url"):
                 songs.append(norm)
-        # FIX: was db.save_search_query() which doesn't exist — correct name is add_to_search_history
         db.add_to_search_history(get_user_id(), query)
     return render_template('search.html', songs=songs, query=query, title="Search")
 
@@ -213,10 +216,6 @@ def player(song_id):
 
 @app.route('/api/trending')
 def api_trending():
-    """
-    FIX: This route was missing entirely — home.html JS and pullup-player.js
-    both call /api/trending but it was never exposed as an endpoint.
-    """
     limit = int(request.args.get('limit', 10))
     raw_trending = fetch_trending(limit)
     songs = []
@@ -228,10 +227,6 @@ def api_trending():
 
 @app.route('/api/search')
 def api_search():
-    """
-    Search endpoint used by pullup-player.js queue/auto-extend feature
-    and the Now Playing queue sheet.
-    """
     query = request.args.get('q', '').strip()
     limit = int(request.args.get('limit', 20))
     if not query:
@@ -246,10 +241,6 @@ def api_search():
 
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
-    """
-    Returns full song data for a given ID.
-    Used by pullup-player.js when it needs to refetch a fresh audio URL.
-    """
     data = _call(get_song_url(song_id))
     song = _normalize_song(data) if data else None
     if not song:
@@ -258,12 +249,7 @@ def api_song(song_id):
 
 @app.route('/api/similar-songs/<song_id>')
 def api_similar_songs(song_id):
-    """
-    Returns songs similar to the given song_id.
-    Used by player.html to show the 'More Like This' section.
-    """
     limit = int(request.args.get('limit', 10))
-    # Fetch the song first to get artist/title for search
     data = _call(get_song_url(song_id))
     song = _normalize_song(data) if data else None
 
@@ -275,13 +261,11 @@ def api_similar_songs(song_id):
             raw = fetch_songs(primary_artist, limit + 5)
             for item in raw:
                 norm = _normalize_song(item)
-                # Exclude the current song itself
                 if norm and norm.get("url") and norm.get("id") != song_id:
                     similar.append(norm)
                     if len(similar) >= limit:
                         break
 
-    # Fallback to trending if nothing found
     if not similar:
         raw_trending = fetch_trending(limit)
         for item in raw_trending:
@@ -295,7 +279,6 @@ def api_similar_songs(song_id):
 
 @app.route('/api/favorite', methods=['POST'])
 def api_favorite():
-    """Toggle a song in/out of the user's favorites."""
     data = request.get_json(silent=True) or {}
     user_id = get_user_id()
     song_data = {
@@ -312,10 +295,8 @@ def api_favorite():
 
 @app.route('/api/favorites')
 def api_favorites():
-    """Return the user's favorite songs list."""
     user_id = get_user_id()
     favs = db.get_user_favorites(user_id)
-    # Normalize keys so the JS player can read them
     normalized = []
     for f in favs:
         normalized.append({
