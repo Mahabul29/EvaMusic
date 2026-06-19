@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app files
 COPY . .
 
-# Koyeb uses PORT env variable
+# Create data directory for JSON storage
+RUN mkdir -p /app/data
+
+# Koyeb uses PORT env variable (default 8000)
 ENV PORT=8000
 
 # Expose port
