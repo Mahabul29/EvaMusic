@@ -24,6 +24,19 @@
 
         try {
             const res  = await fetch(url, { headers: { 'X-SPA': '1' } });
+
+            // ── FIX: If the server redirected us (e.g. login_required sending
+            //    to /home or /login), hard-navigate to the real destination
+            //    instead of silently swapping in the wrong page's HTML.
+            if (res.redirected) {
+                const redirectPath = new URL(res.url).pathname;
+                const requestedPath = new URL(url, window.location.origin).pathname;
+                if (redirectPath !== requestedPath) {
+                    window.location.href = res.url;
+                    return;
+                }
+            }
+
             const html = await res.text();
 
             const parser  = new DOMParser();
@@ -32,6 +45,17 @@
             const curMain = document.querySelector('.main-content');
 
             if (!newMain || !curMain) { window.location.href = url; return; }
+
+            // ── FIX: Double-check the loaded page isn't home/login when we
+            //    requested something else (catches non-redirect server redirects
+            //    done via meta refresh or JS, and catches cases where fetch
+            //    doesn't expose res.redirected due to same-origin quirks).
+            const loadedPath = res.url ? new URL(res.url).pathname : null;
+            const requestedPath2 = new URL(url, window.location.origin).pathname;
+            if (loadedPath && loadedPath !== requestedPath2) {
+                window.location.href = res.url;
+                return;
+            }
 
             _injectStyles(newDoc);
             curMain.innerHTML = newMain.innerHTML;
@@ -194,3 +218,4 @@
     _attachSongCards(document.querySelector('.main-content'));
     console.log('[SPA] Navigation initialized');
 })();
+                        
