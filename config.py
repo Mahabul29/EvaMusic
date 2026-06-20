@@ -106,4 +106,3 @@ ACTIVE_CONFIG = config_by_name.get(ENV, ProductionConfig)
 APP_NAME        = "EvaMusic"
 APP_VERSION     = "1.0.0"
 APP_DESCRIPTION = "A modern music streaming web application"
-    
