@@ -10,10 +10,11 @@ import uuid
 profile_bp = Blueprint('profile', __name__)
 
 def get_user_id():
-    if 'user_id' not in session:
-        session['user_id'] = str(uuid.uuid4())[:8]
-        session['username'] = f"user_{session['user_id']}"
-    return session['user_id']
+    if 'user_id' in session:
+        return session['user_id']
+    if 'guest_id' not in session:
+        session['guest_id'] = str(uuid.uuid4())[:8]
+    return session['guest_id']
 
 # ── PROFILE ────────────────────────────────────────────────────
 
@@ -34,12 +35,27 @@ def profile():
             "audio_url": f.get("url", ""),
         })
 
-    profile_data = {
-        "username":     user_id,
-        "display_name": session.get('username', 'Music Lover'),
-        "bio":          "",
-        "social_links": {},
-    }
+    # Load user data from database if logged in
+    users = db._load("users")
+    user_data = users.get(user_id, {})
+
+    if user_data:
+        profile_data = {
+            "username":     user_data.get("username", user_id),
+            "display_name": user_data.get("display_name", user_data.get("name", "Music Lover")),
+            "bio":          user_data.get("bio", "Music lover"),
+            "picture":      user_data.get("picture", ""),
+            "social_links": user_data.get("social_links", {}),
+        }
+    else:
+        profile_data = {
+            "username":     user_id,
+            "display_name": session.get('username', 'Music Lover'),
+            "bio":          "",
+            "picture":      "",
+            "social_links": {},
+        }
+
     stats = {
         "total_favorites":  len(favorites),
         "total_playlists":  0,
@@ -100,4 +116,4 @@ def api_update_profile():
 def api_delete_profile():
     session.clear()
     return jsonify({"success": True})
-    
+        
