@@ -2,8 +2,10 @@ import os
 import requests
 import uuid
 import html
-from flask import Flask, render_template, jsonify, request, session
+from datetime import datetime, timezone
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
+from oauth import init_oauth, get_google_user
 
 import database as db
 from routes import profile_bp
@@ -11,6 +13,7 @@ from routes import profile_bp
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
+init_oauth(app)
 app.register_blueprint(profile_bp)
 db.init_db()
 
@@ -22,13 +25,19 @@ HEADERS = {
     "Accept": "application/json",
 }
 
+
 def get_user_id():
-    if 'user_id' not in session:
-        session['user_id'] = str(uuid.uuid4())[:8]
-    return session['user_id']
+    """Return the logged-in user's ID, or a guest ID if not logged in."""
+    if 'user_id' in session:
+        return session['user_id']
+    if 'guest_id' not in session:
+        session['guest_id'] = str(uuid.uuid4())[:8]
+    return session['guest_id']
+
 
 def is_logged_in():
     return bool(session.get('logged_in'))
+
 
 def _call(url, timeout=12):
     try:
@@ -38,6 +47,7 @@ def _call(url, timeout=12):
     except Exception as e:
         print(f"[API ERROR] {url}: {e}")
     return None
+
 
 def _extract_audio_url(data):
     if not data:
@@ -77,6 +87,7 @@ def _extract_audio_url(data):
             if url:
                 return url
     return ""
+
 
 def _normalize_song(data):
     if not data:
@@ -119,6 +130,7 @@ def _normalize_song(data):
         "url":      audio_url,
     }
 
+
 def fetch_songs(query, limit=20):
     data = _call(get_search_url(query, limit))
     if isinstance(data, list) and data:
@@ -130,6 +142,7 @@ def fetch_songs(query, limit=20):
                 return inner
     return []
 
+
 def fetch_trending(limit=20):
     data = _call(get_trending_url(limit))
     if isinstance(data, list) and data:
@@ -140,6 +153,7 @@ def fetch_trending(limit=20):
             if isinstance(inner, list) and inner:
                 return inner
     return []
+
 
 # ── PAGE ROUTES ────────────────────────────────────────────────
 
@@ -177,6 +191,7 @@ def home():
         selected_languages=selected_languages
     )
 
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '').strip()
@@ -187,9 +202,9 @@ def search():
             norm = _normalize_song(item)
             if norm and norm.get("url"):
                 songs.append(norm)
-        # FIX: was db.save_search_query() which doesn't exist — correct name is add_to_search_history
         db.add_to_search_history(get_user_id(), query)
     return render_template('search.html', songs=songs, query=query, title="Search")
+
 
 # ── PLAYER / CONTENT ROUTES ────────────────────────────────────
 
@@ -211,14 +226,88 @@ def player(song_id):
         })
     return render_template('player.html', song=song, title=song.get("title", "Player"))
 
+
+# ── AUTH / OAUTH ROUTES ────────────────────────────────────────
+
+@app.route('/login/google')
+def login_google():
+    redirect_uri = url_for('authorize_google', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@app.route('/login/google/callback')
+def authorize_google():
+    token = oauth.google.authorize_access_token()
+    user_info = get_google_user(token)
+
+    if not user_info:
+        return redirect('/?error=oauth_failed')
+
+    email = user_info.get('email')
+    name = user_info.get('name', email.split('@')[0] if email else 'User')
+    picture = user_info.get('picture', '')
+
+    # Store in JSON database
+    users = db._load("users")
+    user_id = None
+
+    # Check if user already exists by email
+    for uid, udata in users.items():
+        if udata.get('email') == email:
+            user_id = uid
+            break
+
+    # Create new user if not found
+    if not user_id:
+        user_id = str(uuid.uuid4())[:8]
+        users[user_id] = {
+            "id": user_id,
+            "email": email,
+            "name": name,
+            "display_name": name,
+            "username": email.split('@')[0] if email else f"user_{user_id}",
+            "picture": picture,
+            "provider": "google",
+            "bio": "Music lover",
+            "social_links": {},
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        db._save("users", users)
+
+    # Set session
+    session['user_id'] = user_id
+    session['logged_in'] = True
+    session['user_name'] = name
+    session['user_email'] = email
+    session['user_picture'] = picture
+
+    return redirect('/')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
+
+
+@app.route('/api/me')
+def api_me():
+    """Return current logged-in user info."""
+    if not session.get('logged_in'):
+        return jsonify({"logged_in": False})
+    return jsonify({
+        "logged_in": True,
+        "user_id": session.get('user_id'),
+        "name": session.get('user_name'),
+        "email": session.get('user_email'),
+        "picture": session.get('user_picture')
+    })
+
+
 # ── API ROUTES ─────────────────────────────────────────────────
 
 @app.route('/api/trending')
 def api_trending():
-    """
-    FIX: This route was missing entirely — home.html JS and pullup-player.js
-    both call /api/trending but it was never exposed as an endpoint.
-    """
     limit = int(request.args.get('limit', 10))
     raw_trending = fetch_trending(limit)
     songs = []
@@ -228,12 +317,9 @@ def api_trending():
             songs.append(norm)
     return jsonify(songs)
 
+
 @app.route('/api/search')
 def api_search():
-    """
-    Search endpoint used by pullup-player.js queue/auto-extend feature
-    and the Now Playing queue sheet.
-    """
     query = request.args.get('q', '').strip()
     limit = int(request.args.get('limit', 20))
     if not query:
@@ -246,26 +332,19 @@ def api_search():
             songs.append(norm)
     return jsonify(songs)
 
+
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
-    """
-    Returns full song data for a given ID.
-    Used by pullup-player.js when it needs to refetch a fresh audio URL.
-    """
     data = _call(get_song_url(song_id))
     song = _normalize_song(data) if data else None
     if not song:
         return jsonify({"error": "Song not found"}), 404
     return jsonify(song)
 
+
 @app.route('/api/similar-songs/<song_id>')
 def api_similar_songs(song_id):
-    """
-    Returns songs similar to the given song_id.
-    Used by player.html to show the 'More Like This' section.
-    """
     limit = int(request.args.get('limit', 10))
-    # Fetch the song first to get artist/title for search
     data = _call(get_song_url(song_id))
     song = _normalize_song(data) if data else None
 
@@ -277,13 +356,11 @@ def api_similar_songs(song_id):
             raw = fetch_songs(primary_artist, limit + 5)
             for item in raw:
                 norm = _normalize_song(item)
-                # Exclude the current song itself
                 if norm and norm.get("url") and norm.get("id") != song_id:
                     similar.append(norm)
                     if len(similar) >= limit:
                         break
 
-    # Fallback to trending if nothing found
     if not similar:
         raw_trending = fetch_trending(limit)
         for item in raw_trending:
@@ -295,9 +372,9 @@ def api_similar_songs(song_id):
 
     return jsonify(similar)
 
+
 @app.route('/api/favorite', methods=['POST'])
 def api_favorite():
-    """Toggle a song in/out of the user's favorites."""
     data = request.get_json(silent=True) or {}
     user_id = get_user_id()
     song_data = {
@@ -312,12 +389,11 @@ def api_favorite():
     result = db.toggle_favorite(user_id, song_data)
     return jsonify(result)
 
+
 @app.route('/api/favorites')
 def api_favorites():
-    """Return the user's favorite songs list."""
     user_id = get_user_id()
     favs = db.get_user_favorites(user_id)
-    # Normalize keys so the JS player can read them
     normalized = []
     for f in favs:
         normalized.append({
@@ -334,9 +410,11 @@ def api_favorites():
         })
     return jsonify(normalized)
 
+
 @app.route('/api/artists')
 def api_fallback_artists():
     return jsonify([])
+
 
 @app.route('/api/suggestions')
 def api_fallback_suggestions():
@@ -349,9 +427,11 @@ def api_fallback_suggestions():
                 songs.append(norm)
     return jsonify(songs)
 
+
 @app.route('/api/usuals')
 def api_fallback_usuals():
     return jsonify([])
+
 
 @app.route('/api/languages', methods=['POST'])
 def save_languages():
@@ -359,6 +439,7 @@ def save_languages():
     langs = data.get('languages', ['hindi'])
     session['selected_languages'] = [str(l).lower() for l in langs]
     return jsonify({"success": True})
+
 
 @app.route('/api/debug')
 def api_debug():
@@ -370,17 +451,6 @@ def api_debug():
     db_health = db.check_db_health()
     return jsonify({"api_base": API_BASE_URL, "api_status": api_status, "db_health": db_health})
 
-# ── ERROR HANDLERS ─────────────────────────────────────────────
-
-@app.errorhandler(404)
-def not_found(e):
-    empty_data = {"trending": [], "charts": [], "new_releases": [], "personalized": False}
-    empty_taste = {'top_artists': [], 'top_languages': [], 'top_genres': [], 'top_moods': [], 'metrics_collected': 0}
-    return render_template('home.html', data=empty_data, taste=empty_taste, selected_languages=[], title="Not Found"), 404
-
-@app.errorhandler(500)
-def server_error(e):
-    return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/stats')
 def api_stats():
@@ -394,9 +464,24 @@ def api_stats():
         "listening_hours": 0
     })
 
+
+# ── ERROR HANDLERS ─────────────────────────────────────────────
+
+@app.errorhandler(404)
+def not_found(e):
+    empty_data = {"trending": [], "charts": [], "new_releases": [], "personalized": False}
+    empty_taste = {'top_artists': [], 'top_languages': [], 'top_genres': [], 'top_moods': [], 'metrics_collected': 0}
+    return render_template('home.html', data=empty_data, taste=empty_taste, selected_languages=[], title="Not Found"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({"error": "Internal server error"}), 500
+
+
 # ── MAIN ───────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
-        
+    
