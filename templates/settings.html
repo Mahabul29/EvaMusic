@@ -64,6 +64,7 @@
     background: linear-gradient(135deg, var(--accent-color), #1ed760);
     display: flex; align-items: center; justify-content: center;
     color: #000; font-size: 20px; font-weight: 700;
+    overflow: hidden;
 }
 .user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .user-info { flex: 1; }
@@ -419,9 +420,9 @@
         </form>
         <div class="auth-divider">or continue with</div>
         <div class="social-login">
-                        <button class="social-btn" onclick="socialLogin('google')">
+            <a href="            <a href="/login/google" class="social-btn" style="text-decoration: none;">
                 <i class="fab fa-google"></i> Google
-            </button>
+            </a>
             <button class="social-btn" onclick="socialLogin('github')">
                 <i class="fab fa-github"></i> GitHub
             </button>
@@ -453,37 +454,42 @@
 // ═══════════════════════════════════════
 // AUTH STATE MANAGEMENT
 // ═══════════════════════════════════════
-const AuthStore = {
-    get(key, defaultVal) {
-        try { return JSON.parse(localStorage.getItem('evamusic_auth_' + key)) ?? defaultVal; }
-        catch { return defaultVal; }
-    },
-    set(key, val) { localStorage.setItem('evamusic_auth_' + key, JSON.stringify(val)); },
-    remove(key) { localStorage.removeItem('evamusic_auth_' + key); }
-};
-
 let currentAuthMode = 'login';
 
 function updateAuthUI() {
-    const user = AuthStore.get('user', null);
     const guestSection = document.getElementById('authGuest');
     const userSection = document.getElementById('authUser');
     const logoutItem = document.getElementById('logoutItem');
 
-    if (user) {
-        guestSection.style.display = 'none';
-        userSection.style.display = 'flex';
-        logoutItem.style.display = 'flex';
+    fetch('/api/me')
+        .then(r => r.json())
+        .then(data => {
+            if (data.logged_in) {
+                guestSection.style.display = 'none';
+                userSection.style.display = 'flex';
+                logoutItem.style.display = 'flex';
 
-        document.getElementById('userName').textContent = user.name || user.email.split('@')[0];
-        document.getElementById('userEmail').textContent = user.email;
-        const initial = (user.name || user.email).charAt(0).toUpperCase();
-        document.getElementById('userAvatar').textContent = initial;
-    } else {
-        guestSection.style.display = 'flex';
-        userSection.style.display = 'none';
-        logoutItem.style.display = 'none';
-    }
+                document.getElementById('userName').textContent = data.name || data.email.split('@')[0];
+                document.getElementById('userEmail').textContent = data.email;
+
+                const avatarEl = document.getElementById('userAvatar');
+                if (data.picture) {
+                    avatarEl.innerHTML = '<img src="' + data.picture + '" alt="avatar">';
+                } else {
+                    const initial = (data.name || data.email).charAt(0).toUpperCase();
+                    avatarEl.textContent = initial;
+                }
+            } else {
+                guestSection.style.display = 'flex';
+                userSection.style.display = 'none';
+                logoutItem.style.display = 'none';
+            }
+        })
+        .catch(() => {
+            guestSection.style.display = 'flex';
+            userSection.style.display = 'none';
+            logoutItem.style.display = 'none';
+        });
 }
 
 function openAuthModal(mode) {
@@ -531,39 +537,42 @@ function handleAuthSubmit(event) {
     const password = document.getElementById('authPassword').value;
     const name = document.getElementById('authName').value;
 
-    // Simulate auth - replace with your actual API call
     const user = {
         email: email,
         name: name || email.split('@')[0],
         token: 'fake-jwt-token-' + Date.now()
     };
 
-    AuthStore.set('user', user);
+    localStorage.setItem('evamusic_auth_user', JSON.stringify(user));
     closeAuthModal();
     updateAuthUI();
     showToast(currentAuthMode === 'signup' ? 'Account created!' : 'Welcome back!', 'success');
 }
 
 function socialLogin(provider) {
-    // Replace with actual OAuth flow
-    showToast(provider + ' login coming soon', 'info');
+    if (provider === 'github') {
+        showToast('GitHub login coming soon', 'info');
+    }
 }
 
 function handleLogout() {
     if (confirm('Are you sure you want to log out?')) {
-        AuthStore.remove('user');
-        updateAuthUI();
-        showToast('Logged out successfully', 'success');
+        fetch('/logout', { method: 'GET' })
+            .then(() => {
+                localStorage.removeItem('evamusic_auth_user');
+                updateAuthUI();
+                showToast('Logged out successfully', 'success');
+            });
     }
 }
 
 // ═══════════════════════════════════════
 // TOAST NOTIFICATIONS
 // ═══════════════════════════════════════
-function showToast(message, type = 'info') {
+function showToast(message, type) {
     document.querySelectorAll('.toast').forEach(t => t.remove());
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    toast.className = 'toast toast-' + type;
     toast.textContent = message;
     document.body.appendChild(toast);
     requestAnimationFrame(() => {
@@ -594,7 +603,7 @@ function selectServer(server, el) {
     document.querySelectorAll('.server-option').forEach(opt => opt.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('currentServer').textContent = server;
-    showToast(`Switched to ${server}`, 'success');
+    showToast('Switched to ' + server, 'success');
     setTimeout(closeServerModal, 300);
 }
 
@@ -602,3 +611,4 @@ function selectServer(server, el) {
 updateAuthUI();
 </script>
 {% endblock %}
+    
