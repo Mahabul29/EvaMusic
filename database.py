@@ -30,7 +30,7 @@ def _save(name, data):
 
 def init_db():
     """Ensures structure files exist on initialization."""
-    for name in ["favorites", "history", "search_history"]:
+    for name in ["favorites", "history", "search_history", "users"]:
         if not os.path.exists(_file_path(name)):
             _save(name, {})
 
@@ -42,7 +42,7 @@ def add_to_favorites(user_id, song_data):
     data = _load("favorites")
     if user_id not in data:
         data[user_id] = []
-    
+
     if not any(s.get('id') == song_data.get('id') for s in data[user_id]):
         song_entry = {
             "id": song_data.get("id"),
@@ -67,7 +67,7 @@ def toggle_favorite(user_id, song_data):
     song_id = song_data.get('id')
     data = _load("favorites")
     user_favs = data.get(user_id, [])
-    
+
     if is_favorite(user_id, song_id):
         data[user_id] = [s for s in user_favs if str(s.get('id')) != str(song_id)]
         _save("favorites", data)
@@ -88,7 +88,7 @@ def add_to_history(user_id, song_data):
     data = _load("history")
     if user_id not in data:
         data[user_id] = []
-    
+
     history_entry = {
         "song_id": song_data.get("id") or song_data.get("song_id"),
         "title": song_data.get("title", "Unknown"),
@@ -131,4 +131,3 @@ def add_to_search_history(user_id, query):
 
 def check_db_health():
     return {"status": "healthy", "connected": True, "type": "file_json"}
-    
