@@ -5,7 +5,7 @@ import html
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
-from oauth import init_oauth, get_google_user
+from oauth import init_oauth, get_google_user, oauth
 
 import database as db
 from routes import profile_bp
@@ -484,4 +484,4 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
-    
+            
