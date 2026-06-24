@@ -32,22 +32,43 @@
 .settings-item-right i { color: var(--text-secondary); font-size: 14px; }
 .settings-value { font-size: 14px; color: var(--text-secondary); }
 
-/* Toggle Switch */
-.toggle-switch {
-    position: relative; width: 48px; height: 26px; cursor: pointer;
+/* Auth buttons */
+.auth-buttons { display: flex; gap: 10px; margin-bottom: 8px; }
+.auth-btn {
+    flex: 1; padding: 12px 16px; border-radius: 12px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    text-align: center; text-decoration: none; transition: all 0.2s;
+    border: none; display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-    position: absolute; inset: 0; background: #444; border-radius: 26px;
-    transition: background 0.3s;
+.auth-btn-login {
+    background: var(--card-bg); color: var(--text-color);
+    border: 1.5px solid var(--border-color);
 }
-.toggle-slider::before {
-    content: ""; position: absolute; width: 20px; height: 20px;
-    left: 3px; bottom: 3px; background: white; border-radius: 50%;
-    transition: transform 0.3s;
+.auth-btn-login:active { background: var(--hover-bg); }
+.auth-btn-signup {
+    background: var(--accent-color); color: #000;
 }
-.toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
-.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+.auth-btn-signup:active { opacity: 0.8; }
+
+/* User profile card */
+.user-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px; background: var(--card-bg); border-radius: 12px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.user-card:active { transform: scale(0.98); background: var(--hover-bg); }
+.user-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-color), #1ed760);
+    display: flex; align-items: center; justify-content: center;
+    color: #000; font-size: 20px; font-weight: 700;
+    overflow: hidden; flex-shrink: 0;
+}
+.user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 16px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-card .settings-item-right i { font-size: 14px; }
 
 /* Modal Overlay */
 .modal-overlay {
@@ -121,44 +142,6 @@
     text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* Auth buttons */
-.auth-buttons { display: flex; gap: 10px; margin-bottom: 8px; }
-.auth-btn {
-    flex: 1; padding: 12px 16px; border-radius: 12px;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    text-align: center; text-decoration: none; transition: all 0.2s;
-    border: none; display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.auth-btn-login {
-    background: var(--card-bg); color: var(--text-color);
-    border: 1.5px solid var(--border-color);
-}
-.auth-btn-login:active { background: var(--hover-bg); }
-.auth-btn-signup {
-    background: var(--accent-color); color: #000;
-}
-.auth-btn-signup:active { opacity: 0.8; }
-
-/* User profile card */
-.user-card {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px; background: var(--card-bg); border-radius: 12px;
-    margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
-}
-.user-card:active { transform: scale(0.98); background: var(--hover-bg); }
-.user-avatar {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-color), #1ed760);
-    display: flex; align-items: center; justify-content: center;
-    color: #000; font-size: 20px; font-weight: 700;
-    overflow: hidden; flex-shrink: 0;
-}
-.user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 16px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-card .settings-item-right i { font-size: 14px; }
-
 .app-info { text-align: center; padding: 32px 0; color: var(--text-secondary); }
 .app-info .app-logo { font-size: 48px; margin-bottom: 12px; }
 .app-info .app-name { font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 4px; }
@@ -183,11 +166,11 @@
     <div class="settings-section">
         <div class="settings-section-title">Account</div>
 
-        <!-- Not logged in: Show Login / Sign Up buttons -->
+        <!-- Not logged in: Show Login button -->
         <div id="authGuest" class="auth-buttons" style="display: none;">
-            <a href="/login/google" class="auth-btn auth-btn-login" data-hard-nav>
+            <button class="auth-btn auth-btn-login" onclick="window.location.href='/login/google'">
                 <i class="fab fa-google"></i> Log In with Google
-            </a>
+            </button>
         </div>
 
         <!-- Logged in: Show user profile card -->
@@ -200,7 +183,7 @@
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
 
-        <!-- Edit Profile - always visible but redirects to login if guest -->
+        <!-- Edit Profile -->
         <div class="settings-item" id="editProfileItem" onclick="handleEditProfile()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
@@ -314,7 +297,7 @@
         </a>
     </div>
 
-        <!-- QUALITY -->
+    <!-- QUALITY -->
     <div class="settings-section">
         <div class="settings-section-title">Quality</div>
         <div class="settings-item" onclick="openStreamingQualityModal()">
@@ -345,7 +328,7 @@
         </div>
     </div>
 
-<!-- HELP & SUPPORT -->
+    <!-- HELP & SUPPORT -->
     <div class="settings-section">
         <div class="settings-section-title">Help & Support</div>
         <a href="/help" class="settings-item">
@@ -426,9 +409,9 @@
             <div class="color-option" style="background: #4ECDC4;" data-color="#4ECDC4" data-name="Teal" onclick="selectAccent('#4ECDC4', 'Teal', this)"></div>
             <div class="color-option" style="background: #45B7D1;" data-color="#45B7D1" data-name="Blue" onclick="selectAccent('#45B7D1', 'Blue', this)"></div>
             <div class="color-option" style="background: #96CEB4;" data-color="#96CEB4" data-name="Mint" onclick="selectAccent('#96CEB4', 'Mint', this)"></div>
-<div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', 'Purple', this)"></div>
-<div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', 'Yellow', this)"></div>
-<div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', 'Orange', this)"></div>
+            <div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', 'Purple', this)"></div>
+            <div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', 'Yellow', this)"></div>
+            <div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', 'Orange', this)"></div>
         </div>
         <button class="modal-cancel" onclick="closeModal(null, 'accentModal')">Cancel</button>
     </div>
@@ -565,14 +548,18 @@ let isLoggedIn = false;
 let currentUser = null;
 
 function updateAuthUI() {
-    const guestSection = document.getElementById('authGuest');
-    const userSection = document.getElementById('authUser');
-    const logoutItem = document.getElementById('logoutItem');
-    const editItem = document.getElementById('editProfileItem');
+    var guestSection = document.getElementById('authGuest');
+    var userSection = document.getElementById('authUser');
+    var logoutItem = document.getElementById('logoutItem');
+
+    if (!guestSection || !userSection || !logoutItem) {
+        console.error('Auth elements not found');
+        return;
+    }
 
     fetch('/api/me')
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             if (data.logged_in) {
                 isLoggedIn = true;
                 currentUser = data;
@@ -580,16 +567,15 @@ function updateAuthUI() {
                 userSection.style.display = 'flex';
                 logoutItem.style.display = 'flex';
 
-                const name = data.name || data.email.split('@')[0];
+                var name = data.name || (data.email ? data.email.split('@')[0] : 'User');
                 document.getElementById('userName').textContent = name;
-                document.getElementById('userEmail').textContent = data.email;
+                document.getElementById('userEmail').textContent = data.email || '';
 
-                const avatarEl = document.getElementById('userAvatar');
+                var avatarEl = document.getElementById('userAvatar');
                 if (data.picture) {
                     avatarEl.innerHTML = '<img src="' + data.picture + '" alt="avatar">';
                 } else {
-                    const initial = name.charAt(0).toUpperCase();
-                    avatarEl.textContent = initial;
+                    avatarEl.textContent = name.charAt(0).toUpperCase();
                 }
             } else {
                 isLoggedIn = false;
@@ -599,7 +585,8 @@ function updateAuthUI() {
                 logoutItem.style.display = 'none';
             }
         })
-        .catch(() => {
+        .catch(function(err) {
+            console.log('Auth check failed:', err);
             isLoggedIn = false;
             currentUser = null;
             guestSection.style.display = 'flex';
@@ -616,8 +603,7 @@ function goToProfile() {
 function handleEditProfile() {
     if (!isLoggedIn) {
         showToast('Please log in to edit your profile', 'info');
-        if (window._spaNavigateTo) window._spaNavigateTo('/login/google');
-        else window.location.href = '/login/google';
+        window.location.href = '/login/google';
         return;
     }
     if (window._spaNavigateTo) window._spaNavigateTo('/profile/edit');
@@ -627,16 +613,15 @@ function handleEditProfile() {
 function handleLogout() {
     if (!confirm('Are you sure you want to log out?')) return;
     fetch('/logout', { method: 'GET', credentials: 'same-origin' })
-        .then(() => {
+        .then(function() {
             localStorage.removeItem('evamusic_auth_user');
             updateAuthUI();
             showToast('Logged out successfully', 'success');
-            setTimeout(() => {
-                if (window._spaNavigateTo) window._spaNavigateTo('/settings');
-                else window.location.href = '/settings';
+            setTimeout(function() {
+                window.location.href = '/settings';
             }, 500);
         })
-        .catch(() => {
+        .catch(function() {
             showToast('Logout failed', 'error');
         });
 }
@@ -645,31 +630,41 @@ function handleLogout() {
 // SETTINGS STORE
 // ═══════════════════════════════════════
 window.SettingsStore = {
-    get(key, defaultVal) {
-        try { return JSON.parse(localStorage.getItem('evamusic_' + key)) ?? defaultVal; }
-        catch { return defaultVal; }
+    get: function(key, defaultVal) {
+        try {
+            var val = localStorage.getItem('evamusic_' + key);
+            return val ? JSON.parse(val) : defaultVal;
+        } catch(e) { return defaultVal; }
     },
-    set(key, val) { localStorage.setItem('evamusic_' + key, JSON.stringify(val)); },
-    remove(key) { localStorage.removeItem('evamusic_' + key); }
+    set: function(key, val) {
+        localStorage.setItem('evamusic_' + key, JSON.stringify(val));
+    },
+    remove: function(key) {
+        localStorage.removeItem('evamusic_' + key);
+    }
 };
 
 // ═══════════════════════════════════════
 // TOAST NOTIFICATIONS
 // ═══════════════════════════════════════
 function showToast(message, type) {
-    document.querySelectorAll('.toast').forEach(t => t.remove());
-    const toast = document.createElement('div');
-    toast.className = 'toast toast-' + type;
+    var existing = document.querySelectorAll('.toast');
+    for (var i = 0; i < existing.length; i++) existing[i].remove();
+
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
     toast.textContent = message;
     document.body.appendChild(toast);
-    requestAnimationFrame(() => {
+
+    requestAnimationFrame(function() {
         toast.style.opacity = '1';
         toast.style.transform = 'translateX(-50%) translateY(0)';
     });
-    setTimeout(() => {
+
+    setTimeout(function() {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(-50%) translateY(20px)';
-        setTimeout(() => toast.remove(), 300);
+        setTimeout(function() { toast.remove(); }, 300);
     }, 3000);
 }
 
@@ -677,14 +672,20 @@ function showToast(message, type) {
 // MODAL SYSTEM
 // ═══════════════════════════════════════
 function openModal(id) {
-    document.getElementById(id).classList.add('active');
-    document.body.style.overflow = 'hidden';
+    var el = document.getElementById(id);
+    if (el) {
+        el.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function closeModal(event, id) {
     if (!event || event.target.id === id) {
-        document.getElementById(id).classList.remove('active');
-        document.body.style.overflow = '';
+        var el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     }
 }
 
@@ -694,12 +695,13 @@ function closeModal(event, id) {
 function openServerModal() { openModal('serverModal'); }
 
 function selectServer(server, el) {
-    document.querySelectorAll('#serverModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#serverModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
     SettingsStore.set('server', server);
     document.getElementById('currentServer').textContent = server;
     showToast('Switched to ' + server, 'success');
-    setTimeout(() => closeModal(null, 'serverModal'), 300);
+    setTimeout(function() { closeModal(null, 'serverModal'); }, 300);
 }
 
 // ═══════════════════════════════════════
@@ -708,12 +710,13 @@ function selectServer(server, el) {
 function openSkipModal() { openModal('skipModal'); }
 
 function selectSkip(seconds, el) {
-    document.querySelectorAll('#skipModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#skipModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
     SettingsStore.set('skipDuration', seconds);
     document.getElementById('currentSkip').textContent = seconds + 's';
     showToast('Skip duration: ' + seconds + 's', 'success');
-    setTimeout(() => closeModal(null, 'skipModal'), 300);
+    setTimeout(function() { closeModal(null, 'skipModal'); }, 300);
 }
 
 // ═══════════════════════════════════════
@@ -722,17 +725,18 @@ function selectSkip(seconds, el) {
 function openThemeModal() { openModal('themeModal'); }
 
 function selectTheme(theme, el) {
-    document.querySelectorAll('#themeModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#themeModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
     SettingsStore.set('theme', theme);
     document.getElementById('currentTheme').textContent = theme;
     applyTheme(theme);
     showToast('Theme: ' + theme, 'success');
-    setTimeout(() => closeModal(null, 'themeModal'), 300);
+    setTimeout(function() { closeModal(null, 'themeModal'); }, 300);
 }
 
 function applyTheme(theme) {
-    const root = document.documentElement;
+    var root = document.documentElement;
     if (theme === 'Light') {
         root.style.setProperty('--bg-color', '#f5f5f5');
         root.style.setProperty('--text-color', '#121212');
@@ -752,7 +756,6 @@ function applyTheme(theme) {
         root.style.setProperty('--nav-bg', '#000000');
         root.style.setProperty('--player-bg', '#000000');
     } else {
-        // Dark (default)
         root.style.setProperty('--bg-color', '#121212');
         root.style.setProperty('--text-color', '#ffffff');
         root.style.setProperty('--text-secondary', '#b3b3b3');
@@ -770,13 +773,14 @@ function applyTheme(theme) {
 function openAccentModal() { openModal('accentModal'); }
 
 function selectAccent(color, name, el) {
-    document.querySelectorAll('#accentModal .color-option').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#accentModal .color-option');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
-    SettingsStore.set('accentColor', { color, name });
+    SettingsStore.set('accentColor', { color: color, name: name });
     document.documentElement.style.setProperty('--accent-color', color);
     document.getElementById('currentAccent').innerHTML = '<span style="color: ' + color + ';">● ' + name + '</span>';
     showToast('Accent: ' + name, 'success');
-    setTimeout(() => closeModal(null, 'accentModal'), 300);
+    setTimeout(function() { closeModal(null, 'accentModal'); }, 300);
 }
 
 // ═══════════════════════════════════════
@@ -785,12 +789,13 @@ function selectAccent(color, name, el) {
 function openStreamingQualityModal() { openModal('streamingQualityModal'); }
 
 function selectStreamingQuality(quality, label, el) {
-    document.querySelectorAll('#streamingQualityModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#streamingQualityModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
-    SettingsStore.set('streamingQuality', { quality, label });
+    SettingsStore.set('streamingQuality', { quality: quality, label: label });
     document.getElementById('currentStreamingQuality').textContent = label;
     showToast('Streaming: ' + label, 'success');
-    setTimeout(() => closeModal(null, 'streamingQualityModal'), 300);
+    setTimeout(function() { closeModal(null, 'streamingQualityModal'); }, 300);
 }
 
 // ═══════════════════════════════════════
@@ -799,12 +804,13 @@ function selectStreamingQuality(quality, label, el) {
 function openDownloadQualityModal() { openModal('downloadQualityModal'); }
 
 function selectDownloadQuality(quality, label, el) {
-    document.querySelectorAll('#downloadQualityModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    var opts = document.querySelectorAll('#downloadQualityModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
     el.classList.add('selected');
-    SettingsStore.set('downloadQuality', { quality, label });
+    SettingsStore.set('downloadQuality', { quality: quality, label: label });
     document.getElementById('currentDownloadQuality').textContent = label;
     showToast('Download: ' + label, 'success');
-    setTimeout(() => closeModal(null, 'downloadQualityModal'), 300);
+    setTimeout(function() { closeModal(null, 'downloadQualityModal'); }, 300);
 }
 
 // ═══════════════════════════════════════
@@ -812,49 +818,68 @@ function selectDownloadQuality(quality, label, el) {
 // ═══════════════════════════════════════
 function initSettings() {
     // Server
-    const server = SettingsStore.get('server', 'HD1');
-    document.getElementById('currentServer').textContent = server;
-    document.querySelectorAll('#serverModal .option-row').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.server === server);
-    });
+    var server = SettingsStore.get('server', 'HD1');
+    var serverEl = document.getElementById('currentServer');
+    if (serverEl) serverEl.textContent = server;
+    var serverOpts = document.querySelectorAll('#serverModal .option-row');
+    for (var i = 0; i < serverOpts.length; i++) {
+        serverOpts[i].classList.toggle('selected', serverOpts[i].dataset.server === server);
+    }
 
     // Skip
-    const skip = SettingsStore.get('skipDuration', 10);
-    document.getElementById('currentSkip').textContent = skip + 's';
-    document.querySelectorAll('#skipModal .option-row').forEach(opt => {
-        opt.classList.toggle('selected', parseInt(opt.dataset.skip) === skip);
-    });
+    var skip = SettingsStore.get('skipDuration', 10);
+    var skipEl = document.getElementById('currentSkip');
+    if (skipEl) skipEl.textContent = skip + 's';
+    var skipOpts = document.querySelectorAll('#skipModal .option-row');
+    for (var i = 0; i < skipOpts.length; i++) {
+        skipOpts[i].classList.toggle('selected', parseInt(skipOpts[i].dataset.skip) === skip);
+    }
 
     // Theme
-    const theme = SettingsStore.get('theme', 'Dark');
-    document.getElementById('currentTheme').textContent = theme;
+    var theme = SettingsStore.get('theme', 'Dark');
+    var themeEl = document.getElementById('currentTheme');
+    if (themeEl) themeEl.textContent = theme;
     applyTheme(theme);
-    document.querySelectorAll('#themeModal .option-row').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.theme === theme);
-    });
+    var themeOpts = document.querySelectorAll('#themeModal .option-row');
+    for (var i = 0; i < themeOpts.length; i++) {
+        themeOpts[i].classList.toggle('selected', themeOpts[i].dataset.theme === theme);
+    }
 
     // Accent
-    const accent = SettingsStore.get('accentColor', { color: '#1DB954', name: 'Green' });
+    var accent = SettingsStore.get('accentColor', { color: '#1DB954', name: 'Green' });
     document.documentElement.style.setProperty('--accent-color', accent.color);
-    document.getElementById('currentAccent').innerHTML = '<span style="color: ' + accent.color + ';">● ' + accent.name + '</span>';
-    document.querySelectorAll('#accentModal .color-option').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.color === accent.color);
-    });
+    var accentEl = document.getElementById('currentAccent');
+    if (accentEl) accentEl.innerHTML = '<span style="color: ' + accent.color + ';">● ' + accent.name + '</span>';
+    var accentOpts = document.querySelectorAll('#accentModal .color-option');
+    for (var i = 0; i < accentOpts.length; i++) {
+        accentOpts[i].classList.toggle('selected', accentOpts[i].dataset.color === accent.color);
+    }
 
     // Streaming Quality
-    e('selected', opt.dataset.quality === streamQ.quality);
-    });
+    var streamQ = SettingsStore.get('streamingQuality', { quality: 'high', label: 'High (320kbps)' });
+    var streamEl = document.getElementById('currentStreamingQuality');
+    if (streamEl) streamEl.textContent = streamQ.label;
+    var streamOpts = document.querySelectorAll('#streamingQualityModal .option-row');
+    for (var i = 0; i < streamOpts.length; i++) {
+        streamOpts[i].classList.toggle('selected', streamOpts[i].dataset.quality === streamQ.quality);
+    }
 
     // Download Quality
-    const downloadQ = SettingsStore.get('downloadQuality', { quality: 'high', label: 'High (320kbps)' });
-    document.getElementById('currentDownloadQuality').textContent = downloadQ.label;
-    document.querySelectorAll('#downloadQualityModal .option-row').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.quality === downloadQ.quality);
-    });
+    var downloadQ = SettingsStore.get('downloadQuality', { quality: 'high', label: 'High (320kbps)' });
+    var downloadEl = document.getElementById('currentDownloadQuality');
+    if (downloadEl) downloadEl.textContent = downloadQ.label;
+    var downloadOpts = document.querySelectorAll('#downloadQualityModal .option-row');
+    for (var i = 0; i < downloadOpts.length; i++) {
+        downloadOpts[i].classList.toggle('selected', downloadOpts[i].dataset.quality === downloadQ.quality);
+    }
 }
 
 // Run on load
-initSettings();
-updateAuthUI();
+try {
+    initSettings();
+    updateAuthUI();
+} catch (e) {
+    console.error('Settings init error:', e);
+}
 </script>
 {% endblock %}
