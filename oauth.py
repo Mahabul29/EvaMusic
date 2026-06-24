@@ -4,7 +4,7 @@ Handles Google OAuth login flow.
 """
 
 from authlib.integrations.flask_client import OAuth
-from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_DISCOVERY_URL
+from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_DISCOVERY_URL, WEB_BASE_URL
 
 oauth = OAuth()
 
@@ -28,3 +28,8 @@ def get_google_user(token):
         headers={'Authorization': f'Bearer {token["access_token"]}'}
     )
     return resp.json() if resp.status_code == 200 else None
+
+def get_google_redirect_uri():
+    """Return the exact redirect URI to register in Google Cloud Console."""
+    return f"{WEB_BASE_URL}/login/google/callback"
+    
