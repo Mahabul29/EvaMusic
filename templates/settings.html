@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Settings{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -32,10 +32,97 @@
 .settings-item-right i { color: var(--text-secondary); font-size: 14px; }
 .settings-value { font-size: 14px; color: var(--text-secondary); }
 
-/* Auth buttons in settings */
-.auth-buttons {
-    display: flex; gap: 10px; margin-bottom: 8px;
+/* Toggle Switch */
+.toggle-switch {
+    position: relative; width: 48px; height: 26px; cursor: pointer;
 }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0; background: #444; border-radius: 26px;
+    transition: background 0.3s;
+}
+.toggle-slider::before {
+    content: ""; position: absolute; width: 20px; height: 20px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%;
+    transition: transform 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+    background: var(--card-bg); width: 100%; max-width: 600px;
+    border-radius: 20px 20px 0 0; padding: 20px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-sheet { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
+.modal-cancel {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: var(--hover-bg); border: none; border-radius: 12px;
+    color: var(--text-color); font-size: 16px; font-weight: 500; cursor: pointer;
+}
+
+/* Option rows in modals */
+.option-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-radius: 12px; margin-bottom: 8px;
+    background: var(--hover-bg); cursor: pointer; transition: background 0.15s;
+}
+.option-row:active { background: #333; }
+.option-row.selected {
+    background: rgba(29,185,84,0.15);
+    border: 2px solid var(--accent-color);
+}
+.option-row.selected .option-name { color: var(--accent-color); font-weight: 600; }
+.option-name { font-size: 15px; font-weight: 500; }
+.option-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent-color); color: #000; font-weight: 600;
+}
+.option-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.option-row.selected .option-check {
+    background: var(--accent-color); border-color: var(--accent-color);
+}
+.option-check i {
+    font-size: 12px; color: #000; opacity: 0; transition: opacity 0.2s;
+}
+.option-row.selected .option-check i { opacity: 1; }
+
+/* Color grid */
+.color-grid { display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+.color-option {
+    width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.color-option:active { transform: scale(0.9); }
+.color-option.selected {
+    border-color: white;
+    box-shadow: 0 0 0 3px var(--accent-color);
+}
+.color-option.selected::after {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 16px;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Auth buttons */
+.auth-buttons { display: flex; gap: 10px; margin-bottom: 8px; }
 .auth-btn {
     flex: 1; padding: 12px 16px; border-radius: 12px;
     font-size: 14px; font-weight: 600; cursor: pointer;
@@ -52,7 +139,7 @@
 }
 .auth-btn-signup:active { opacity: 0.8; }
 
-/* User profile card (when logged in) */
+/* User profile card */
 .user-card {
     display: flex; align-items: center; gap: 14px;
     padding: 16px; background: var(--card-bg); border-radius: 12px;
@@ -64,106 +151,27 @@
     background: linear-gradient(135deg, var(--accent-color), #1ed760);
     display: flex; align-items: center; justify-content: center;
     color: #000; font-size: 20px; font-weight: 700;
-    overflow: hidden;
+    overflow: hidden; flex-shrink: 0;
 }
 .user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.user-info { flex: 1; }
-.user-name { font-size: 16px; font-weight: 600; color: var(--text-color); }
-.user-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 16px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-card .settings-item-right i { font-size: 14px; }
 
-.toggle-switch {
-    position: relative; width: 48px; height: 26px; cursor: pointer;
-}
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-    position: absolute; inset: 0; background: #444; border-radius: 26px;
-    transition: background 0.3s;
-}
-.toggle-slider::before {
-    content: ""; position: absolute; width: 20px; height: 20px;
-    left: 3px; bottom: 3px; background: white; border-radius: 50%;
-    transition: transform 0.3s;
-}
-.toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
-.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 .app-info { text-align: center; padding: 32px 0; color: var(--text-secondary); }
 .app-info .app-logo { font-size: 48px; margin-bottom: 12px; }
 .app-info .app-name { font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 4px; }
 .app-info .app-version { font-size: 13px; }
 
-/* Auth Modal */
-.modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    display: none; align-items: flex-end; justify-content: center;
-    z-index: 1000; backdrop-filter: blur(4px);
+/* Privacy text */
+.policy-text {
+    overflow-y: auto; flex: 1; font-size: 13px; line-height: 1.6;
+    color: var(--text-secondary); padding-right: 4px; max-height: 50vh;
 }
-.modal-overlay.active { display: flex; }
-.modal-sheet {
-    background: var(--card-bg); width: 100%; max-width: 600px;
-    border-radius: 20px 20px 0 0; padding: 20px;
-    transform: translateY(100%); transition: transform 0.3s ease;
-}
-.modal-overlay.active .modal-sheet { transform: translateY(0); }
-.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; text-align: center; }
-
-/* Auth form styles */
-.auth-form { display: flex; flex-direction: column; gap: 12px; }
-.auth-input {
-    width: 100%; padding: 14px 16px; background: var(--hover-bg);
-    border: 1.5px solid var(--border-color); border-radius: 12px;
-    color: var(--text-color); font-size: 15px; outline: none;
-    box-sizing: border-box;
-}
-.auth-input:focus { border-color: var(--accent-color); }
-.auth-input::placeholder { color: var(--text-secondary); }
-.auth-submit {
-    width: 100%; padding: 14px; background: var(--accent-color);
-    border: none; border-radius: 12px; color: #000;
-    font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 4px;
-}
-.auth-submit:active { opacity: 0.8; }
-.auth-switch {
-    text-align: center; font-size: 13px; color: var(--text-secondary);
-    margin-top: 8px;
-}
-.auth-switch a {
-    color: var(--accent-color); text-decoration: none; font-weight: 600;
-}
-.auth-divider {
-    display: flex; align-items: center; gap: 12px;
-    margin: 8px 0; color: var(--text-secondary); font-size: 12px;
-}
-.auth-divider::before, .auth-divider::after {
-    content: ""; flex: 1; height: 1px; background: var(--border-color);
-}
-.social-login {
-    display: flex; gap: 10px;
-}
-.social-btn {
-    flex: 1; padding: 12px; background: var(--hover-bg);
-    border: 1.5px solid var(--border-color); border-radius: 12px;
-    color: var(--text-color); font-size: 14px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.social-btn:active { background: var(--card-bg); }
-
-/* Server selector modal */
-.server-option {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; border-radius: 12px; margin-bottom: 8px;
-    background: var(--hover-bg); cursor: pointer;
-}
-.server-option:active { background: #333; }
-.server-option.selected { background: rgba(29,185,84,0.15); }
-.server-option.selected .server-name { color: var(--accent-color); }
-.server-name { font-size: 15px; font-weight: 500; }
-.server-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-color); color: #000; font-weight: 600; }
-.modal-cancel {
-    width: 100%; padding: 14px; margin-top: 8px;
-    background: var(--hover-bg); border: none; border-radius: 12px;
-    color: var(--text-color); font-size: 16px; font-weight: 500; cursor: pointer;
-}
+.policy-text h4 { color: var(--text-color); font-size: 14px; margin: 14px 0 6px; }
+.policy-text h4:first-child { margin-top: 0; }
+.policy-text p { margin-bottom: 10px; }
 </style>
 {% endblock %}
 
@@ -176,26 +184,24 @@
         <div class="settings-section-title">Account</div>
 
         <!-- Not logged in: Show Login / Sign Up buttons -->
-        <div id="authGuest" class="auth-buttons">
-            <button class="auth-btn auth-btn-login" onclick="openAuthModal('login')">
-                <i class="fas fa-sign-in-alt"></i> Log In
-            </button>
-            <button class="auth-btn auth-btn-signup" onclick="openAuthModal('signup')">
-                <i class="fas fa-user-plus"></i> Sign Up
-            </button>
+        <div id="authGuest" class="auth-buttons" style="display: none;">
+            <a href="/login/google" class="auth-btn auth-btn-login" data-hard-nav>
+                <i class="fab fa-google"></i> Log In with Google
+            </a>
         </div>
 
         <!-- Logged in: Show user profile card -->
-        <div id="authUser" class="user-card" style="display: none;" onclick="location.href='/profile'">
-            <div class="user-avatar" id="userAvatar">G</div>
+        <div id="authUser" class="user-card" style="display: none;" onclick="goToProfile()">
+            <div class="user-avatar" id="userAvatar">U</div>
             <div class="user-info">
-                <div class="user-name" id="userName">Guest User</div>
+                <div class="user-name" id="userName">Username</div>
                 <div class="user-email" id="userEmail">Tap to view profile</div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
 
-        <a href="/profile/edit" class="settings-item" id="editProfileItem">
+        <!-- Edit Profile - always visible but redirects to login if guest -->
+        <div class="settings-item" id="editProfileItem" onclick="handleEditProfile()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
                 <div class="settings-item-text">
@@ -204,21 +210,9 @@
                 </div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
-        </a>
-        <div class="settings-item" onclick="showToast('Notifications settings', 'info')">
-            <div class="settings-item-left">
-                <div class="settings-item-icon"><i class="fas fa-bell"></i></div>
-                <div class="settings-item-text">
-                    <span class="settings-item-title">Notifications</span>
-                    <span class="settings-item-desc">Push alerts</span>
-                </div>
-            </div>
-            <div class="settings-item-right">
-                <label class="toggle-switch" onclick="event.stopPropagation()">
-                    <input type="checkbox" checked><span class="toggle-slider"></span>
-                </label>
-            </div>
         </div>
+
+        <!-- Logout (only shown when logged in) -->
         <div class="settings-item" id="logoutItem" style="display: none;" onclick="handleLogout()">
             <div class="settings-item-left">
                 <div class="settings-item-icon" style="background: rgba(255, 107, 107, 0.1); color: #FF6B6B;">
@@ -236,7 +230,7 @@
     <!-- APPEARANCE -->
     <div class="settings-section">
         <div class="settings-section-title">Appearance</div>
-        <a href="/settings/theme" class="settings-item">
+        <div class="settings-item" onclick="openThemeModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-palette"></i></div>
                 <div class="settings-item-text">
@@ -244,9 +238,12 @@
                     <span class="settings-item-desc">Dark, Light, AMOLED</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">Dark</span><i class="fas fa-chevron-right"></i></div>
-        </a>
-        <a href="/settings/accent" class="settings-item">
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentTheme">Dark</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="settings-item" onclick="openAccentModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-tint"></i></div>
                 <div class="settings-item-text">
@@ -255,10 +252,10 @@
                 </div>
             </div>
             <div class="settings-item-right">
-                <span class="settings-value" style="color: var(--accent-color);">● Green</span>
+                <span class="settings-value" id="currentAccent" style="color: var(--accent-color);">● Green</span>
                 <i class="fas fa-chevron-right"></i>
             </div>
-        </a>
+        </div>
         <a href="/settings/display-language" class="settings-item">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-globe"></i></div>
@@ -274,32 +271,17 @@
     <!-- PLAYBACK -->
     <div class="settings-section">
         <div class="settings-section-title">Playback</div>
-        <div class="settings-item" onclick="showToast('Auto-play enabled', 'success')">
+        <div class="settings-item" onclick="openSkipModal()">
             <div class="settings-item-left">
-                <div class="settings-item-icon"><i class="fas fa-play-circle"></i></div>
+                <div class="settings-item-icon"><i class="fas fa-forward"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Auto Play</span>
-                    <span class="settings-item-desc">Play next song automatically</span>
+                    <span class="settings-item-title">Skip Duration</span>
+                    <span class="settings-item-desc">Seek forward/backward time</span>
                 </div>
             </div>
             <div class="settings-item-right">
-                <label class="toggle-switch" onclick="event.stopPropagation()">
-                    <input type="checkbox" checked><span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-        <div class="settings-item" onclick="showToast('Gapless playback', 'info')">
-            <div class="settings-item-left">
-                <div class="settings-item-icon"><i class="fas fa-music"></i></div>
-                <div class="settings-item-text">
-                    <span class="settings-item-title">Gapless Playback</span>
-                    <span class="settings-item-desc">No silence between songs</span>
-                </div>
-            </div>
-            <div class="settings-item-right">
-                <label class="toggle-switch" onclick="event.stopPropagation()">
-                    <input type="checkbox"><span class="toggle-slider"></span>
-                </label>
+                <span class="settings-value" id="currentSkip">10s</span>
+                <i class="fas fa-chevron-right"></i>
             </div>
         </div>
     </div>
@@ -330,22 +312,12 @@
             </div>
             <div class="settings-item-right"><span class="settings-value">All</span><i class="fas fa-chevron-right"></i></div>
         </a>
-        <a href="/settings/sleep-timer" class="settings-item">
-            <div class="settings-item-left">
-                <div class="settings-item-icon"><i class="fas fa-moon"></i></div>
-                <div class="settings-item-text">
-                    <span class="settings-item-title">Sleep Timer</span>
-                    <span class="settings-item-desc">Auto stop playback</span>
-                </div>
-            </div>
-            <div class="settings-item-right"><span class="settings-value">Off</span><i class="fas fa-chevron-right"></i></div>
-        </a>
     </div>
 
-    <!-- QUALITY -->
+        <!-- QUALITY -->
     <div class="settings-section">
         <div class="settings-section-title">Quality</div>
-        <div class="settings-item" onclick="showToast('Streaming quality: High', 'info')">
+        <div class="settings-item" onclick="openStreamingQualityModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-wifi"></i></div>
                 <div class="settings-item-text">
@@ -353,9 +325,12 @@
                     <span class="settings-item-desc">Wi-Fi streaming</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentStreamingQuality">High (320kbps)</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
         </div>
-        <div class="settings-item" onclick="showToast('Download quality: High', 'info')">
+        <div class="settings-item" onclick="openDownloadQualityModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-download"></i></div>
                 <div class="settings-item-text">
@@ -363,36 +338,49 @@
                     <span class="settings-item-desc">Offline music quality</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">High (320kbps)</span><i class="fas fa-chevron-right"></i></div>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentDownloadQuality">High (320kbps)</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
         </div>
     </div>
 
-    <!-- DATA & STORAGE -->
+<!-- HELP & SUPPORT -->
     <div class="settings-section">
-        <div class="settings-section-title">Data & Storage</div>
-        <div class="settings-item" onclick="showToast('Cache cleared!', 'success')">
+        <div class="settings-section-title">Help & Support</div>
+        <a href="/help" class="settings-item">
             <div class="settings-item-left">
-                <div class="settings-item-icon"><i class="fas fa-trash-alt"></i></div>
+                <div class="settings-item-icon"><i class="fas fa-question-circle"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Clear Cache</span>
-                    <span class="settings-item-desc">Free up space</span>
+                    <span class="settings-item-title">Help Center</span>
+                    <span class="settings-item-desc">FAQs and troubleshooting</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">128 MB</span><i class="fas fa-chevron-right"></i></div>
-        </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="https://t.me/Mahabul201" target="_blank" rel="noopener" class="settings-item" data-hard-nav>
+            <div class="settings-item-left">
+                <div class="settings-item-icon"><i class="fab fa-telegram"></i></div>
+                <div class="settings-item-text">
+                    <span class="settings-item-title">Telegram</span>
+                    <span class="settings-item-desc">@Mahabul201</span>
+                </div>
+            </div>
+            <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
+        </a>
     </div>
 
     <!-- ABOUT -->
     <div class="settings-section">
         <div class="settings-section-title">About</div>
-        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0', 'info')">
+        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0\nMade with ❤️', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-info-circle"></i></div>
                 <div class="settings-item-text"><span class="settings-item-title">About EvaMusic</span></div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
-        <div class="settings-item" onclick="showToast('Opening privacy policy...', 'info')">
+        <div class="settings-item" onclick="openModal('privacyModal')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-shield-alt"></i></div>
                 <div class="settings-item-text"><span class="settings-item-title">Privacy Policy</span></div>
@@ -408,163 +396,262 @@
     </div>
 </div>
 
-<!-- Auth Modal (Login / Sign Up) -->
-<div class="modal-overlay" id="authModal" onclick="closeAuthModal(event)">
+<!-- ═══ Theme Modal ═══ -->
+<div class="modal-overlay" id="themeModal" onclick="closeModal(event, 'themeModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title" id="authModalTitle">Log In</div>
-        <form class="auth-form" id="authForm" onsubmit="handleAuthSubmit(event)">
-            <input type="text" class="auth-input" id="authName" placeholder="Full Name" style="display: none;">
-            <input type="email" class="auth-input" id="authEmail" placeholder="Email address" required>
-            <input type="password" class="auth-input" id="authPassword" placeholder="Password" required>
-            <button type="submit" class="auth-submit" id="authSubmitBtn">Log In</button>
-        </form>
-        <div class="auth-divider">or continue with</div>
-        <div class="social-login">
-            <a href="/login/google" class="social-btn" style="text-decoration: none;">
-                <i class="fab fa-google"></i> Google
-            </a>
-            <button class="social-btn" onclick="socialLogin('github')">
-                <i class="fab fa-github"></i> GitHub
-            </button>
+        <div class="modal-title">Select Theme</div>
+        <div class="option-row selected" data-theme="Dark" onclick="selectTheme('Dark', this)">
+            <span class="option-name">🌙 Dark</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
-        <div class="auth-switch" id="authSwitchText">
-            Don't have an account? <a href="#" onclick="switchAuthMode('signup')">Sign Up</a>
+        <div class="option-row" data-theme="Light" onclick="selectTheme('Light', this)">
+            <span class="option-name">☀️ Light</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
-        <button class="modal-cancel" onclick="closeAuthModal()" style="margin-top: 16px;">Cancel</button>
+        <div class="option-row" data-theme="AMOLED" onclick="selectTheme('AMOLED', this)">
+            <span class="option-name">⚫ AMOLED</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'themeModal')">Cancel</button>
     </div>
 </div>
 
-<!-- Server Selector Modal -->
-<div class="modal-overlay" id="serverModal" onclick="closeServerModal(event)">
+<!-- ═══ Accent Color Modal ═══ -->
+<div class="modal-overlay" id="accentModal" onclick="closeModal(event, 'accentModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Accent Color</div>
+        <div class="color-grid">
+            <div class="color-option selected" style="background: #1DB954;" data-color="#1DB954" data-name="Green" onclick="selectAccent('#1DB954', 'Green', this)"></div>
+            <div class="color-option" style="background: #FF6B6B;" data-color="#FF6B6B" data-name="Red" onclick="selectAccent('#FF6B6B', 'Red', this)"></div>
+            <div class="color-option" style="background: #4ECDC4;" data-color="#4ECDC4" data-name="Teal" onclick="selectAccent('#4ECDC4', 'Teal', this)"></div>
+            <div class="color-option" style="background: #45B7D1;" data-color="#45B7D1" data-name="Blue" onclick="selectAccent('#45B7D1', 'Blue', this)"></div>
+            <div class="color-option" style="background: #96CEB4;" data-color="#96CEB4" data-name="Mint" onclick="selectAccent('#96CEB4', 'Mint', this)"></div>
+<div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', 'Purple', this)"></div>
+<div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', 'Yellow', this)"></div>
+<div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', 'Orange', this)"></div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'accentModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Server Selector Modal ═══ -->
+<div class="modal-overlay" id="serverModal" onclick="closeModal(event, 'serverModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
         <div class="modal-title">Select Server</div>
-        <div class="server-option selected" onclick="selectServer('HD1', this)">
-            <span class="server-name">HD1</span>
-            <span class="server-badge">Fast</span>
+        <div class="option-row selected" data-server="HD1" onclick="selectServer('HD1', this)">
+            <span class="option-name">HD1</span>
+            <span class="option-badge">Fast</span>
         </div>
-        <div class="server-option" onclick="selectServer('HD2', this)">
-            <span class="server-name">HD2</span>
-            <span class="server-badge">Backup</span>
+        <div class="option-row" data-server="HD2" onclick="selectServer('HD2', this)">
+            <span class="option-name">HD2</span>
+            <span class="option-badge">Backup</span>
         </div>
-        <button class="modal-cancel" onclick="closeServerModal()">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'serverModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Skip Duration Modal ═══ -->
+<div class="modal-overlay" id="skipModal" onclick="closeModal(event, 'skipModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Skip Duration</div>
+        <div class="option-row" data-skip="5" onclick="selectSkip(5, this)">
+            <span class="option-name">5 seconds</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        <div class="option-row selected" data-skip="10" onclick="selectSkip(10, this)">
+            <span class="option-name">10 seconds</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        <div class="option-row" data-skip="15" onclick="selectSkip(15, this)">
+            <span class="option-name">15 seconds</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        <div class="option-row" data-skip="30" onclick="selectSkip(30, this)">
+            <span class="option-name">30 seconds</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'skipModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Streaming Quality Modal ═══ -->
+<div class="modal-overlay" id="streamingQualityModal" onclick="closeModal(event, 'streamingQualityModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Streaming Quality</div>
+        <div class="option-row" data-quality="low" onclick="selectStreamingQuality('low', 'Low (96kbps)', this)">
+            <span class="option-name">Low</span>
+            <span class="option-badge" style="background: #888;">96kbps</span>
+        </div>
+        <div class="option-row" data-quality="medium" onclick="selectStreamingQuality('medium', 'Medium (160kbps)', this)">
+            <span class="option-name">Medium</span>
+            <span class="option-badge" style="background: #888;">160kbps</span>
+        </div>
+        <div class="option-row selected" data-quality="high" onclick="selectStreamingQuality('high', 'High (320kbps)', this)">
+            <span class="option-name">High</span>
+            <span class="option-badge">320kbps</span>
+        </div>
+        <div class="option-row" data-quality="lossless" onclick="selectStreamingQuality('lossless', 'Lossless (FLAC)', this)">
+            <span class="option-name">Lossless</span>
+            <span class="option-badge" style="background: #FFD93D; color: #000;">FLAC</span>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'streamingQualityModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Download Quality Modal ═══ -->
+<div class="modal-overlay" id="downloadQualityModal" onclick="closeModal(event, 'downloadQualityModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">Download Quality</div>
+        <div class="option-row" data-quality="low" onclick="selectDownloadQuality('low', 'Low (96kbps)', this)">
+            <span class="option-name">Low</span>
+            <span class="option-badge" style="background: #888;">96kbps</span>
+        </div>
+        <div class="option-row" data-quality="medium" onclick="selectDownloadQuality('medium', 'Medium (160kbps)', this)">
+            <span class="option-name">Medium</span>
+            <span class="option-badge" style="background: #888;">160kbps</span>
+        </div>
+        <div class="option-row selected" data-quality="high" onclick="selectDownloadQuality('high', 'High (320kbps)', this)">
+            <span class="option-name">High</span>
+            <span class="option-badge">320kbps</span>
+        </div>
+        <div class="option-row" data-quality="lossless" onclick="selectDownloadQuality('lossless', 'Lossless (FLAC)', this)">
+            <span class="option-name">Lossless</span>
+            <span class="option-badge" style="background: #FFD93D; color: #000;">FLAC</span>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'downloadQualityModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- ═══ Privacy Policy Modal ═══ -->
+<div class="modal-overlay" id="privacyModal" onclick="closeModal(event, 'privacyModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-title">Privacy Policy</div>
+        <div class="policy-text">
+            <p>This policy explains what information EvaMusic collects and how it is used. By using EvaMusic, you agree to the practices described below.</p>
+
+            <h4>Information We Collect</h4>
+            <p>If you create an account, we store your username and password (encrypted) to let you log in and sync your profile. If you don't create an account, EvaMusic works as a guest and most of your preferences (theme, accent color, streaming server, etc.) are saved only on your own device.</p>
+
+            <h4>How We Use Your Information</h4>
+            <p>Account details are used solely to manage your login session and profile. We do not sell your data or share it with advertisers.</p>
+
+            <h4>Music Content</h4>
+            <p>Songs streamed through EvaMusic are retrieved from third-party music catalogs and streaming servers. EvaMusic does not host or store the audio files itself; it acts as a player and search interface for content available through those external sources.</p>
+
+            <h4>Local Storage & Cookies</h4>
+            <p>EvaMusic uses your browser's local storage to remember settings such as theme, accent color, preferred server, and playback preferences. This data stays on your device and is not transmitted to our servers unless required for account login.</p>
+
+            <h4>Data Security</h4>
+            <p>We take reasonable steps to protect any account information you provide, but no online service can guarantee complete security. Please use a unique password for your EvaMusic account.</p>
+
+            <h4>Children's Privacy</h4>
+            <p>EvaMusic is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+
+            <h4>Changes to This Policy</h4>
+            <p>This policy may be updated occasionally as EvaMusic evolves. Continued use of the app after changes means you accept the updated policy.</p>
+
+            <h4>Contact Us</h4>
+            <p>Questions about this policy can be sent to mahabulbhai288550@gmail.com or via Telegram at @Mahabul201.</p>
+        </div>
+        <button class="modal-cancel" onclick="closeModal(null, 'privacyModal')" style="margin-top: 12px; flex-shrink: 0;">Close</button>
     </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════
-// AUTH STATE MANAGEMENT
+// AUTH STATE MANAGEMENT (Google OAuth)
 // ═══════════════════════════════════════
-let currentAuthMode = 'login';
+let isLoggedIn = false;
+let currentUser = null;
 
 function updateAuthUI() {
     const guestSection = document.getElementById('authGuest');
     const userSection = document.getElementById('authUser');
     const logoutItem = document.getElementById('logoutItem');
+    const editItem = document.getElementById('editProfileItem');
 
     fetch('/api/me')
         .then(r => r.json())
         .then(data => {
             if (data.logged_in) {
+                isLoggedIn = true;
+                currentUser = data;
                 guestSection.style.display = 'none';
                 userSection.style.display = 'flex';
                 logoutItem.style.display = 'flex';
 
-                document.getElementById('userName').textContent = data.name || data.email.split('@')[0];
+                const name = data.name || data.email.split('@')[0];
+                document.getElementById('userName').textContent = name;
                 document.getElementById('userEmail').textContent = data.email;
 
                 const avatarEl = document.getElementById('userAvatar');
                 if (data.picture) {
                     avatarEl.innerHTML = '<img src="' + data.picture + '" alt="avatar">';
                 } else {
-                    const initial = (data.name || data.email).charAt(0).toUpperCase();
+                    const initial = name.charAt(0).toUpperCase();
                     avatarEl.textContent = initial;
                 }
             } else {
+                isLoggedIn = false;
+                currentUser = null;
                 guestSection.style.display = 'flex';
                 userSection.style.display = 'none';
                 logoutItem.style.display = 'none';
             }
         })
         .catch(() => {
+            isLoggedIn = false;
+            currentUser = null;
             guestSection.style.display = 'flex';
             userSection.style.display = 'none';
             logoutItem.style.display = 'none';
         });
 }
 
-function openAuthModal(mode) {
-    currentAuthMode = mode;
-    const modal = document.getElementById('authModal');
-    const title = document.getElementById('authModalTitle');
-    const nameInput = document.getElementById('authName');
-    const submitBtn = document.getElementById('authSubmitBtn');
-    const switchText = document.getElementById('authSwitchText');
+function goToProfile() {
+    if (window._spaNavigateTo) window._spaNavigateTo('/profile');
+    else window.location.href = '/profile';
+}
 
-    document.getElementById('authForm').reset();
-
-    if (mode === 'signup') {
-        title.textContent = 'Sign Up';
-        nameInput.style.display = 'block';
-        nameInput.required = true;
-        submitBtn.textContent = 'Create Account';
-        switchText.innerHTML = 'Already have an account? <a href="#" onclick="switchAuthMode(\'login\')">Log In</a>';
-    } else {
-        title.textContent = 'Log In';
-        nameInput.style.display = 'none';
-        nameInput.required = false;
-        submitBtn.textContent = 'Log In';
-        switchText.innerHTML = 'Don\'t have an account? <a href="#" onclick="switchAuthMode(\'signup\')">Sign Up</a>';
+function handleEditProfile() {
+    if (!isLoggedIn) {
+        showToast('Please log in to edit your profile', 'info');
+        if (window._spaNavigateTo) window._spaNavigateTo('/login/google');
+        else window.location.href = '/login/google';
+        return;
     }
-
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeAuthModal(event) {
-    if (!event || event.target.id === 'authModal') {
-        document.getElementById('authModal').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-}
-
-function switchAuthMode(mode) {
-    openAuthModal(mode);
-}
-
-function handleAuthSubmit(event) {
-    event.preventDefault();
-    const email = document.getElementById('authEmail').value;
-    const password = document.getElementById('authPassword').value;
-    const name = document.getElementById('authName').value;
-
-    const user = {
-        email: email,
-        name: name || email.split('@')[0],
-        token: 'fake-jwt-token-' + Date.now()
-    };
-
-    localStorage.setItem('evamusic_auth_user', JSON.stringify(user));
-    closeAuthModal();
-    updateAuthUI();
-    showToast(currentAuthMode === 'signup' ? 'Account created!' : 'Welcome back!', 'success');
-}
-
-function socialLogin(provider) {
-    if (provider === 'github') {
-        showToast('GitHub login coming soon', 'info');
-    }
+    if (window._spaNavigateTo) window._spaNavigateTo('/profile/edit');
+    else window.location.href = '/profile/edit';
 }
 
 function handleLogout() {
-    if (confirm('Are you sure you want to log out?')) {
-        fetch('/logout', { method: 'GET' })
-            .then(() => {
-                localStorage.removeItem('evamusic_auth_user');
-                updateAuthUI();
-                showToast('Logged out successfully', 'success');
-            });
-    }
+    if (!confirm('Are you sure you want to log out?')) return;
+    fetch('/logout', { method: 'GET', credentials: 'same-origin' })
+        .then(() => {
+            localStorage.removeItem('evamusic_auth_user');
+            updateAuthUI();
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                if (window._spaNavigateTo) window._spaNavigateTo('/settings');
+                else window.location.href = '/settings';
+            }, 500);
+        })
+        .catch(() => {
+            showToast('Logout failed', 'error');
+        });
 }
+
+// ═══════════════════════════════════════
+// SETTINGS STORE
+// ═══════════════════════════════════════
+window.SettingsStore = {
+    get(key, defaultVal) {
+        try { return JSON.parse(localStorage.getItem('evamusic_' + key)) ?? defaultVal; }
+        catch { return defaultVal; }
+    },
+    set(key, val) { localStorage.setItem('evamusic_' + key, JSON.stringify(val)); },
+    remove(key) { localStorage.removeItem('evamusic_' + key); }
+};
 
 // ═══════════════════════════════════════
 // TOAST NOTIFICATIONS
@@ -586,29 +673,188 @@ function showToast(message, type) {
     }, 3000);
 }
 
-// Server Modal
-function openServerModal() {
-    document.getElementById('serverModal').classList.add('active');
+// ═══════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
-function closeServerModal(event) {
-    if (!event || event.target.id === 'serverModal') {
-        document.getElementById('serverModal').classList.remove('active');
+function closeModal(event, id) {
+    if (!event || event.target.id === id) {
+        document.getElementById(id).classList.remove('active');
         document.body.style.overflow = '';
     }
 }
 
+// ═══════════════════════════════════════
+// SERVER SELECTOR
+// ═══════════════════════════════════════
+function openServerModal() { openModal('serverModal'); }
+
 function selectServer(server, el) {
-    document.querySelectorAll('.server-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelectorAll('#serverModal .option-row').forEach(opt => opt.classList.remove('selected'));
     el.classList.add('selected');
+    SettingsStore.set('server', server);
     document.getElementById('currentServer').textContent = server;
     showToast('Switched to ' + server, 'success');
-    setTimeout(closeServerModal, 300);
+    setTimeout(() => closeModal(null, 'serverModal'), 300);
 }
 
-// Init on load
+// ═══════════════════════════════════════
+// SKIP DURATION
+// ═══════════════════════════════════════
+function openSkipModal() { openModal('skipModal'); }
+
+function selectSkip(seconds, el) {
+    document.querySelectorAll('#skipModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('skipDuration', seconds);
+    document.getElementById('currentSkip').textContent = seconds + 's';
+    showToast('Skip duration: ' + seconds + 's', 'success');
+    setTimeout(() => closeModal(null, 'skipModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// THEME SELECTOR
+// ═══════════════════════════════════════
+function openThemeModal() { openModal('themeModal'); }
+
+function selectTheme(theme, el) {
+    document.querySelectorAll('#themeModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('theme', theme);
+    document.getElementById('currentTheme').textContent = theme;
+    applyTheme(theme);
+    showToast('Theme: ' + theme, 'success');
+    setTimeout(() => closeModal(null, 'themeModal'), 300);
+}
+
+function applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'Light') {
+        root.style.setProperty('--bg-color', '#f5f5f5');
+        root.style.setProperty('--text-color', '#121212');
+        root.style.setProperty('--text-secondary', '#666');
+        root.style.setProperty('--card-bg', '#ffffff');
+        root.style.setProperty('--hover-bg', '#e8e8e8');
+        root.style.setProperty('--border-color', '#ddd');
+        root.style.setProperty('--nav-bg', '#ffffff');
+        root.style.setProperty('--player-bg', '#ffffff');
+    } else if (theme === 'AMOLED') {
+        root.style.setProperty('--bg-color', '#000000');
+        root.style.setProperty('--text-color', '#ffffff');
+        root.style.setProperty('--text-secondary', '#888');
+        root.style.setProperty('--card-bg', '#0a0a0a');
+        root.style.setProperty('--hover-bg', '#141414');
+        root.style.setProperty('--border-color', '#1a1a1a');
+        root.style.setProperty('--nav-bg', '#000000');
+        root.style.setProperty('--player-bg', '#000000');
+    } else {
+        // Dark (default)
+        root.style.setProperty('--bg-color', '#121212');
+        root.style.setProperty('--text-color', '#ffffff');
+        root.style.setProperty('--text-secondary', '#b3b3b3');
+        root.style.setProperty('--card-bg', '#1e1e1e');
+        root.style.setProperty('--hover-bg', '#2a2a2a');
+        root.style.setProperty('--border-color', '#333');
+        root.style.setProperty('--nav-bg', '#1a1a1a');
+        root.style.setProperty('--player-bg', '#181818');
+    }
+}
+
+// ═══════════════════════════════════════
+// ACCENT COLOR
+// ═══════════════════════════════════════
+function openAccentModal() { openModal('accentModal'); }
+
+function selectAccent(color, name, el) {
+    document.querySelectorAll('#accentModal .color-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('accentColor', { color, name });
+    document.documentElement.style.setProperty('--accent-color', color);
+    document.getElementById('currentAccent').innerHTML = '<span style="color: ' + color + ';">● ' + name + '</span>';
+    showToast('Accent: ' + name, 'success');
+    setTimeout(() => closeModal(null, 'accentModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// STREAMING QUALITY
+// ═══════════════════════════════════════
+function openStreamingQualityModal() { openModal('streamingQualityModal'); }
+
+function selectStreamingQuality(quality, label, el) {
+    document.querySelectorAll('#streamingQualityModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('streamingQuality', { quality, label });
+    document.getElementById('currentStreamingQuality').textContent = label;
+    showToast('Streaming: ' + label, 'success');
+    setTimeout(() => closeModal(null, 'streamingQualityModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// DOWNLOAD QUALITY
+// ═══════════════════════════════════════
+function openDownloadQualityModal() { openModal('downloadQualityModal'); }
+
+function selectDownloadQuality(quality, label, el) {
+    document.querySelectorAll('#downloadQualityModal .option-row').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    SettingsStore.set('downloadQuality', { quality, label });
+    document.getElementById('currentDownloadQuality').textContent = label;
+    showToast('Download: ' + label, 'success');
+    setTimeout(() => closeModal(null, 'downloadQualityModal'), 300);
+}
+
+// ═══════════════════════════════════════
+// INITIALIZE SETTINGS ON LOAD
+// ═══════════════════════════════════════
+function initSettings() {
+    // Server
+    const server = SettingsStore.get('server', 'HD1');
+    document.getElementById('currentServer').textContent = server;
+    document.querySelectorAll('#serverModal .option-row').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.server === server);
+    });
+
+    // Skip
+    const skip = SettingsStore.get('skipDuration', 10);
+    document.getElementById('currentSkip').textContent = skip + 's';
+    document.querySelectorAll('#skipModal .option-row').forEach(opt => {
+        opt.classList.toggle('selected', parseInt(opt.dataset.skip) === skip);
+    });
+
+    // Theme
+    const theme = SettingsStore.get('theme', 'Dark');
+    document.getElementById('currentTheme').textContent = theme;
+    applyTheme(theme);
+    document.querySelectorAll('#themeModal .option-row').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.theme === theme);
+    });
+
+    // Accent
+    const accent = SettingsStore.get('accentColor', { color: '#1DB954', name: 'Green' });
+    document.documentElement.style.setProperty('--accent-color', accent.color);
+    document.getElementById('currentAccent').innerHTML = '<span style="color: ' + accent.color + ';">● ' + accent.name + '</span>';
+    document.querySelectorAll('#accentModal .color-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.color === accent.color);
+    });
+
+    // Streaming Quality
+    e('selected', opt.dataset.quality === streamQ.quality);
+    });
+
+    // Download Quality
+    const downloadQ = SettingsStore.get('downloadQuality', { quality: 'high', label: 'High (320kbps)' });
+    document.getElementById('currentDownloadQuality').textContent = downloadQ.label;
+    document.querySelectorAll('#downloadQualityModal .option-row').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.quality === downloadQ.quality);
+    });
+}
+
+// Run on load
+initSettings();
 updateAuthUI();
 </script>
 {% endblock %}
-    
