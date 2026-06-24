@@ -39,7 +39,7 @@ def get_search_url(query: str, limit: int = 20) -> str:
 
 
 def get_trending_url(limit: int = 20) -> str:
-    return f"{TRENDING_URL}?{urlencode({'limit': limit})}"
+    return f"{TRENDING_URL}?urlencode({'limit': limit})}"
 
 
 def get_song_url(song_id: str) -> str:
