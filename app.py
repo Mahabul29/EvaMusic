@@ -5,12 +5,19 @@ import html
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
-from oauth import init_oauth, get_google_user, oauth
+from oauth import init_oauth, get_google_user, oauth, get_google_redirect_uri
 
 import database as db
 from routes import profile_bp
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# ═══════════════════════════════════════════════════════════════
+# CRITICAL FIX: Trust proxy headers so _external=True uses https://
+# ═══════════════════════════════════════════════════════════════
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
 init_oauth(app)
@@ -25,7 +32,6 @@ HEADERS = {
     "Accept": "application/json",
 }
 
-
 def get_user_id():
     """Return the logged-in user's ID, or a guest ID if not logged in."""
     if 'user_id' in session:
@@ -34,10 +40,8 @@ def get_user_id():
         session['guest_id'] = str(uuid.uuid4())[:8]
     return session['guest_id']
 
-
 def is_logged_in():
     return bool(session.get('logged_in'))
-
 
 def _call(url, timeout=12):
     try:
@@ -47,7 +51,6 @@ def _call(url, timeout=12):
     except Exception as e:
         print(f"[API ERROR] {url}: {e}")
     return None
-
 
 def _extract_audio_url(data):
     if not data:
@@ -88,7 +91,6 @@ def _extract_audio_url(data):
                 return url
     return ""
 
-
 def _normalize_song(data):
     if not data:
         return None
@@ -121,15 +123,14 @@ def _normalize_song(data):
     if isinstance(album, str): album = html.unescape(album)
 
     return {
-        "id":       str(inner.get("id") or inner.get("song_id") or data.get("id") or ""),
-        "title":    title,
-        "artist":   artist,
-        "album":    album,
+        "id": str(inner.get("id") or inner.get("song_id") or data.get("id") or ""),
+        "title": title,
+        "artist": artist,
+        "album": album,
         "duration": int(inner.get("duration") or inner.get("length") or 0),
-        "image":    image or "/static/images/default-album.png",
-        "url":      audio_url,
+        "image": image or "/static/images/default-album.png",
+        "url": audio_url,
     }
-
 
 def fetch_songs(query, limit=20):
     data = _call(get_search_url(query, limit))
@@ -142,7 +143,6 @@ def fetch_songs(query, limit=20):
                 return inner
     return []
 
-
 def fetch_trending(limit=20):
     data = _call(get_trending_url(limit))
     if isinstance(data, list) and data:
@@ -153,7 +153,6 @@ def fetch_trending(limit=20):
             if isinstance(inner, list) and inner:
                 return inner
     return []
-
 
 # ── PAGE ROUTES ────────────────────────────────────────────────
 
@@ -191,7 +190,6 @@ def home():
         selected_languages=selected_languages
     )
 
-
 @app.route('/search')
 def search():
     query = request.args.get('q', '').strip()
@@ -204,7 +202,6 @@ def search():
                 songs.append(norm)
         db.add_to_search_history(get_user_id(), query)
     return render_template('search.html', songs=songs, query=query, title="Search")
-
 
 # ── PLAYER / CONTENT ROUTES ────────────────────────────────────
 
@@ -219,21 +216,23 @@ def player(song_id):
         }
     if song.get("id"):
         db.add_to_recently_played(get_user_id(), {
-            "song_id":   song.get("id"),
-            "title":     song.get("title", "Unknown"),
-            "artist":    song.get("artist", "Unknown"),
+            "song_id": song.get("id"),
+            "title": song.get("title", "Unknown"),
+            "artist": song.get("artist", "Unknown"),
             "image_url": song.get("image", "")
         })
     return render_template('player.html', song=song, title=song.get("title", "Player"))
-
 
 # ── AUTH / OAUTH ROUTES ────────────────────────────────────────
 
 @app.route('/login/google')
 def login_google():
-    redirect_uri = url_for('authorize_google', _external=True)
+    # ═══════════════════════════════════════════════════════════
+    # CRITICAL FIX: Use explicit redirect_uri from config instead
+    # of url_for() which generates http:// behind Koyeb proxy
+    # ═══════════════════════════════════════════════════════════
+    redirect_uri = get_google_redirect_uri()
     return oauth.google.authorize_redirect(redirect_uri)
-
 
 @app.route('/login/google/callback')
 def authorize_google():
@@ -283,12 +282,10 @@ def authorize_google():
 
     return redirect('/')
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
-
 
 @app.route('/api/me')
 def api_me():
@@ -303,7 +300,6 @@ def api_me():
         "picture": session.get('user_picture')
     })
 
-
 # ── API ROUTES ─────────────────────────────────────────────────
 
 @app.route('/api/trending')
@@ -316,7 +312,6 @@ def api_trending():
         if norm and norm.get("url"):
             songs.append(norm)
     return jsonify(songs)
-
 
 @app.route('/api/search')
 def api_search():
@@ -332,7 +327,6 @@ def api_search():
             songs.append(norm)
     return jsonify(songs)
 
-
 @app.route('/api/song/<song_id>')
 def api_song(song_id):
     data = _call(get_song_url(song_id))
@@ -340,7 +334,6 @@ def api_song(song_id):
     if not song:
         return jsonify({"error": "Song not found"}), 404
     return jsonify(song)
-
 
 @app.route('/api/similar-songs/<song_id>')
 def api_similar_songs(song_id):
@@ -358,8 +351,8 @@ def api_similar_songs(song_id):
                 norm = _normalize_song(item)
                 if norm and norm.get("url") and norm.get("id") != song_id:
                     similar.append(norm)
-                    if len(similar) >= limit:
-                        break
+                if len(similar) >= limit:
+                    break
 
     if not similar:
         raw_trending = fetch_trending(limit)
@@ -367,28 +360,26 @@ def api_similar_songs(song_id):
             norm = _normalize_song(item)
             if norm and norm.get("url") and norm.get("id") != song_id:
                 similar.append(norm)
-                if len(similar) >= limit:
-                    break
+            if len(similar) >= limit:
+                break
 
     return jsonify(similar)
-
 
 @app.route('/api/favorite', methods=['POST'])
 def api_favorite():
     data = request.get_json(silent=True) or {}
     user_id = get_user_id()
     song_data = {
-        "id":       data.get("song_id", ""),
-        "title":    data.get("title", "Unknown"),
-        "artist":   data.get("artist", "Unknown"),
-        "album":    data.get("album", ""),
+        "id": data.get("song_id", ""),
+        "title": data.get("title", "Unknown"),
+        "artist": data.get("artist", "Unknown"),
+        "album": data.get("album", ""),
         "duration": data.get("duration", 0),
-        "image":    data.get("image_url", "/static/images/default-album.png"),
-        "url":      data.get("audio_url", ""),
+        "image": data.get("image_url", "/static/images/default-album.png"),
+        "url": data.get("audio_url", ""),
     }
     result = db.toggle_favorite(user_id, song_data)
     return jsonify(result)
-
 
 @app.route('/api/favorites')
 def api_favorites():
@@ -397,24 +388,22 @@ def api_favorites():
     normalized = []
     for f in favs:
         normalized.append({
-            "song_id":   f.get("id", ""),
-            "id":        f.get("id", ""),
-            "title":     f.get("title", "Unknown"),
-            "artist":    f.get("artist", "Unknown"),
-            "album":     f.get("album", ""),
-            "duration":  f.get("duration", 0),
-            "image":     f.get("image", "/static/images/default-album.png"),
+            "song_id": f.get("id", ""),
+            "id": f.get("id", ""),
+            "title": f.get("title", "Unknown"),
+            "artist": f.get("artist", "Unknown"),
+            "album": f.get("album", ""),
+            "duration": f.get("duration", 0),
+            "image": f.get("image", "/static/images/default-album.png"),
             "image_url": f.get("image", "/static/images/default-album.png"),
-            "url":       f.get("url", ""),
+            "url": f.get("url", ""),
             "audio_url": f.get("url", ""),
         })
     return jsonify(normalized)
 
-
 @app.route('/api/artists')
 def api_fallback_artists():
     return jsonify([])
-
 
 @app.route('/api/suggestions')
 def api_fallback_suggestions():
@@ -427,11 +416,9 @@ def api_fallback_suggestions():
                 songs.append(norm)
     return jsonify(songs)
 
-
 @app.route('/api/usuals')
 def api_fallback_usuals():
     return jsonify([])
-
 
 @app.route('/api/languages', methods=['POST'])
 def save_languages():
@@ -439,7 +426,6 @@ def save_languages():
     langs = data.get('languages', ['hindi'])
     session['selected_languages'] = [str(l).lower() for l in langs]
     return jsonify({"success": True})
-
 
 @app.route('/api/debug')
 def api_debug():
@@ -450,7 +436,6 @@ def api_debug():
         api_status = f"error: {e}"
     db_health = db.check_db_health()
     return jsonify({"api_base": API_BASE_URL, "api_status": api_status, "db_health": db_health})
-
 
 @app.route('/api/stats')
 def api_stats():
@@ -464,7 +449,6 @@ def api_stats():
         "listening_hours": 0
     })
 
-
 # ── ERROR HANDLERS ─────────────────────────────────────────────
 
 @app.errorhandler(404)
@@ -473,15 +457,13 @@ def not_found(e):
     empty_taste = {'top_artists': [], 'top_languages': [], 'top_genres': [], 'top_moods': [], 'metrics_collected': 0}
     return render_template('home.html', data=empty_data, taste=empty_taste, selected_languages=[], title="Not Found"), 404
 
-
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({"error": "Internal server error"}), 500
-
 
 # ── MAIN ───────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
-            
+                         
