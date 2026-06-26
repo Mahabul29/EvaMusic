@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}Language - EvaMusic{% endblock %}
+
+{% block extra_css %}
+<style>
+.lang-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.lang-page .page-header {
+    margin-bottom: 30px;
+}
+
+.lang-page .page-header h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.lang-page .page-header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.lang-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.lang-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+}
+
+.lang-card.active {
+    border-color: var(--primary);
+    background: rgba(43, 182, 115, 0.08);
+}
+
+.lang-card .check-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg);
+    font-size: 0.8rem;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+}
+
+.lang-card.active .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.lang-card .flag {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.lang-card .native-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+
+.lang-card .english-name {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.settings-section {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-header i {
+    font-size: 1.2rem;
+    color: var(--primary);
+    width: 36px;
+    height: 36px;
+    background: rgba(43, 182, 115, 0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.section-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.section-header p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.section-body {
+    padding: 20px 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b3b3b3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    transition: border-color 0.2s;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.toggle-row:last-child {
+    border-bottom: none;
+}
+
+.toggle-info h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.toggle-info p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: var(--surface-light);
+    border-radius: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle-switch.active {
+    background: var(--primary);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active::after {
+    left: 25px;
+}
+
+.action-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.btn {
+    padding: 12px 28px;
+    border-radius: 25px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--bg);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-light);
+}
+
+.toast {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast i {
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .lang-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .lang-page {
+        padding: 10px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lang-page">
+    <div class="page-header">
+        <h1><i class="fas fa-globe"></i> <span data-key="page_title">Language</span></h1>
+        <p data-key="page_subtitle">Choose your preferred language for the EvaMusic interface</p>
+    </div>
+
+    <div class="lang-grid">
+        <div class="lang-card active" data-lang="en" onclick="selectLanguage('en')">
+            <div class="check-icon"><i class="fas fa-check"></i></div>
+            <span class="flag">🇬🇧</span>
+            <div class="native-name">English</div>
+            <div class="english-name">English</div>
+        </div>
+        <div class="lang-card" data-lang="hi" onclick="selectLanguage('hi')">
+            <div class="check-icon"><i class="fas fa-check"></i></div>
+            <span class="flag">🇮🇳</span>
+            <div class="native-name">हिन्दी</div>
+            <div class="english-name">Hindi</div>
+        </div>
+        <div class="lang-card" data-lang="as" onclick="selectLanguage('as')">
+            <div class="check-icon"><i class="fas fa-check"></i></div>
+            <span class="flag">🇮🇳</span>
+            <div class="native-name">অসমীয়া</div>
+            <div class="english-name">Assamese</div>
+        </div>
+        <div class="lang-card" data-lang="bn" onclick="selectLanguage('bn')">
+            <div class="check-icon"><i class="fas fa-check"></i></div>
+            <span class="flag">🇧🇩</span>
+            <div class="native-name">বাংলা</div>
+            <div class="english-name">Bengali</div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-language"></i>
+            <div>
+                <h3 data-key="interface_title">Interface Language</h3>
+                <p data-key="interface_desc">Language used for menus, buttons and navigation</p>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="form-group">
+                <label class="form-label" data-key="select_label">Select Language</label>
+                <select class="form-select" id="interfaceLang" onchange="selectLanguage(this.value)">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी (Hindi)</option>
+                    <option value="as">অসমীয়া (Assamese)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                </select>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4 data-key="auto_detect">Auto-detect Language</h4>
+                    <p data-key="auto_detect_desc">Automatically detect based on browser settings</p>
+                </div>
+                <div class="toggle-switch" id="autoDetect" onclick="toggleSwitch(this)"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-music"></i>
+            <div>
+                <h3 data-key="content_title">Content Language</h3>
+                <p data-key="content_desc">Preferred language for songs and recommendations</p>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="form-group">
+                <label class="form-label" data-key="primary_label">Primary Language</label>
+                <select class="form-select" id="primaryLang">
+                    <option value="all">All Languages</option>
+                    <option value="hindi" selected>Hindi</option>
+                    <option value="english">English</option>
+                    <option value="assamese">Assamese</option>
+                    <option value="bengali">Bengali</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-key="secondary_label">Secondary Language</label>
+                <select class="form-select" id="secondaryLang">
+                    <option value="none" selected>None</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="english">English</option>
+                    <option value="assamese">Assamese</option>
+                    <option value="bengali">Bengali</option>
+                </select>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4 data-key="show_translations">Show Translations</h4>
+                    <p data-key="show_translations_desc">Display song titles in multiple languages</p>
+                </div>
+                <div class="toggle-switch active" id="showTranslations" onclick="toggleSwitch(this)"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-primary" onclick="saveLanguage()">
+            <i class="fas fa-save"></i> <span data-key="save_btn">Save Changes</span>
+        </button>
+        <button class="btn btn-secondary" onclick="resetLanguage()">
+            <i class="fas fa-undo"></i> <span data-key="reset_btn">Reset to Default</span>
+        </button>
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMsg">Settings saved!</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const translations = {
+    en: {
+        page_title: "Language",
+        page_subtitle: "Choose your preferred language for the EvaMusic interface",
+        interface_title: "Interface Language",
+        interface_desc: "Language used for menus, buttons and navigation",
+        select_label: "Select Language",
+        auto_detect: "Auto-detect Language",
+        auto_detect_desc: "Automatically detect based on browser settings",
+        content_title: "Content Language",
+        content_desc: "Preferred language for songs and recommendations",
+        primary_label: "Primary Language",
+        secondary_label: "Secondary Language",
+        show_translations: "Show Translations",
+        show_translations_desc: "Display song titles in multiple languages",
+        save_btn: "Save Changes",
+        reset_btn: "Reset to Default",
+        toast_saved: "Language settings saved!",
+        toast_reset: "Reset to default!"
+    },
+    hi: {
+        page_title: "भाषा",
+        page_subtitle: "EvaMusic इंटरफेस के लिए अपनी पसंदीदा भाषा चुनें",
+        interface_title: "इंटरफेस भाषा",
+        interface_desc: "मेनू, बटन और नेविगेशन के लिए उपयोग की जाने वाली भाषा",
+        select_label: "भाषा चुनें",
+        auto_detect: "भाषा ऑटो-डिटेक्ट",
+        auto_detect_desc: "ब्राउज़र सेटिंग्स के आधार पर स्वचालित रूप से पता लगाएं",
+        content_title: "सामग्री भाषा",
+        content_desc: "गानों और सिफारिशों के लिए पसंदीदा भाषा",
+        primary_label: "प्राथमिक भाषा",
+        secondary_label: "द्वितीयक भाषा",
+        show_translations: "अनुवाद दिखाएं",
+        show_translations_desc: "गीत शीर्षक कई भाषाओं में प्रदर्शित करें",
+        save_btn: "परिवर्तन सहेजें",
+        reset_btn: "डिफ़ॉल्ट पर रीसेट करें",
+        toast_saved: "भाषा सेटिंग्स सहेजी गईं!",
+        toast_reset: "डिफ़ॉल्ट पर रीसेट हो गया!"
+    },
+    as: {
+        page_title: "ভাষা",
+        page_subtitle: "EvaMusic ইণ্টাৰফেচৰ বাবে আপোনাৰ পছন্দৰ ভাষা বাছনি কৰক",
+        interface_title: "ইণ্টাৰফেচ ভাষা",
+        interface_desc: "মেনু, বুটাম আৰু নেভিগেশ্বনৰ বাবে ব্যৱহৃত ভাষা",
+        select_label: "ভাষা বাছনি কৰক",
+        auto_detect: "ভাষা অটো-চিনাক্তকৰণ",
+        auto_detect_desc: "ব্ৰাউজাৰ ছেটিংছৰ ভিত্তিত স্বয়ংক্ৰিয়ভাবে চিনাক্ত কৰক",
+        content_title: "সামগ্ৰী ভাষা",
+        content_desc: "গীত আৰু সুপাৰিশৰ বাবে পছন্দৰ ভাষা",
+        primary_label: "প্ৰাথমিক ভাষা",
+        secondary_label: "দ্বিতীয় ভাষা",
+        show_translations: "অনুবাদ দেখুৱাওক",
+        show_translations_desc: "বহু ভাষাত গীতৰ শীৰ্ষক প্ৰদৰ্শন কৰক",
+        save_btn: "পৰিবৰ্তন সঞ্চয় কৰক",
+        reset_btn: "ডিফল্টলৈ পুনৰ স্থাপন কৰক",
+        toast_saved: "ভাষা ছেটিংছ সফলতাৰে সঞ্চয় কৰা হ'ল!",
+        toast_reset: "ডিফল্টলৈ পুনৰ স্থাপন কৰা হ'ল!"
+    },
+    bn: {
+        page_title: "ভাষা",
+        page_subtitle: "EvaMusic ইন্টারফেসের জন্য আপনার পছন্দের ভাষা বেছে নিন",
+        interface_title: "ইন্টারফেস ভাষা",
+        interface_desc: "মেনু, বোতাম এবং নেভিগেশনের জন্য ব্যবহৃত ভাষা",
+        select_label: "ভাষা নির্বাচন করুন",
+        auto_detect: "ভাষা অটো-সনাক্তকরণ",
+        auto_detect_desc: "ব্রাউজার সেটিংসের উপর ভিত্তি করে স্বয়ংক্রিয়ভাবে সনাক্ত করুন",
+        content_title: "কন্টেন্ট ভাষা",
+        content_desc: "গান এবং সুপারিশের জন্য পছন্দের ভাষা",
+        primary_label: "প্রাথমিক ভাষা",
+        secondary_label: "মাধ্যমিক ভাষা",
+        show_translations: "অনুবাদ দেখান",
+        show_translations_desc: "একাধিক ভাষায় গানের শিরোনাম প্রদর্শন করুন",
+        save_btn: "পরিবর্তন সংরক্ষণ করুন",
+        reset_btn: "ডিফল্টে রিসেট করুন",
+        toast_saved: "ভাষা সেটিংস সফলভাবে সংরক্ষণ করা হয়েছে!",
+        toast_reset: "ডিফল্টে রিসেট করা হয়েছে!"
+    }
+};
+
+let currentLang = localStorage.getItem('evamusic_lang') || 'en';
+
+function selectLanguage(lang) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.lang === lang);
+    });
+    document.getElementById('interfaceLang').value = lang;
+    const t = translations[lang];
+    document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.dataset.key;
+        if (t && t[key]) el.textContent = t[key];
+    });
+    document.documentElement.lang = lang === 'as' ? 'as' : lang === 'bn' ? 'bn' : lang === 'hi' ? 'hi' : 'en';
+}
+
+function toggleSwitch(el) {
+    el.classList.toggle('active');
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+async function saveLanguage() {
+    const settings = {
+        interface_lang: currentLang,
+        primary_lang: document.getElementById('primaryLang').value,
+        secondary_lang: document.getElementById('secondaryLang').value,
+        auto_detect: document.getElementById('autoDetect').classList.contains('active'),
+        show_translations: document.getElementById('showTranslations').classList.contains('active')
+    };
+    localStorage.setItem('evamusic_lang', currentLang);
+    localStorage.setItem('evamusic_lang_settings', JSON.stringify(settings));
+    try {
+        await fetch('/api/languages', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({languages: [settings.primary_lang, settings.secondary_lang].filter(l => l && l !== 'none')})
+        });
+    } catch(e) {
+        console.log('Server save failed, using localStorage');
+    }
+    showToast(translations[currentLang].toast_saved);
+}
+
+function resetLanguage() {
+    currentLang = 'en';
+    document.getElementById('interfaceLang').value = 'en';
+    document.getElementById('primaryLang').value = 'hindi';
+    document.getElementById('secondaryLang').value = 'none';
+    document.getElementById('autoDetect').classList.remove('active');
+    document.getElementById('showTranslations').classList.add('active');
+    selectLanguage('en');
+    localStorage.removeItem('evamusic_lang');
+    localStorage.removeItem('evamusic_lang_settings');
+    showToast(translations['en'].toast_reset);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('evamusic_lang_settings');
+    if (saved) {
+        try {
+            const s = JSON.parse(saved);
+            if (s.interface_lang) currentLang = s.interface_lang;
+            if (s.primary_lang) document.getElementById('primaryLang').value = s.primary_lang;
+            if (s.secondary_lang) document.getElementById('secondaryLang').value = s.secondary_lang;
+            if (s.auto_detect) document.getElementById('autoDetect').classList.add('active');
+            if (s.show_translations !== undefined) {
+                document.getElementById('showTranslations').classList.toggle('active', s.show_translations);
+            }
+        } catch(e) {}
+    }
+    selectLanguage(currentLang);
+});
+</script>
+{% endblock %}
