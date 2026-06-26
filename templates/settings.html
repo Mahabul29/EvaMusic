@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}{{ _("Settings") }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -155,21 +155,24 @@
 .policy-text h4 { color: var(--text-color); font-size: 14px; margin: 14px 0 6px; }
 .policy-text h4:first-child { margin-top: 0; }
 .policy-text p { margin-bottom: 10px; }
+
+/* Language flag */
+.lang-flag { font-size: 18px; margin-right: 4px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="settings-page">
-    <div class="settings-header"><h1>Settings</h1></div>
+    <div class="settings-header"><h1>{{ _("Settings") }}</h1></div>
 
     <!-- ACCOUNT -->
     <div class="settings-section">
-        <div class="settings-section-title">Account</div>
+        <div class="settings-section-title">{{ _("Account") }}</div>
 
         <!-- Not logged in: Show Login button -->
         <div id="authGuest" class="auth-buttons" style="display: none;">
             <button class="auth-btn auth-btn-login" onclick="window.location.href='/login/google'">
-                <i class="fab fa-google"></i> Log In with Google
+                <i class="fab fa-google"></i> {{ _("Log In with Google") }}
             </button>
         </div>
 
@@ -178,7 +181,7 @@
             <div class="user-avatar" id="userAvatar">U</div>
             <div class="user-info">
                 <div class="user-name" id="userName">Username</div>
-                <div class="user-email" id="userEmail">Tap to view profile</div>
+                <div class="user-email" id="userEmail">{{ _("Tap to view profile") }}</div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
@@ -188,8 +191,8 @@
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-user-edit"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Edit Profile</span>
-                    <span class="settings-item-desc">Name, avatar, bio</span>
+                    <span class="settings-item-title">{{ _("Edit Profile") }}</span>
+                    <span class="settings-item-desc">{{ _("Name, avatar, bio") }}</span>
                 </div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
@@ -202,8 +205,8 @@
                     <i class="fas fa-sign-out-alt"></i>
                 </div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title" style="color: #FF6B6B;">Log Out</span>
-                    <span class="settings-item-desc">Sign out of your account</span>
+                    <span class="settings-item-title" style="color: #FF6B6B;">{{ _("Log Out") }}</span>
+                    <span class="settings-item-desc">{{ _("Sign out of your account") }}</span>
                 </div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right" style="color: #FF6B6B;"></i></div>
@@ -212,17 +215,17 @@
 
     <!-- APPEARANCE -->
     <div class="settings-section">
-        <div class="settings-section-title">Appearance</div>
+        <div class="settings-section-title">{{ _("Appearance") }}</div>
         <div class="settings-item" onclick="openThemeModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-palette"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Theme</span>
-                    <span class="settings-item-desc">Dark, Light, AMOLED</span>
+                    <span class="settings-item-title">{{ _("Theme") }}</span>
+                    <span class="settings-item-desc">{{ _("Dark, Light, AMOLED") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
-                <span class="settings-value" id="currentTheme">Dark</span>
+                <span class="settings-value" id="currentTheme">{{ _("Dark") }}</span>
                 <i class="fas fa-chevron-right"></i>
             </div>
         </div>
@@ -230,36 +233,39 @@
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-tint"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Accent Color</span>
-                    <span class="settings-item-desc">App highlight color</span>
+                    <span class="settings-item-title">{{ _("Accent Color") }}</span>
+                    <span class="settings-item-desc">{{ _("App highlight color") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
-                <span class="settings-value" id="currentAccent" style="color: var(--accent-color);">● Green</span>
+                <span class="settings-value" id="currentAccent" style="color: var(--accent-color);">● {{ _("Green") }}</span>
                 <i class="fas fa-chevron-right"></i>
             </div>
         </div>
-        <a href="/settings/display-language" class="settings-item">
+        <div class="settings-item" onclick="openLangModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-globe"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Display Language</span>
-                    <span class="settings-item-desc">App interface language</span>
+                    <span class="settings-item-title">{{ _("Display Language") }}</span>
+                    <span class="settings-item-desc">{{ _("App interface language") }}</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">English</span><i class="fas fa-chevron-right"></i></div>
-        </a>
+            <div class="settings-item-right">
+                <span class="settings-value" id="currentLang">{{ current_lang_name }}</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
     </div>
 
     <!-- PLAYBACK -->
     <div class="settings-section">
-        <div class="settings-section-title">Playback</div>
+        <div class="settings-section-title">{{ _("Playback") }}</div>
         <div class="settings-item" onclick="openSkipModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-forward"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Skip Duration</span>
-                    <span class="settings-item-desc">Seek forward/backward time</span>
+                    <span class="settings-item-title">{{ _("Skip Duration") }}</span>
+                    <span class="settings-item-desc">{{ _("Seek forward/backward time") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
@@ -271,13 +277,13 @@
 
     <!-- MUSIC SERVER -->
     <div class="settings-section">
-        <div class="settings-section-title">Music Server</div>
+        <div class="settings-section-title">{{ _("Music Server") }}</div>
         <div class="settings-item" onclick="openServerModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-server"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Server</span>
-                    <span class="settings-item-desc">Select streaming server</span>
+                    <span class="settings-item-title">{{ _("Server") }}</span>
+                    <span class="settings-item-desc">{{ _("Select streaming server") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
@@ -289,27 +295,27 @@
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-language"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Music Language</span>
-                    <span class="settings-item-desc">Preferred song languages</span>
+                    <span class="settings-item-title">{{ _("Music Language") }}</span>
+                    <span class="settings-item-desc">{{ _("Preferred song languages") }}</span>
                 </div>
             </div>
-            <div class="settings-item-right"><span class="settings-value">All</span><i class="fas fa-chevron-right"></i></div>
+            <div class="settings-item-right"><span class="settings-value">{{ _("All") }}</span><i class="fas fa-chevron-right"></i></div>
         </a>
     </div>
 
     <!-- QUALITY -->
     <div class="settings-section">
-        <div class="settings-section-title">Quality</div>
+        <div class="settings-section-title">{{ _("Quality") }}</div>
         <div class="settings-item" onclick="openStreamingQualityModal()">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-wifi"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Streaming Quality</span>
-                    <span class="settings-item-desc">Wi-Fi streaming</span>
+                    <span class="settings-item-title">{{ _("Streaming Quality") }}</span>
+                    <span class="settings-item-desc">{{ _("Wi-Fi streaming") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
-                <span class="settings-value" id="currentStreamingQuality">High (320kbps)</span>
+                <span class="settings-value" id="currentStreamingQuality">{{ _("High") }} (320kbps)</span>
                 <i class="fas fa-chevron-right"></i>
             </div>
         </div>
@@ -317,12 +323,12 @@
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-download"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Download Quality</span>
-                    <span class="settings-item-desc">Offline music quality</span>
+                    <span class="settings-item-title">{{ _("Download Quality") }}</span>
+                    <span class="settings-item-desc">{{ _("Offline music quality") }}</span>
                 </div>
             </div>
             <div class="settings-item-right">
-                <span class="settings-value" id="currentDownloadQuality">High (320kbps)</span>
+                <span class="settings-value" id="currentDownloadQuality">{{ _("High") }} (320kbps)</span>
                 <i class="fas fa-chevron-right"></i>
             </div>
         </div>
@@ -330,13 +336,13 @@
 
     <!-- HELP & SUPPORT -->
     <div class="settings-section">
-        <div class="settings-section-title">Help & Support</div>
+        <div class="settings-section-title">{{ _("Help & Support") }}</div>
         <a href="/help" class="settings-item">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-question-circle"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Help Center</span>
-                    <span class="settings-item-desc">FAQs and troubleshooting</span>
+                    <span class="settings-item-title">{{ _("Help Center") }}</span>
+                    <span class="settings-item-desc">{{ _("FAQs and troubleshooting") }}</span>
                 </div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
@@ -345,7 +351,7 @@
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fab fa-telegram"></i></div>
                 <div class="settings-item-text">
-                    <span class="settings-item-title">Telegram</span>
+                    <span class="settings-item-title">{{ _("Telegram") }}</span>
                     <span class="settings-item-desc">@Mahabul201</span>
                 </div>
             </div>
@@ -355,18 +361,18 @@
 
     <!-- ABOUT -->
     <div class="settings-section">
-        <div class="settings-section-title">About</div>
-        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0\nMade with ❤️', 'info')">
+        <div class="settings-section-title">{{ _("About") }}</div>
+        <div class="settings-item" onclick="showToast('EvaMusic v1.0.0\n{{ _("Made with") }} ❤️', 'info')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-info-circle"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">About EvaMusic</span></div>
+                <div class="settings-item-text"><span class="settings-item-title">{{ _("About EvaMusic") }}</span></div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
         <div class="settings-item" onclick="openModal('privacyModal')">
             <div class="settings-item-left">
                 <div class="settings-item-icon"><i class="fas fa-shield-alt"></i></div>
-                <div class="settings-item-text"><span class="settings-item-title">Privacy Policy</span></div>
+                <div class="settings-item-text"><span class="settings-item-title">{{ _("Privacy Policy") }}</span></div>
             </div>
             <div class="settings-item-right"><i class="fas fa-chevron-right"></i></div>
         </div>
@@ -375,140 +381,154 @@
     <div class="app-info">
         <div class="app-logo">🎵</div>
         <div class="app-name">EvaMusic</div>
-        <div class="app-version">Version 1.0.0</div>
+        <div class="app-version">{{ _("Version") }} 1.0.0</div>
     </div>
 </div>
 
 <!-- ═══ Theme Modal ═══ -->
 <div class="modal-overlay" id="themeModal" onclick="closeModal(event, 'themeModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Select Theme</div>
+        <div class="modal-title">{{ _("Select Theme") }}</div>
         <div class="option-row selected" data-theme="Dark" onclick="selectTheme('Dark', this)">
-            <span class="option-name">🌙 Dark</span>
+            <span class="option-name">🌙 {{ _("Dark") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
         <div class="option-row" data-theme="Light" onclick="selectTheme('Light', this)">
-            <span class="option-name">☀️ Light</span>
+            <span class="option-name">☀️ {{ _("Light") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
         <div class="option-row" data-theme="AMOLED" onclick="selectTheme('AMOLED', this)">
             <span class="option-name">⚫ AMOLED</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'themeModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'themeModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Accent Color Modal ═══ -->
 <div class="modal-overlay" id="accentModal" onclick="closeModal(event, 'accentModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Accent Color</div>
+        <div class="modal-title">{{ _("Accent Color") }}</div>
         <div class="color-grid">
-            <div class="color-option selected" style="background: #1DB954;" data-color="#1DB954" data-name="Green" onclick="selectAccent('#1DB954', 'Green', this)"></div>
-            <div class="color-option" style="background: #FF6B6B;" data-color="#FF6B6B" data-name="Red" onclick="selectAccent('#FF6B6B', 'Red', this)"></div>
-            <div class="color-option" style="background: #4ECDC4;" data-color="#4ECDC4" data-name="Teal" onclick="selectAccent('#4ECDC4', 'Teal', this)"></div>
-            <div class="color-option" style="background: #45B7D1;" data-color="#45B7D1" data-name="Blue" onclick="selectAccent('#45B7D1', 'Blue', this)"></div>
-            <div class="color-option" style="background: #96CEB4;" data-color="#96CEB4" data-name="Mint" onclick="selectAccent('#96CEB4', 'Mint', this)"></div>
-            <div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', 'Purple', this)"></div>
-            <div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', 'Yellow', this)"></div>
-            <div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', 'Orange', this)"></div>
+            <div class="color-option selected" style="background: #1DB954;" data-color="#1DB954" data-name="Green" onclick="selectAccent('#1DB954', '{{ _("Green") }}', this)"></div>
+            <div class="color-option" style="background: #FF6B6B;" data-color="#FF6B6B" data-name="Red" onclick="selectAccent('#FF6B6B', '{{ _("Red") }}', this)"></div>
+            <div class="color-option" style="background: #4ECDC4;" data-color="#4ECDC4" data-name="Teal" onclick="selectAccent('#4ECDC4', '{{ _("Teal") }}', this)"></div>
+            <div class="color-option" style="background: #45B7D1;" data-color="#45B7D1" data-name="Blue" onclick="selectAccent('#45B7D1', '{{ _("Blue") }}', this)"></div>
+            <div class="color-option" style="background: #96CEB4;" data-color="#96CEB4" data-name="Mint" onclick="selectAccent('#96CEB4', '{{ _("Mint") }}', this)"></div>
+            <div class="color-option" style="background: #DDA0DD;" data-color="#DDA0DD" data-name="Purple" onclick="selectAccent('#DDA0DD', '{{ _("Purple") }}', this)"></div>
+            <div class="color-option" style="background: #FFD93D;" data-color="#FFD93D" data-name="Yellow" onclick="selectAccent('#FFD93D', '{{ _("Yellow") }}', this)"></div>
+            <div class="color-option" style="background: #FF8C42;" data-color="#FF8C42" data-name="Orange" onclick="selectAccent('#FF8C42', '{{ _("Orange") }}', this)"></div>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'accentModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'accentModal')">{{ _("Cancel") }}</button>
+    </div>
+</div>
+
+<!-- ═══ Language Selector Modal ═══ -->
+<div class="modal-overlay" id="langModal" onclick="closeModal(event, 'langModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-title">{{ _("Display Language") }}</div>
+        {% for lang in supported_languages %}
+        <div class="option-row {% if current_lang == lang.code %}selected{% endif %}" data-lang="{{ lang.code }}" onclick="selectLang('{{ lang.code }}', '{{ lang.native }}', this)">
+            <span class="option-name"><span class="lang-flag">{{ lang.flag }}</span> {{ lang.native }}</span>
+            <div class="option-check"><i class="fas fa-check"></i></div>
+        </div>
+        {% endfor %}
+        <button class="modal-cancel" onclick="closeModal(null, 'langModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Server Selector Modal ═══ -->
 <div class="modal-overlay" id="serverModal" onclick="closeModal(event, 'serverModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Select Server</div>
+        <div class="modal-title">{{ _("Select Server") }}</div>
         <div class="option-row selected" data-server="HD1" onclick="selectServer('HD1', this)">
             <span class="option-name">HD1</span>
-            <span class="option-badge">Fast</span>
+            <span class="option-badge">{{ _("Fast") }}</span>
         </div>
         <div class="option-row" data-server="HD2" onclick="selectServer('HD2', this)">
             <span class="option-name">HD2</span>
-            <span class="option-badge">Backup</span>
+            <span class="option-badge">{{ _("Backup") }}</span>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'serverModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'serverModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Skip Duration Modal ═══ -->
 <div class="modal-overlay" id="skipModal" onclick="closeModal(event, 'skipModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Skip Duration</div>
+        <div class="modal-title">{{ _("Skip Duration") }}</div>
         <div class="option-row" data-skip="5" onclick="selectSkip(5, this)">
-            <span class="option-name">5 seconds</span>
+            <span class="option-name">5 {{ _("seconds") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
         <div class="option-row selected" data-skip="10" onclick="selectSkip(10, this)">
-            <span class="option-name">10 seconds</span>
+            <span class="option-name">10 {{ _("seconds") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
         <div class="option-row" data-skip="15" onclick="selectSkip(15, this)">
-            <span class="option-name">15 seconds</span>
+            <span class="option-name">15 {{ _("seconds") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
         <div class="option-row" data-skip="30" onclick="selectSkip(30, this)">
-            <span class="option-name">30 seconds</span>
+            <span class="option-name">30 {{ _("seconds") }}</span>
             <div class="option-check"><i class="fas fa-check"></i></div>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'skipModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'skipModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Streaming Quality Modal ═══ -->
 <div class="modal-overlay" id="streamingQualityModal" onclick="closeModal(event, 'streamingQualityModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Streaming Quality</div>
-        <div class="option-row" data-quality="low" onclick="selectStreamingQuality('low', 'Low (96kbps)', this)">
-            <span class="option-name">Low</span>
+        <div class="modal-title">{{ _("Streaming Quality") }}</div>
+        <div class="option-row" data-quality="low" onclick="selectStreamingQuality('low', '{{ _("Low") }} (96kbps)', this)">
+            <span class="option-name">{{ _("Low") }}</span>
             <span class="option-badge" style="background: #888;">96kbps</span>
         </div>
-        <div class="option-row" data-quality="medium" onclick="selectStreamingQuality('medium', 'Medium (160kbps)', this)">
-            <span class="option-name">Medium</span>
+        <div class="option-row" data-quality="medium" onclick="selectStreamingQuality('medium', '{{ _("Medium") }} (160kbps)', this)">
+            <span class="option-name">{{ _("Medium") }}</span>
             <span class="option-badge" style="background: #888;">160kbps</span>
         </div>
-        <div class="option-row selected" data-quality="high" onclick="selectStreamingQuality('high', 'High (320kbps)', this)">
-            <span class="option-name">High</span>
+        <div class="option-row selected" data-quality="high" onclick="selectStreamingQuality('high', '{{ _("High") }} (320kbps)', this)">
+            <span class="option-name">{{ _("High") }}</span>
             <span class="option-badge">320kbps</span>
         </div>
-        <div class="option-row" data-quality="lossless" onclick="selectStreamingQuality('lossless', 'Lossless (FLAC)', this)">
-            <span class="option-name">Lossless</span>
+        <div class="option-row" data-quality="lossless" onclick="selectStreamingQuality('lossless', '{{ _("Lossless") }} (FLAC)', this)">
+            <span class="option-name">{{ _("Lossless") }}</span>
             <span class="option-badge" style="background: #FFD93D; color: #000;">FLAC</span>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'streamingQualityModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'streamingQualityModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Download Quality Modal ═══ -->
 <div class="modal-overlay" id="downloadQualityModal" onclick="closeModal(event, 'downloadQualityModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-title">Download Quality</div>
-        <div class="option-row" data-quality="low" onclick="selectDownloadQuality('low', 'Low (96kbps)', this)">
-            <span class="option-name">Low</span>
+        <div class="modal-title">{{ _("Download Quality") }}</div>
+        <div class="option-row" data-quality="low" onclick="selectDownloadQuality('low', '{{ _("Low") }} (96kbps)', this)">
+            <span class="option-name">{{ _("Low") }}</span>
             <span class="option-badge" style="background: #888;">96kbps</span>
         </div>
-        <div class="option-row" data-quality="medium" onclick="selectDownloadQuality('medium', 'Medium (160kbps)', this)">
-            <span class="option-name">Medium</span>
+        <div class="option-row" data-quality="medium" onclick="selectDownloadQuality('medium', '{{ _("Medium") }} (160kbps)', this)">
+            <span class="option-name">{{ _("Medium") }}</span>
             <span class="option-badge" style="background: #888;">160kbps</span>
         </div>
-        <div class="option-row selected" data-quality="high" onclick="selectDownloadQuality('high', 'High (320kbps)', this)">
-            <span class="option-name">High</span>
+        <div class="option-row selected" data-quality="high" onclick="selectDownloadQuality('high', '{{ _("High") }} (320kbps)', this)">
+            <span class="option-name">{{ _("High") }}</span>
             <span class="option-badge">320kbps</span>
         </div>
-        <div class="option-row" data-quality="lossless" onclick="selectDownloadQuality('lossless', 'Lossless (FLAC)', this)">
-            <span class="option-name">Lossless</span>
+        <div class="option-row" data-quality="lossless" onclick="selectDownloadQuality('lossless', '{{ _("Lossless") }} (FLAC)', this)">
+            <span class="option-name">{{ _("Lossless") }}</span>
             <span class="option-badge" style="background: #FFD93D; color: #000;">FLAC</span>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'downloadQualityModal')">Cancel</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'downloadQualityModal')">{{ _("Cancel") }}</button>
     </div>
 </div>
 
 <!-- ═══ Privacy Policy Modal ═══ -->
 <div class="modal-overlay" id="privacyModal" onclick="closeModal(event, 'privacyModal')">
     <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height: 80vh; display: flex; flex-direction: column;">
-        <div class="modal-title">Privacy Policy</div>
+        <div class="modal-title">{{ _("Privacy Policy") }}</div>
         <div class="policy-text">
             <p>This policy explains what information EvaMusic collects and how it is used. By using EvaMusic, you agree to the practices described below.</p>
 
@@ -536,7 +556,7 @@
             <h4>Contact Us</h4>
             <p>Questions about this policy can be sent to mahabulbhai288550@gmail.com or via Telegram at @Mahabul201.</p>
         </div>
-        <button class="modal-cancel" onclick="closeModal(null, 'privacyModal')" style="margin-top: 12px; flex-shrink: 0;">Close</button>
+        <button class="modal-cancel" onclick="closeModal(null, 'privacyModal')" style="margin-top: 12px; flex-shrink: 0;">{{ _("Close") }}</button>
     </div>
 </div>
 
@@ -602,7 +622,7 @@ function goToProfile() {
 
 function handleEditProfile() {
     if (!isLoggedIn) {
-        showToast('Please log in to edit your profile', 'info');
+        showToast("{{ _('Please log in to edit your profile') }}", 'info');
         window.location.href = '/login/google';
         return;
     }
@@ -611,18 +631,18 @@ function handleEditProfile() {
 }
 
 function handleLogout() {
-    if (!confirm('Are you sure you want to log out?')) return;
+    if (!confirm("{{ _('Are you sure you want to log out?') }}")) return;
     fetch('/logout', { method: 'GET', credentials: 'same-origin' })
         .then(function() {
             localStorage.removeItem('evamusic_auth_user');
             updateAuthUI();
-            showToast('Logged out successfully', 'success');
+            showToast("{{ _('Logged out successfully') }}", 'success');
             setTimeout(function() {
                 window.location.href = '/settings';
             }, 500);
         })
         .catch(function() {
-            showToast('Logout failed', 'error');
+            showToast("{{ _('Logout failed') }}", 'error');
         });
 }
 
@@ -690,6 +710,25 @@ function closeModal(event, id) {
 }
 
 // ═══════════════════════════════════════
+// LANGUAGE SELECTOR
+// ═══════════════════════════════════════
+function openLangModal() { openModal('langModal'); }
+
+function selectLang(langCode, langName, el) {
+    var opts = document.querySelectorAll('#langModal .option-row');
+    for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
+    el.classList.add('selected');
+    SettingsStore.set('language', langCode);
+    document.getElementById('currentLang').textContent = langName;
+    showToast("{{ _('Switched to') }} " + langName, 'success');
+    setTimeout(function() {
+        closeModal(null, 'langModal');
+        // Reload page to apply new language server-side
+        window.location.reload();
+    }, 400);
+}
+
+// ═══════════════════════════════════════
 // SERVER SELECTOR
 // ═══════════════════════════════════════
 function openServerModal() { openModal('serverModal'); }
@@ -700,7 +739,7 @@ function selectServer(server, el) {
     el.classList.add('selected');
     SettingsStore.set('server', server);
     document.getElementById('currentServer').textContent = server;
-    showToast('Switched to ' + server, 'success');
+    showToast("{{ _('Switched to') }} " + server, 'success');
     setTimeout(function() { closeModal(null, 'serverModal'); }, 300);
 }
 
@@ -715,7 +754,7 @@ function selectSkip(seconds, el) {
     el.classList.add('selected');
     SettingsStore.set('skipDuration', seconds);
     document.getElementById('currentSkip').textContent = seconds + 's';
-    showToast('Skip duration: ' + seconds + 's', 'success');
+    showToast("{{ _('Skip duration') }}: " + seconds + 's', 'success');
     setTimeout(function() { closeModal(null, 'skipModal'); }, 300);
 }
 
@@ -731,7 +770,7 @@ function selectTheme(theme, el) {
     SettingsStore.set('theme', theme);
     document.getElementById('currentTheme').textContent = theme;
     applyTheme(theme);
-    showToast('Theme: ' + theme, 'success');
+    showToast("{{ _('Theme') }}: " + theme, 'success');
     setTimeout(function() { closeModal(null, 'themeModal'); }, 300);
 }
 
@@ -779,7 +818,7 @@ function selectAccent(color, name, el) {
     SettingsStore.set('accentColor', { color: color, name: name });
     document.documentElement.style.setProperty('--accent-color', color);
     document.getElementById('currentAccent').innerHTML = '<span style="color: ' + color + ';">● ' + name + '</span>';
-    showToast('Accent: ' + name, 'success');
+    showToast("{{ _('Accent') }}: " + name, 'success');
     setTimeout(function() { closeModal(null, 'accentModal'); }, 300);
 }
 
@@ -794,7 +833,7 @@ function selectStreamingQuality(quality, label, el) {
     el.classList.add('selected');
     SettingsStore.set('streamingQuality', { quality: quality, label: label });
     document.getElementById('currentStreamingQuality').textContent = label;
-    showToast('Streaming: ' + label, 'success');
+    showToast("{{ _('Streaming') }}: " + label, 'success');
     setTimeout(function() { closeModal(null, 'streamingQualityModal'); }, 300);
 }
 
@@ -809,7 +848,7 @@ function selectDownloadQuality(quality, label, el) {
     el.classList.add('selected');
     SettingsStore.set('downloadQuality', { quality: quality, label: label });
     document.getElementById('currentDownloadQuality').textContent = label;
-    showToast('Download: ' + label, 'success');
+    showToast("{{ _('Download') }}: " + label, 'success');
     setTimeout(function() { closeModal(null, 'downloadQualityModal'); }, 300);
 }
 
@@ -817,6 +856,19 @@ function selectDownloadQuality(quality, label, el) {
 // INITIALIZE SETTINGS ON LOAD
 // ═══════════════════════════════════════
 function initSettings() {
+    // Language
+    var lang = SettingsStore.get('language', '{{ current_lang }}');
+    var langEl = document.getElementById('currentLang');
+    if (langEl) {
+        var langNames = {{ supported_languages | tojson }};
+        var found = langNames.find(function(l) { return l.code === lang; });
+        langEl.textContent = found ? found.native : '{{ current_lang_name }}';
+    }
+    var langOpts = document.querySelectorAll('#langModal .option-row');
+    for (var i = 0; i < langOpts.length; i++) {
+        langOpts[i].classList.toggle('selected', langOpts[i].dataset.lang === lang);
+    }
+
     // Server
     var server = SettingsStore.get('server', 'HD1');
     var serverEl = document.getElementById('currentServer');
@@ -846,7 +898,7 @@ function initSettings() {
     }
 
     // Accent
-    var accent = SettingsStore.get('accentColor', { color: '#1DB954', name: 'Green' });
+    var accent = SettingsStore.get('accentColor', { color: '#1DB954', name: '{{ _("Green") }}' });
     document.documentElement.style.setProperty('--accent-color', accent.color);
     var accentEl = document.getElementById('currentAccent');
     if (accentEl) accentEl.innerHTML = '<span style="color: ' + accent.color + ';">● ' + accent.name + '</span>';
@@ -856,7 +908,7 @@ function initSettings() {
     }
 
     // Streaming Quality
-    var streamQ = SettingsStore.get('streamingQuality', { quality: 'high', label: 'High (320kbps)' });
+    var streamQ = SettingsStore.get('streamingQuality', { quality: 'high', label: '{{ _("High") }} (320kbps)' });
     var streamEl = document.getElementById('currentStreamingQuality');
     if (streamEl) streamEl.textContent = streamQ.label;
     var streamOpts = document.querySelectorAll('#streamingQualityModal .option-row');
@@ -865,7 +917,7 @@ function initSettings() {
     }
 
     // Download Quality
-    var downloadQ = SettingsStore.get('downloadQuality', { quality: 'high', label: 'High (320kbps)' });
+    var downloadQ = SettingsStore.get('downloadQuality', { quality: 'high', label: '{{ _("High") }} (320kbps)' });
     var downloadEl = document.getElementById('currentDownloadQuality');
     if (downloadEl) downloadEl.textContent = downloadQ.label;
     var downloadOpts = document.querySelectorAll('#downloadQualityModal .option-row');
