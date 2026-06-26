@@ -457,7 +457,7 @@
         <div class="profile-info">
             <h1 class="profile-name">{{ profile.display_name or profile.username }}</h1>
             <p class="profile-username">@{{ profile.username }}</p>
-            <p class="profile-bio">{{ profile.bio or 'Music lover' }}</p>
+            <p class="profile-bio">{{ profile.bio or _("Music lover") }}</p>
             <div class="profile-socials">
                 {% if profile.social_links and profile.social_links.instagram %}
                 <a href="https://instagram.com/{{ profile.social_links.instagram }}" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
@@ -473,8 +473,8 @@
                 {% endif %}
             </div>
             <div class="profile-actions">
-                <a href="/profile/edit" class="btn btn-primary"><i class="fas fa-edit"></i> Edit Profile</a>
-                <button class="btn btn-secondary" onclick="shareProfile()"><i class="fas fa-share-alt"></i> Share</button>
+                <a href="/profile/edit" class="btn btn-primary"><i class="fas fa-edit"></i> {{ _("Edit Profile") }}</a>
+                <button class="btn btn-secondary" onclick="shareProfile()"><i class="fas fa-share-alt"></i> {{ _("Share") }}</button>
             </div>
         </div>
     </div>
@@ -483,39 +483,39 @@
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-heart"></i></div>
             <div class="stat-value">{{ stats.total_favorites or 0 }}</div>
-            <div class="stat-label">Favorites</div>
+            <div class="stat-label">{{ _("Favorites") }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-list"></i></div>
             <div class="stat-value">{{ stats.total_playlists or 0 }}</div>
-            <div class="stat-label">Playlists</div>
+            <div class="stat-label">{{ _("Playlists") }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-play-circle"></i></div>
             <div class="stat-value">{{ stats.total_plays or 0 }}</div>
-            <div class="stat-label">Plays</div>
+            <div class="stat-label">{{ _("Plays") }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-clock"></i></div>
             <div class="stat-value">{{ stats.listening_hours or 0 }}h</div>
-            <div class="stat-label">Hours</div>
+            <div class="stat-label">{{ _("Hours") }}</div>
         </div>
     </div>
 
     <div class="profile-nav">
         <a href="/favorites" class="nav-card">
             <i class="fas fa-heart"></i>
-            <span>My Favorites</span>
+            <span>{{ _("My Favorites") }}</span>
             <i class="fas fa-chevron-right"></i>
         </a>
         <a href="/history" class="nav-card">
             <i class="fas fa-history"></i>
-            <span>Listening History</span>
+            <span>{{ _("Listening History") }}</span>
             <i class="fas fa-chevron-right"></i>
         </a>
         <a href="/playlists" class="nav-card">
             <i class="fas fa-list"></i>
-            <span>My Playlists</span>
+            <span>{{ _("My Playlists") }}</span>
             <i class="fas fa-chevron-right"></i>
         </a>
     </div>
@@ -523,8 +523,8 @@
     {% if recently_played %}
     <div class="section" id="recentlyPlayedSection">
         <div class="section-header">
-            <h2>Recently Played</h2>
-            <a href="/history" class="see-all">See All</a>
+            <h2>{{ _("Recently Played") }}</h2>
+            <a href="/history" class="see-all">{{ _("See All") }}</a>
         </div>
         <div class="song-list">
             {% for song in recently_played[:6] %}
@@ -549,8 +549,8 @@
     {% if favorites %}
     <div class="section" id="topFavoritesSection">
         <div class="section-header">
-            <h2>Top Favorites</h2>
-            <a href="/favorites" class="see-all">See All</a>
+            <h2>{{ _("Top Favorites") }}</h2>
+            <a href="/favorites" class="see-all">{{ _("See All") }}</a>
         </div>
         <div class="song-grid">
             {% for song in favorites[:6] %}
@@ -572,15 +572,15 @@
     {% if playlists %}
     <div class="section" id="myPlaylistsSection">
         <div class="section-header">
-            <h2>My Playlists</h2>
-            <a href="/playlists" class="see-all">See All</a>
+            <h2>{{ _("My Playlists") }}</h2>
+            <a href="/playlists" class="see-all">{{ _("See All") }}</a>
         </div>
         <div class="playlist-grid">
             {% for playlist in playlists[:4] %}
             <div class="playlist-card" onclick="location.href='/playlist/{{ playlist.playlist_id }}'">
                 <div class="playlist-cover"><i class="fas fa-music"></i></div>
                 <div class="playlist-name">{{ playlist.name }}</div>
-                <div class="playlist-count">{{ (playlist.songs or [])|length }} songs</div>
+                <div class="playlist-count">{{ (playlist.songs or [])|length }} {{ _("songs") }}</div>
             </div>
             {% endfor %}
         </div>
@@ -588,4 +588,3 @@
     {% endif %}
 </div>
 {% endblock %}
-  
