@@ -26,6 +26,18 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
+# ═══════════════════════════════════════════════════════════════
+# SESSION COOKIE FIX for Koyeb / HTTPS / Cloudflare
+# ═══════════════════════════════════════════════════════════════
+# Koyeb serves your app over HTTPS. Browsers block session cookies
+# without these settings, so language switching won't persist.
+app.config.update(
+    SESSION_COOKIE_SECURE=True,      # Required for HTTPS (Koyeb)
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',   # Allows redirect-after-post
+    PERMANENT_SESSION_LIFETIME=60*60*24*365,  # 1 year
+)
+
 init_oauth(app)
 app.register_blueprint(profile_bp)
 db.init_db()
@@ -164,6 +176,7 @@ def fetch_trending(limit=20):
 
 @app.route('/switch-language/<lang>')
 def switch_language(lang):
+    session.permanent = True
     """Switch app language and redirect back."""
     lang = lang.lower().strip()
     if lang not in SUPPORTED_LANGUAGES:
@@ -290,6 +303,7 @@ def authorize_google():
     session['user_name'] = name
     session['user_email'] = email
     session['user_picture'] = picture
+    session.permanent = True
 
     return redirect('/')
 
