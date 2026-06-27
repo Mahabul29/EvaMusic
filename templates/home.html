@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}EvaMusic — Home{% endblock %}
+{% block title %}EvaMusic — {{ _("Home") }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -307,13 +307,13 @@
     <!-- Header -->
     <div class="home-header">
         <div class="home-greeting">
-            Good <span id="greetingTime">Evening</span> 👋
+            {{ _("Good") }} <span id="greetingTime">{{ _("Evening") }}</span> 👋
         </div>
         <div class="home-header-actions">
-            <a href="/search" class="header-icon-btn" title="Search">
+            <a href="/search" class="header-icon-btn" title="{{ _("Search") }}">
                 <i class="fas fa-search"></i>
             </a>
-            <a href="/settings" class="header-icon-btn" title="Settings">
+            <a href="/settings" class="header-icon-btn" title="{{ _("Settings") }}">
                 <i class="fas fa-cog"></i>
             </a>
         </div>
@@ -321,13 +321,13 @@
 
     <!-- Language Filter -->
     <div class="lang-filter" id="langFilter">
-        <button class="lang-pill active" data-lang="all" onclick="setLang('all', this)">All</button>
-        <button class="lang-pill" data-lang="hindi" onclick="setLang('hindi', this)">Hindi</button>
-        <button class="lang-pill" data-lang="english" onclick="setLang('english', this)">English</button>
-        <button class="lang-pill" data-lang="punjabi" onclick="setLang('punjabi', this)">Punjabi</button>
-        <button class="lang-pill" data-lang="tamil" onclick="setLang('tamil', this)">Tamil</button>
-        <button class="lang-pill" data-lang="telugu" onclick="setLang('telugu', this)">Telugu</button>
-        <button class="lang-pill" data-lang="bengali" onclick="setLang('bengali', this)">Bengali</button>
+        <button class="lang-pill active" data-lang="all" onclick="setLang('all', this)">{{ _("All") }}</button>
+        <button class="lang-pill" data-lang="hindi" onclick="setLang('hindi', this)">{{ _("Hindi") }}</button>
+        <button class="lang-pill" data-lang="english" onclick="setLang('english', this)">{{ _("English") }}</button>
+        <button class="lang-pill" data-lang="punjabi" onclick="setLang('punjabi', this)">{{ _("Punjabi") }}</button>
+        <button class="lang-pill" data-lang="tamil" onclick="setLang('tamil', this)">{{ _("Tamil") }}</button>
+        <button class="lang-pill" data-lang="telugu" onclick="setLang('telugu', this)">{{ _("Telugu") }}</button>
+        <button class="lang-pill" data-lang="bengali" onclick="setLang('bengali', this)">{{ _("Bengali") }}</button>
     </div>
 
     <!-- Quick Resume (if songs passed from server) -->
@@ -335,7 +335,7 @@
     <div class="quick-play-banner" onclick="playFromServer(0)" id="quickPlayBanner">
         <div class="quick-play-icon"><i class="fas fa-bolt"></i></div>
         <div class="quick-play-text">
-            <div class="quick-play-label">Quick Play</div>
+            <div class="quick-play-label">{{ _("Quick Play") }}</div>
             <div class="quick-play-title" id="quickPlayTitle">{{ data.trending[0].title }}</div>
             <div class="quick-play-sub">{{ data.trending[0].artist }}</div>
         </div>
@@ -347,7 +347,7 @@
 
     <!-- ── Trending Now ── -->
     <div class="section-head">
-        <div class="section-title">🔥 Trending Now</div>
+        <div class="section-title">🔥 {{ _("Trending Now") }}</div>
     </div>
     {% if data.trending %}
     <div class="songs-scroll-row" id="section-trending">
@@ -380,7 +380,7 @@
     <!-- ── Charts ── -->
     {% if data.charts %}
     <div class="section-head">
-        <div class="section-title">🎵 Top Charts</div>
+        <div class="section-title">🎵 {{ _("Top Charts") }}</div>
     </div>
     <div class="song-list" id="section-charts">
         {% for song in data.charts[:8] %}
@@ -406,7 +406,7 @@
     <!-- ── New Releases ── -->
     {% if data.new_releases %}
     <div class="section-head">
-        <div class="section-title">✨ New Releases</div>
+        <div class="section-title">✨ {{ _("New Releases") }}</div>
     </div>
     <div class="songs-scroll-row" id="section-new-releases">
         {% for song in data.new_releases %}
@@ -427,13 +427,13 @@
 
     <!-- ── Because You Liked ── -->
     <div class="section-head" id="becauseYouLikedHead" style="display:none;">
-        <div class="section-title">💚 Because You Liked</div>
+        <div class="section-title">💚 {{ _("Because You Liked") }}</div>
     </div>
     <div class="songs-scroll-row" id="section-because-liked" style="display:none;"></div>
 
     <!-- ── Recommended / Usuals ── -->
     <div class="section-head">
-        <div class="section-title">🎧 Recommended</div>
+        <div class="section-title">🎧 {{ _("Recommended") }}</div>
     </div>
     <div class="songs-scroll-row" id="section-recommended">
         {% for i in range(5) %}
@@ -447,7 +447,7 @@
 
     <!-- ── Artists ── -->
     <div class="section-head">
-        <div class="section-title">🎤 Artists</div>
+        <div class="section-title">🎤 {{ _("Artists") }}</div>
     </div>
     <div class="songs-scroll-row" id="section-artists">
         {% for i in range(5) %}
@@ -473,7 +473,7 @@ const SERVER_SONGS = [
 // ── Greeting by time of day ───────────────────────────────────────────────────
 (function() {
     const h = new Date().getHours();
-    const greet = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
+    const greet = h < 12 ? '{{ _("Morning") }}' : h < 17 ? '{{ _("Afternoon") }}' : '{{ _("Evening") }}';
     const el = document.getElementById('greetingTime');
     if (el) el.textContent = greet;
 })();
@@ -535,7 +535,7 @@ function escHtml(str) {
 
 function renderSongCard(song) {
     const id     = song.id     || song.song_id || '';
-    const title  = song.title  || song.name    || 'Unknown';
+    const title  = song.title  || song.name    || '{{ _("Unknown") }}';
     const artist = song.artist || song.primaryArtists || '';
     const img    = song.image  || song.image_url || song.thumbnail || '/static/images/default-album.png';
     return `
@@ -544,7 +544,7 @@ function renderSongCard(song) {
          data-song-title="${escHtml(title)}"
          data-song-artist="${escHtml(artist)}"
          data-song-image="${escHtml(img)}"
-         data-song-url="${escHtml(song.url||'')}"
+         data-song-url="${escHtml(song.url||'')}" 
          data-song='${escHtml(JSON.stringify(song))}'>
         <div class="song-thumb">
             <img src="${escHtml(img)}" alt="${escHtml(title)}" loading="lazy"
@@ -557,7 +557,7 @@ function renderSongCard(song) {
 }
 
 function renderArtistCard(artist) {
-    const name = artist.name || artist.title || 'Unknown';
+    const name = artist.name || artist.title || '{{ _("Unknown") }}';
     const img  = artist.image || artist.image_url || '/static/images/default-album.png';
     const url  = `/artist/${encodeURIComponent(name)}`;
     return `
@@ -610,11 +610,11 @@ async function loadArtists() {
             container.innerHTML = data.map(renderArtistCard).join('');
             attachDynamicCardHandlers(container);
         } else {
-            container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>No artists found</p></div>`;
+            container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
         }
     } catch (e) {
         console.warn('Artists load failed', e);
-        container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>No artists found</p></div>`;
+        container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
     }
 }
 
@@ -638,7 +638,7 @@ async function loadBecauseYouLiked() {
             if (data2 && data2.length > 0) {
                 head.style.display = 'flex';
                 container.style.display = 'flex';
-                head.querySelector('.section-title').textContent = '🎵 Recommended For You';
+                head.querySelector('.section-title').textContent = '🎵 {{ _("Recommended For You") }}';
                 container.innerHTML = data2.map(renderSongCard).join('');
                 attachDynamicCardHandlers(container);
             } else {
@@ -669,7 +669,7 @@ async function loadRecommended() {
                 container.innerHTML = data2.map(renderSongCard).join('');
                 attachDynamicCardHandlers(container);
             } else {
-                container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-music"></i><p>Start listening to build your Usuals!</p></div>`;
+                container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-music"></i><p>{{ _("Start listening to build your Usuals!") }}</p></div>`;
             }
         }
     } catch (e) {
