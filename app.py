@@ -3,14 +3,20 @@ import requests
 import uuid
 import html
 from datetime import datetime, timezone
-from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 from oauth import init_oauth, get_google_user, oauth, get_google_redirect_uri
+from language import register_lang_helpers, SUPPORTED_LANGUAGES
 
 import database as db
 from routes import profile_bp
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# ═══════════════════════════════════════════════════════════════
+# LANGUAGE / i18n SUPPORT
+# ═══════════════════════════════════════════════════════════════
+register_lang_helpers(app)
 
 # ═══════════════════════════════════════════════════════════════
 # CRITICAL FIX: Trust proxy headers so _external=True uses https://
@@ -154,6 +160,19 @@ def fetch_trending(limit=20):
                 return inner
     return []
 
+# ── LANGUAGE SWITCH ROUTE ─────────────────────────────────────
+
+@app.route('/switch-language/<lang>')
+def switch_language(lang):
+    """Switch app language and redirect back."""
+    lang = lang.lower().strip()
+    if lang not in SUPPORTED_LANGUAGES:
+        lang = "en"
+    session["lang"] = lang
+    resp = make_response(redirect(request.referrer or url_for("home")))
+    resp.set_cookie("evamusic_lang", lang, max_age=60*60*24*365)
+    return resp
+
 # ── PAGE ROUTES ────────────────────────────────────────────────
 
 @app.route('/')
@@ -227,10 +246,6 @@ def player(song_id):
 
 @app.route('/login/google')
 def login_google():
-    # ═══════════════════════════════════════════════════════════
-    # CRITICAL FIX: Use explicit redirect_uri from config instead
-    # of url_for() which generates http:// behind Koyeb proxy
-    # ═══════════════════════════════════════════════════════════
     redirect_uri = get_google_redirect_uri()
     return oauth.google.authorize_redirect(redirect_uri)
 
@@ -246,17 +261,14 @@ def authorize_google():
     name = user_info.get('name', email.split('@')[0] if email else 'User')
     picture = user_info.get('picture', '')
 
-    # Store in JSON database
     users = db._load("users")
     user_id = None
 
-    # Check if user already exists by email
     for uid, udata in users.items():
         if udata.get('email') == email:
             user_id = uid
             break
 
-    # Create new user if not found
     if not user_id:
         user_id = str(uuid.uuid4())[:8]
         users[user_id] = {
@@ -273,7 +285,6 @@ def authorize_google():
         }
         db._save("users", users)
 
-    # Set session
     session['user_id'] = user_id
     session['logged_in'] = True
     session['user_name'] = name
@@ -466,4 +477,3 @@ def server_error(e):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
-                         
