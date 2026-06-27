@@ -71,6 +71,18 @@ if DB_AVAILABLE and db and hasattr(db, 'init_db'):
     db.init_db()
 
 # ═══════════════════════════════════════════════════════════════
+# DESKTOP DETECTION
+# ═══════════════════════════════════════════════════════════════
+DESKTOP_UA_PATTERN = re.compile(
+    r'(Windows NT|Macintosh|Linux x86_64|X11; Linux|CrOS)',
+    re.IGNORECASE
+)
+
+def is_desktop():
+    user_agent = request.headers.get('User-Agent', '')
+    return DESKTOP_UA_PATTERN.search(user_agent) and 'Mobile' not in user_agent
+
+# ═══════════════════════════════════════════════════════════════
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════
 HEADERS = {
@@ -245,6 +257,10 @@ def switch_language(lang):
 @app.route('/')
 @app.route('/home')
 def home():
+    # Auto-switch to desktop for PC users
+    if is_desktop():
+        return redirect('/desktop')
+
     homepage_data = _build_homepage_data()
     selected_languages = session.get('selected_languages', ['hindi', 'english'])
     taste_summary = {
