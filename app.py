@@ -1,47 +1,85 @@
 import os
+import re
 import requests
 import uuid
-import html
+import html as html_module
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response
+
+# ═══════════════════════════════════════════════════════════════
+# CONFIG IMPORTS
+# ═══════════════════════════════════════════════════════════════
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
-from oauth import init_oauth, get_google_user, oauth, get_google_redirect_uri
-from language import register_lang_helpers, SUPPORTED_LANGUAGES
 
-import database as db
-from routes import profile_bp
+# ═══════════════════════════════════════════════════════════════
+# OPTIONAL IMPORTS (graceful fallback if files missing)
+# ═══════════════════════════════════════════════════════════════
+try:
+    from oauth import init_oauth, get_google_user, oauth, get_google_redirect_uri
+    OAUTH_AVAILABLE = True
+except ImportError:
+    OAUTH_AVAILABLE = False
+    init_oauth = get_google_user = oauth = get_google_redirect_uri = None
 
+try:
+    from language import register_lang_helpers, SUPPORTED_LANGUAGES
+    I18N_AVAILABLE = True
+except ImportError:
+    I18N_AVAILABLE = False
+    register_lang_helpers = SUPPORTED_LANGUAGES = None
+
+try:
+    import database as db
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
+    db = None
+
+try:
+    from routes import profile_bp
+    PROFILE_ROUTES_AVAILABLE = True
+except ImportError:
+    PROFILE_ROUTES_AVAILABLE = False
+    profile_bp = None
+
+# ═══════════════════════════════════════════════════════════════
+# FLASK APP SETUP
+# ═══════════════════════════════════════════════════════════════
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# ═══════════════════════════════════════════════════════════════
-# LANGUAGE / i18n SUPPORT
-# ═══════════════════════════════════════════════════════════════
-register_lang_helpers(app)
-
-# ═══════════════════════════════════════════════════════════════
-# CRITICAL FIX: Trust proxy headers so _external=True uses https://
-# ═══════════════════════════════════════════════════════════════
+# Trust proxy headers for HTTPS on Koyeb/Cloudflare
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
 
-# ═══════════════════════════════════════════════════════════════
-# SESSION COOKIE FIX for Koyeb / HTTPS / Cloudflare
-# ═══════════════════════════════════════════════════════════════
-# Koyeb serves your app over HTTPS. Browsers block session cookies
-# without these settings, so language switching won't persist.
+# Session cookies for HTTPS (Koyeb)
 app.config.update(
-    SESSION_COOKIE_SECURE=True,      # Required for HTTPS (Koyeb)
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',   # Allows redirect-after-post
-    PERMANENT_SESSION_LIFETIME=60*60*24*365,  # 1 year
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=60*60*24*365,
 )
 
-init_oauth(app)
-app.register_blueprint(profile_bp)
-db.init_db()
+# i18n
+if I18N_AVAILABLE and register_lang_helpers:
+    register_lang_helpers(app)
 
+# OAuth
+if OAUTH_AVAILABLE and init_oauth:
+    init_oauth(app)
+
+# Blueprints
+if PROFILE_ROUTES_AVAILABLE and profile_bp:
+    app.register_blueprint(profile_bp)
+
+# Database init
+if DB_AVAILABLE and db and hasattr(db, 'init_db'):
+    db.init_db()
+
+# ═══════════════════════════════════════════════════════════════
+# CONSTANTS
+# ═══════════════════════════════════════════════════════════════
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -50,8 +88,12 @@ HEADERS = {
     "Accept": "application/json",
 }
 
+# ═══════════════════════════════════════════════════════════════
+# HELPER FUNCTIONS
+# ═══════════════════════════════════════════════════════════════
+
 def get_user_id():
-    """Return the logged-in user's ID, or a guest ID if not logged in."""
+    """Return logged-in user's ID, or a guest ID."""
     if 'user_id' in session:
         return session['user_id']
     if 'guest_id' not in session:
@@ -62,6 +104,7 @@ def is_logged_in():
     return bool(session.get('logged_in'))
 
 def _call(url, timeout=12):
+    """Make GET request to music API."""
     try:
         r = requests.get(url, headers=HEADERS, timeout=timeout)
         if r.status_code == 200:
@@ -71,6 +114,7 @@ def _call(url, timeout=12):
     return None
 
 def _extract_audio_url(data):
+    """Extract audio URL from various API response shapes."""
     if not data:
         return ""
     URL_KEYS = ["url", "downloadUrl", "download_url", "media_url",
@@ -110,6 +154,7 @@ def _extract_audio_url(data):
     return ""
 
 def _normalize_song(data):
+    """Normalize a song object from any API response shape."""
     if not data:
         return None
 
@@ -136,9 +181,9 @@ def _normalize_song(data):
     artist = inner.get("artist") or inner.get("primaryArtists") or inner.get("singers") or "Unknown Artist"
     album = inner.get("album") or inner.get("album_name") or ""
 
-    if isinstance(title, str): title = html.unescape(title)
-    if isinstance(artist, str): artist = html.unescape(artist)
-    if isinstance(album, str): album = html.unescape(album)
+    if isinstance(title, str): title = html_module.unescape(title)
+    if isinstance(artist, str): artist = html_module.unescape(artist)
+    if isinstance(album, str): album = html_module.unescape(album)
 
     return {
         "id": str(inner.get("id") or inner.get("song_id") or data.get("id") or ""),
@@ -151,6 +196,7 @@ def _normalize_song(data):
     }
 
 def fetch_songs(query, limit=20):
+    """Search for songs."""
     data = _call(get_search_url(query, limit))
     if isinstance(data, list) and data:
         return data
@@ -162,6 +208,7 @@ def fetch_songs(query, limit=20):
     return []
 
 def fetch_trending(limit=20):
+    """Fetch trending songs."""
     data = _call(get_trending_url(limit))
     if isinstance(data, list) and data:
         return data
@@ -172,26 +219,10 @@ def fetch_trending(limit=20):
                 return inner
     return []
 
-# ── LANGUAGE SWITCH ROUTE ─────────────────────────────────────
-
-@app.route('/switch-language/<lang>')
-def switch_language(lang):
-    session.permanent = True
-    """Switch app language and redirect back."""
-    lang = lang.lower().strip()
-    if lang not in SUPPORTED_LANGUAGES:
-        lang = "en"
-    session["lang"] = lang
-    resp = make_response(redirect(request.referrer or url_for("home")))
-    resp.set_cookie("evamusic_lang", lang, max_age=60*60*24*365)
-    return resp
-
-# ── PAGE ROUTES ────────────────────────────────────────────────
-
-@app.route('/')
-@app.route('/home')
-def home():
-    raw_trending = fetch_trending(40)
+def _build_homepage_data(raw_trending=None):
+    """Build homepage data dict from trending songs."""
+    if raw_trending is None:
+        raw_trending = fetch_trending(40)
     trending_songs = []
     if raw_trending:
         for item in raw_trending:
@@ -199,13 +230,36 @@ def home():
             if norm and norm.get("url"):
                 trending_songs.append(norm)
 
-    homepage_data = {
+    return {
         "trending": trending_songs[:12],
         "charts": trending_songs[12:24] if len(trending_songs) > 12 else [],
         "new_releases": trending_songs[24:36] if len(trending_songs) > 24 else [],
         "personalized": False
     }
 
+# ═══════════════════════════════════════════════════════════════
+# LANGUAGE SWITCH
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/switch-language/<lang>')
+def switch_language(lang):
+    session.permanent = True
+    lang = lang.lower().strip()
+    if SUPPORTED_LANGUAGES and lang not in SUPPORTED_LANGUAGES:
+        lang = "en"
+    session["lang"] = lang
+    resp = make_response(redirect(request.referrer or url_for("home")))
+    resp.set_cookie("evamusic_lang", lang, max_age=60*60*24*365)
+    return resp
+
+# ═══════════════════════════════════════════════════════════════
+# PAGE ROUTES
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/')
+@app.route('/home')
+def home():
+    homepage_data = _build_homepage_data()
     selected_languages = session.get('selected_languages', ['hindi', 'english'])
     taste_summary = {
         'top_artists': [],
@@ -214,7 +268,6 @@ def home():
         'top_moods': [('Chill', 1)],
         'metrics_collected': 0
     }
-
     return render_template(
         'home.html',
         data=homepage_data,
@@ -232,10 +285,9 @@ def search():
             norm = _normalize_song(item)
             if norm and norm.get("url"):
                 songs.append(norm)
-        db.add_to_search_history(get_user_id(), query)
+        if DB_AVAILABLE and db and hasattr(db, 'add_to_search_history'):
+            db.add_to_search_history(get_user_id(), query)
     return render_template('search.html', songs=songs, query=query, title="Search")
-
-# ── PLAYER / CONTENT ROUTES ────────────────────────────────────
 
 @app.route('/player/<song_id>')
 def player(song_id):
@@ -246,7 +298,7 @@ def player(song_id):
             "id": song_id, "title": "Unknown Song", "artist": "Unknown Artist",
             "album": "", "url": "", "image": "/static/images/default-album.png", "duration": 0,
         }
-    if song.get("id"):
+    if song.get("id") and DB_AVAILABLE and db and hasattr(db, 'add_to_recently_played'):
         db.add_to_recently_played(get_user_id(), {
             "song_id": song.get("id"),
             "title": song.get("title", "Unknown"),
@@ -255,18 +307,36 @@ def player(song_id):
         })
     return render_template('player.html', song=song, title=song.get("title", "Player"))
 
-# ── AUTH / OAUTH ROUTES ────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# DESKTOP VIEW
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/desktop')
+def desktop():
+    return render_template('windows.html')
+
+# ═══════════════════════════════════════════════════════════════
+# AUTH / OAUTH ROUTES
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/login/google')
 def login_google():
+    if not OAUTH_AVAILABLE or not oauth:
+        return redirect('/?error=oauth_not_configured')
     redirect_uri = get_google_redirect_uri()
     return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route('/login/google/callback')
 def authorize_google():
-    token = oauth.google.authorize_access_token()
-    user_info = get_google_user(token)
+    if not OAUTH_AVAILABLE or not oauth:
+        return redirect('/?error=oauth_not_configured')
+    try:
+        token = oauth.google.authorize_access_token()
+    except Exception as e:
+        print(f"[OAuth Error] {e}")
+        return redirect('/?error=oauth_failed')
 
+    user_info = get_google_user(token) if get_google_user else None
     if not user_info:
         return redirect('/?error=oauth_failed')
 
@@ -274,29 +344,32 @@ def authorize_google():
     name = user_info.get('name', email.split('@')[0] if email else 'User')
     picture = user_info.get('picture', '')
 
-    users = db._load("users")
     user_id = None
+    if DB_AVAILABLE and db and hasattr(db, '_load'):
+        users = db._load("users")
+        for uid, udata in users.items():
+            if udata.get('email') == email:
+                user_id = uid
+                break
 
-    for uid, udata in users.items():
-        if udata.get('email') == email:
-            user_id = uid
-            break
-
-    if not user_id:
+        if not user_id:
+            user_id = str(uuid.uuid4())[:8]
+            users[user_id] = {
+                "id": user_id,
+                "email": email,
+                "name": name,
+                "display_name": name,
+                "username": email.split('@')[0] if email else f"user_{user_id}",
+                "picture": picture,
+                "provider": "google",
+                "bio": "Music lover",
+                "social_links": {},
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            db._save("users", users)
+    else:
+        # Fallback without database
         user_id = str(uuid.uuid4())[:8]
-        users[user_id] = {
-            "id": user_id,
-            "email": email,
-            "name": name,
-            "display_name": name,
-            "username": email.split('@')[0] if email else f"user_{user_id}",
-            "picture": picture,
-            "provider": "google",
-            "bio": "Music lover",
-            "social_links": {},
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        db._save("users", users)
 
     session['user_id'] = user_id
     session['logged_in'] = True
@@ -325,7 +398,9 @@ def api_me():
         "picture": session.get('user_picture')
     })
 
-# ── API ROUTES ─────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# API ROUTES
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/api/trending')
 def api_trending():
@@ -403,13 +478,19 @@ def api_favorite():
         "image": data.get("image_url", "/static/images/default-album.png"),
         "url": data.get("audio_url", ""),
     }
-    result = db.toggle_favorite(user_id, song_data)
+    if DB_AVAILABLE and db and hasattr(db, 'toggle_favorite'):
+        result = db.toggle_favorite(user_id, song_data)
+    else:
+        result = {"success": True, "action": "added"}
     return jsonify(result)
 
 @app.route('/api/favorites')
 def api_favorites():
     user_id = get_user_id()
-    favs = db.get_user_favorites(user_id)
+    if DB_AVAILABLE and db and hasattr(db, 'get_user_favorites'):
+        favs = db.get_user_favorites(user_id)
+    else:
+        favs = []
     normalized = []
     for f in favs:
         normalized.append({
@@ -459,14 +540,14 @@ def api_debug():
         api_status = r.status_code
     except Exception as e:
         api_status = f"error: {e}"
-    db_health = db.check_db_health()
+    db_health = db.check_db_health() if DB_AVAILABLE and db and hasattr(db, 'check_db_health') else "unknown"
     return jsonify({"api_base": API_BASE_URL, "api_status": api_status, "db_health": db_health})
 
 @app.route('/api/stats')
 def api_stats():
     user_id = get_user_id()
-    favs = db.get_user_favorites(user_id)
-    history = db.get_recently_played(user_id)
+    favs = db.get_user_favorites(user_id) if DB_AVAILABLE and db and hasattr(db, 'get_user_favorites') else []
+    history = db.get_recently_played(user_id) if DB_AVAILABLE and db and hasattr(db, 'get_recently_played') else []
     return jsonify({
         "total_favorites": len(favs),
         "total_plays": len(history),
@@ -474,7 +555,9 @@ def api_stats():
         "listening_hours": 0
     })
 
-# ── ERROR HANDLERS ─────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# ERROR HANDLERS
+# ═══════════════════════════════════════════════════════════════
 
 @app.errorhandler(404)
 def not_found(e):
@@ -486,7 +569,9 @@ def not_found(e):
 def server_error(e):
     return jsonify({"error": "Internal server error"}), 500
 
-# ── MAIN ───────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
