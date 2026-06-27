@@ -349,12 +349,6 @@ TRANSLATIONS = {
     },
 
     # ── Accent Color Modal ──
-    "Accent Color": {
-        "en": "Accent Color",
-        "hi": "एक्सेंट रंग",
-        "bn": "অ্যাকসেন্ট রঙ",
-        "as": "এক্সেণ্ট ৰং"
-    },
     "Green": {
         "en": "Green",
         "hi": "हरा",
@@ -425,12 +419,6 @@ TRANSLATIONS = {
     },
 
     # ── Skip Duration Modal ──
-    "Skip Duration": {
-        "en": "Skip Duration",
-        "hi": "स्किप अवधि",
-        "bn": "স্কিপ সময়কাল",
-        "as": "স্কিপ সময়সীমা"
-    },
     "seconds": {
         "en": "seconds",
         "hi": "सेकंड",
@@ -439,18 +427,6 @@ TRANSLATIONS = {
     },
 
     # ── Quality Modal ──
-    "Streaming Quality": {
-        "en": "Streaming Quality",
-        "hi": "स्ट्रीमिंग गुणवत्ता",
-        "bn": "স্ট্রিমিং গুণমান",
-        "as": "ষ্ট্ৰীমিং গুণমান"
-    },
-    "Download Quality": {
-        "en": "Download Quality",
-        "hi": "डाउनलोड गुणवत्ता",
-        "bn": "ডাউনলোড গুণমান",
-        "as": "ডাউনলোড গুণমান"
-    },
     "Low": {
         "en": "Low",
         "hi": "कम",
@@ -543,12 +519,6 @@ TRANSLATIONS = {
         "bn": "সংগীত প্রেমী",
         "as": "সংগীত প্ৰেমী"
     },
-    "Edit Profile": {
-        "en": "Edit Profile",
-        "hi": "प्रोफ़ाइल संपादित करें",
-        "bn": "প্রোফাইল সম্পাদনা",
-        "as": "প্ৰফাইল সম্পাদনা"
-    },
     "Share": {
         "en": "Share",
         "hi": "साझा करें",
@@ -600,12 +570,6 @@ TRANSLATIONS = {
         "hi": "स्किप अवधि",
         "bn": "স্কিপ সময়কাল",
         "as": "স্কিপ সময়সীমা"
-    },
-    "Theme": {
-        "en": "Theme",
-        "hi": "थीम",
-        "bn": "থিম",
-        "as": "থীম"
     },
     "Accent": {
         "en": "Accent",
@@ -796,223 +760,7 @@ TRANSLATIONS = {
         "as": "পৰৱৰ্তী"
     },
 
-
-    # ── Home Page ──
-    "Good morning": {
-        "en": "Good morning",
-        "hi": "शुभ प्रभात",
-        "bn": "শুভ সকাল",
-        "as": "সুপ্ৰভাত"
-    },
-    "Good afternoon": {
-        "en": "Good afternoon",
-        "hi": "शुभ दोपहर",
-        "bn": "শুভ অপরাহ্ণ",
-        "as": "শুভ অপৰাহ্ণ"
-    },
-    "Good evening": {
-        "en": "Good evening",
-        "hi": "शुभ संध्या",
-        "bn": "শুভ সন্ধ্যা",
-        "as": "শুভ সন্ধ্যা"
-    },
-    "Discover your next favorite song": {
-        "en": "Discover your next favorite song",
-        "hi": "अपना अगला पसंदीदा गाना खोजें",
-        "bn": "আপনার পরবর্তী প্রিয় গানটি আবিষ্কার করুন",
-        "as": "আপোনাৰ পৰৱৰ্তী পচন্দৰ গানটো বিচাৰক"
-    },
-    "History": {
-        "en": "History",
-        "hi": "इतिहास",
-        "bn": "ইতিহাস",
-        "as": "ইতিহাস"
-    },
-    "Trending Now": {
-        "en": "Trending Now",
-        "hi": "अभी ट्रेंडिंग",
-        "bn": "এখন ট্রেন্ডিং",
-        "as": "এতিয়া ট্ৰেণ্ডিং"
-    },
-    "Top Charts": {
-        "en": "Top Charts",
-        "hi": "शीर्ष चार्ट",
-        "bn": "শীর্ষ চার্ট",
-        "as": "শীৰ্ষ চাৰ্ট"
-    },
-    "New Releases": {
-        "en": "New Releases",
-        "hi": "नई रिलीज़",
-        "bn": "নতুন রিলিজ",
-        "as": "নতুন ৰিলিজ"
-    },
-    "Popular Artists": {
-        "en": "Popular Artists",
-        "hi": "लोकप्रिय कलाकार",
-        "bn": "জনপ্রিয় শিল্পী",
-        "as": "জনপ্ৰিয় শিল্পী"
-    },
-    "Browse by Mood": {
-        "en": "Browse by Mood",
-        "hi": "मूड के अनुसार ब्राउज़ करें",
-        "bn": "মুড অনুযায়ী ব্রাউজ করুন",
-        "as": "মুড অনুসৰি ব্ৰাউজ কৰক"
-    },
-    "Romantic": {
-        "en": "Romantic",
-        "hi": "रोमांटिक",
-        "bn": "রোমান্টিক",
-        "as": "ৰোমান্টিক"
-    },
-    "Party": {
-        "en": "Party",
-        "hi": "पार्टी",
-        "bn": "পার্টি",
-        "as": "পাৰ্টি"
-    },
-    "Sad": {
-        "en": "Sad",
-        "hi": "उदास",
-        "bn": "দুঃখজনক",
-        "as": "দুখীয়া"
-    },
-    "Workout": {
-        "en": "Workout",
-        "hi": "वर्कआउट",
-        "bn": "ওয়ার্কআউট",
-        "as": "ৱৰ্কআউট"
-    },
-    "Focus": {
-        "en": "Focus",
-        "hi": "फोकस",
-        "bn": "ফোকাস",
-        "as": "ফোকাছ"
-    },
-    "Sleep": {
-        "en": "Sleep",
-        "hi": "नींद",
-        "bn": "ঘুম",
-        "as": "নিদ্ৰা"
-    },
-    "Devotional": {
-        "en": "Devotional",
-        "hi": "भक्ति",
-        "bn": "ভক্তিমূলক",
-        "as": "ভক্তিমূলক"
-    },
-    "Classical": {
-        "en": "Classical",
-        "hi": "शास्त्रीय",
-        "bn": "শাস্ত্রীয়",
-        "as": "শাস্ত্ৰীয়"
-    },
-    "Daily Mix": {
-        "en": "Daily Mix",
-        "hi": "डेली मिक्स",
-        "bn": "ডেইলি মিক্স",
-        "as": "দৈনিক মিক্স"
-    },
-    "Made for you": {
-        "en": "Made for you",
-        "hi": "आपके लिए बनाया गया",
-        "bn": "আপনার জন্য তৈরি",
-        "as": "আপোনাৰ বাবে নিৰ্মিত"
-    },
-    "Recommended for You": {
-        "en": "Recommended for You",
-        "hi": "आपके लिए सुझाव",
-        "bn": "আপনার জন্য সুপারিশ",
-        "as": "আপোনাৰ বাবে পৰামৰ্শ"
-    },
-
-    
-    # ── Additional Home Page ──
-    "Morning": {
-        "en": "Morning",
-        "hi": "प्रभात",
-        "bn": "সকাল",
-        "as": "প্ৰভাত"
-    },
-    "Afternoon": {
-        "en": "Afternoon",
-        "hi": "दोपहर",
-        "bn": "অপরাহ্ণ",
-        "as": "অপৰাহ্ণ"
-    },
-    "Evening": {
-        "en": "Evening",
-        "hi": "संध्या",
-        "bn": "সন্ধ্যা",
-        "as": "সন্ধ্যা"
-    },
-    "Quick Play": {
-        "en": "Quick Play",
-        "hi": "क्विक प्ले",
-        "bn": "কুইক প্লে",
-        "as": "কুইক প্লে"
-    },
-    "Because You Liked": {
-        "en": "Because You Liked",
-        "hi": "क्योंकि आपने पसंद किया",
-        "bn": "কারণ আপনি পছন্দ করেছেন",
-        "as": "কাৰণ আপুনি পচন্দ কৰিছে"
-    },
-    "Recommended": {
-        "en": "Recommended",
-        "hi": "सुझाव",
-        "bn": "সুপারিশ",
-        "as": "পৰামৰ্শ"
-    },
-    "Artists": {
-        "en": "Artists",
-        "hi": "कलाकार",
-        "bn": "শিল্পী",
-        "as": "শিল্পী"
-    },
-    "Recommended For You": {
-        "en": "Recommended For You",
-        "hi": "आपके लिए सुझाव",
-        "bn": "আপনার জন্য সুপারিশ",
-        "as": "আপোনাৰ বাবে পৰামৰ্শ"
-    },
-    "No artists found": {
-        "en": "No artists found",
-        "hi": "कोई कलाकार नहीं मिला",
-        "bn": "কোনো শিল্পী পাওয়া যায়নি",
-        "as": "কোনো শিল্পী পোৱা নগ’ল"
-    },
-    "Start listening to build your Usuals!": {
-        "en": "Start listening to build your Usuals!",
-        "hi": "अपने Usuals बनाने के लिए सुनना शुरू करें!",
-        "bn": "আপনার Usuals তৈরি করতে শুনতে শুরু করুন!",
-        "as": "আপোনাৰ Usuals নিৰ্মাণ কৰিবলৈ শুনা আৰম্ভ কৰক!"
-    },
-    "Punjabi": {
-        "en": "Punjabi",
-        "hi": "पंजाबी",
-        "bn": "পাঞ্জাবি",
-        "as": "পঞ্জাবী"
-    },
-    "Tamil": {
-        "en": "Tamil",
-        "hi": "तमिल",
-        "bn": "তামিল",
-        "as": "তামিল"
-    },
-    "Telugu": {
-        "en": "Telugu",
-        "hi": "तेलुगु",
-        "bn": "তেলুগু",
-        "as": "তেলেগু"
-    },
-    "Unknown": {
-        "en": "Unknown",
-        "hi": "अज्ञात",
-        "bn": "অজানা",
-        "as": "অজ্ঞাত"
-    },
-
-        # ── Misc ──
+    # ── Misc ──
     "All": {
         "en": "All",
         "hi": "सभी",
@@ -1055,6 +803,196 @@ TRANSLATIONS = {
         "bn": "প্রোফাইল দেখতে ট্যাপ করুন",
         "as": "প্ৰফাইল চাবলৈ টেপ কৰক"
     },
+
+    # ── Home Page ──
+    "Good morning": {
+        "en": "Good morning",
+        "hi": "शुभ प्रभात",
+        "bn": "শুভ সকাল",
+        "as": "সুপ্ৰভাত"
+    },
+    "Good afternoon": {
+        "en": "Good afternoon",
+        "hi": "शुभ दोपहर",
+        "bn": "শুভ অপরাহ্ণ",
+        "as": "শুভ অপৰাহ্ণ"
+    },
+    "Good evening": {
+        "en": "Good evening",
+        "hi": "शुभ संध्या",
+        "bn": "শুভ সন্ধ্যা",
+        "as": "শুভ সন্ধ্যা"
+    },
+    "Discover your next favorite song": {
+        "en": "Discover your next favorite song",
+        "hi": "अपना अगला पसंदीदा गाना खोजें",
+        "bn": "আপনার পরবর্তী প্রিয় গানটি আবিষ্কার করুন",
+        "as": "আপোনাৰ পৰৱৰ্তী পচন্দৰ গানটো বিচাৰক"
+    },
+    "Trending Now": {
+        "en": "Trending Now",
+        "hi": "अभी ट्रेंडिंग",
+        "bn": "এখন ট্রেন্ডিং",
+        "as": "এতিয়া ট্ৰেণ্ডিং"
+    },
+    "Browse by Mood": {
+        "en": "Browse by Mood",
+        "hi": "मूड के अनुसार ब्राउज़ करें",
+        "bn": "মুড অনুযায়ী ব্রাউজ করুন",
+        "as": "মুড অনুসৰি ব্ৰাউজ কৰক"
+    },
+    "Romantic": {
+        "en": "Romantic",
+        "hi": "रोमांटिक",
+        "bn": "রোমান্টিক",
+        "as": "ৰোমান্টিক"
+    },
+    "Party": {
+        "en": "Party",
+        "hi": "पार्टी",
+        "bn": "পার্টি",
+        "as": "পাৰ্টি"
+    },
+    "Sad": {
+        "en": "Sad",
+        "hi": "उदास",
+        "bn": "দুঃখজনক",
+        "as": "দুখীয়া"
+    },
+    "Workout": {
+        "en": "Workout",
+        "hi": "वर्कआउट",
+        "bn": "ওয়ার্কআউট",
+        "as": "ৱৰ্কআউট"
+    },
+    "Focus": {
+        "en": "Focus",
+        "hi": "फोकस",
+        "bn": "ফোকাস",
+        "as": "ফোকাছ"
+    },
+    "Devotional": {
+        "en": "Devotional",
+        "hi": "भक्ति",
+        "bn": "ভক্তিমূলক",
+        "as": "ভক্তিমূলক"
+    },
+    "Classical": {
+        "en": "Classical",
+        "hi": "शास्त्रीय",
+        "bn": "শাস্ত্রীয়",
+        "as": "শাস্ত্ৰীয়"
+    },
+    "Daily Mix": {
+        "en": "Daily Mix",
+        "hi": "डेली मिक्स",
+        "bn": "ডেইলি মিক্স",
+        "as": "দৈনিক মিক্স"
+    },
+    "Made for you": {
+        "en": "Made for you",
+        "hi": "आपके लिए बनाया गया",
+        "bn": "আপনার জন্য তৈরি",
+        "as": "আপোনাৰ বাবে নিৰ্মিত"
+    },
+    "Recommended for You": {
+        "en": "Recommended for You",
+        "hi": "आपके लिए सुझाव",
+        "bn": "আপনার জন্য সুপারিশ",
+        "as": "আপোনাৰ বাবে পৰামৰ্শ"
+    },
+
+    # ── Additional Home Page (user's exact file) ──
+    "Morning": {
+        "en": "Morning",
+        "hi": "प्रभात",
+        "bn": "সকাল",
+        "as": "প্ৰভাত"
+    },
+    "Afternoon": {
+        "en": "Afternoon",
+        "hi": "दोपहर",
+        "bn": "অপরাহ্ণ",
+        "as": "অপৰাহ্ণ"
+    },
+    "Evening": {
+        "en": "Evening",
+        "hi": "संध्या",
+        "bn": "সন্ধ্যা",
+        "as": "সন্ধ্যা"
+    },
+    "Quick Play": {
+        "en": "Quick Play",
+        "hi": "क्विक प्ले",
+        "bn": "কুইক প্লে",
+        "as": "কুইক প্লে"
+    },
+    "Top Charts": {
+        "en": "Top Charts",
+        "hi": "शीर्ष चार्ट",
+        "bn": "শীর্ষ চার্ট",
+        "as": "শীৰ্ষ চাৰ্ট"
+    },
+    "New Releases": {
+        "en": "New Releases",
+        "hi": "नई रिलीज़",
+        "bn": "নতুন রিলিজ",
+        "as": "নতুন ৰিলিজ"
+    },
+    "Because You Liked": {
+        "en": "Because You Liked",
+        "hi": "क्योंकि आपने पसंद किया",
+        "bn": "কারণ আপনি পছন্দ করেছেন",
+        "as": "কাৰণ আপুনি পচন্দ কৰিছে"
+    },
+    "Recommended": {
+        "en": "Recommended",
+        "hi": "सुझाव",
+        "bn": "সুপারিশ",
+        "as": "পৰামৰ্শ"
+    },
+    "Artists": {
+        "en": "Artists",
+        "hi": "कलाकार",
+        "bn": "শিল্পী",
+        "as": "শিল্পী"
+    },
+    "No artists found": {
+        "en": "No artists found",
+        "hi": "कोई कलाकार नहीं मिला",
+        "bn": "কোনো শিল্পী পাওয়া যায়নি",
+        "as": "কোনো শিল্পী পোৱা নগ’ল"
+    },
+    "Start listening to build your Usuals!": {
+        "en": "Start listening to build your Usuals!",
+        "hi": "अपने Usuals बनाने के लिए सुनना शुरू करें!",
+        "bn": "আপনার Usuals তৈরি করতে শুনতে শুরু করুন!",
+        "as": "আপোনাৰ Usuals নিৰ্মাণ কৰিবলৈ শুনা আৰম্ভ কৰক!"
+    },
+    "Punjabi": {
+        "en": "Punjabi",
+        "hi": "पंजाबी",
+        "bn": "পাঞ্জাবি",
+        "as": "পঞ্জাবী"
+    },
+    "Tamil": {
+        "en": "Tamil",
+        "hi": "तमिल",
+        "bn": "তামিল",
+        "as": "তামিল"
+    },
+    "Telugu": {
+        "en": "Telugu",
+        "hi": "तेलुगु",
+        "bn": "তেলুগু",
+        "as": "তেলেগু"
+    },
+    "Unknown": {
+        "en": "Unknown",
+        "hi": "अज्ञात",
+        "bn": "অজানা",
+        "as": "অজ্ঞাত"
+    },
 }
 
 
@@ -1062,7 +1000,7 @@ TRANSLATIONS = {
 # CORE FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def get_text(key: str, lang: str = None) -> str:
+def get_text(key, lang=None):
     """
     Get translated text for a given key.
     Falls back to English if translation not found.
@@ -1076,12 +1014,12 @@ def get_text(key: str, lang: str = None) -> str:
 
     entry = TRANSLATIONS.get(key)
     if not entry:
-        return key  # fallback: return the key itself
+        return key
 
     return entry.get(lang, entry.get(DEFAULT_LANGUAGE, key))
 
 
-def get_language_name(lang_code: str) -> str:
+def get_language_name(lang_code):
     """Get the native name of a language."""
     info = SUPPORTED_LANGUAGES.get(lang_code)
     if info:
@@ -1097,7 +1035,7 @@ def get_all_languages():
     ]
 
 
-# Short alias — use this in templates: {{ _("Settings") }}
+# Short alias
 _ = get_text
 
 
@@ -1114,19 +1052,16 @@ def get_user_language(request_obj=None, session_obj=None):
       3. Browser Accept-Language header
       4. DEFAULT_LANGUAGE
     """
-    # 1. Check session
     if session_obj:
         sess_lang = session_obj.get("lang")
         if sess_lang and sess_lang in SUPPORTED_LANGUAGES:
             return sess_lang
 
-    # 2. Check cookie
     if request_obj:
         cookie_lang = request_obj.cookies.get("evamusic_lang")
         if cookie_lang and cookie_lang in SUPPORTED_LANGUAGES:
             return cookie_lang
 
-        # 3. Check Accept-Language header
         accept = request_obj.accept_languages
         if accept:
             best = accept.best_match(list(SUPPORTED_LANGUAGES.keys()))
@@ -1150,18 +1085,17 @@ def register_lang_helpers(app):
         g.lang = get_user_language(request, session)
         g.supported_languages = get_all_languages()
 
-    # Jinja2 global: _("key") → translated string
-    app.jinja_env.globals.update({
-        "_": get_text,
-        "get_language_name": get_language_name,
-        "SUPPORTED_LANGUAGES": SUPPORTED_LANGUAGES,
-        "DEFAULT_LANGUAGE": DEFAULT_LANGUAGE,
-    })
-
-    # Context processor: inject current language into all templates
+    # FIX: Use context_processor instead of jinja_env.globals
+    # This is more reliable across different Flask setups
     @app.context_processor
     def _inject_lang():
+        current_lang = getattr(g, "lang", DEFAULT_LANGUAGE)
         return {
-            "current_lang": getattr(g, "lang", DEFAULT_LANGUAGE),
-            "current_lang_name": get_language_name(getattr(g, "lang", DEFAULT_LANGUAGE)),
+            "_": get_text,                    # {{ _("Settings") }}
+            "get_language_name": get_language_name,
+            "SUPPORTED_LANGUAGES": SUPPORTED_LANGUAGES,
+            "DEFAULT_LANGUAGE": DEFAULT_LANGUAGE,
+            "current_lang": current_lang,
+            "current_lang_name": get_language_name(current_lang),
+            "supported_languages": get_all_languages(),
         }
