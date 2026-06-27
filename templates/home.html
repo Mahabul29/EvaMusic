@@ -151,7 +151,7 @@
     margin-top: 2px;
 }
 
-/* ── List Song Row (for charts / recommended) ── */
+/* ── List Song Row ── */
 .song-list { padding: 0 16px; }
 .song-row {
     display: flex;
@@ -298,11 +298,34 @@
     transition: transform 0.15s;
 }
 .quick-play-btn:active { transform: scale(0.92); }
+
+/* ── Desktop View Link ── */
+.desktop-link {
+    display: none;
+    padding: 12px 16px;
+    text-align: center;
+    background: var(--card-bg);
+    margin: 8px 16px;
+    border-radius: 12px;
+    color: var(--accent-color);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+@media (min-width: 1024px) {
+    .desktop-link { display: block; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="home-page">
+
+    <!-- Desktop View Link -->
+    <a href="/desktop" class="desktop-link">
+        <i class="fas fa-desktop" style="margin-right:8px;"></i>Switch to Desktop View
+    </a>
 
     <!-- Header -->
     <div class="home-header">
@@ -330,7 +353,7 @@
         <button class="lang-pill" data-lang="bengali" onclick="setLang('bengali', this)">{{ _("Bengali") }}</button>
     </div>
 
-    <!-- Quick Resume (if songs passed from server) -->
+    <!-- Quick Resume -->
     {% if data.trending %}
     <div class="quick-play-banner" onclick="playFromServer(0)" id="quickPlayBanner">
         <div class="quick-play-icon"><i class="fas fa-bolt"></i></div>
@@ -352,7 +375,12 @@
     {% if data.trending %}
     <div class="songs-scroll-row" id="section-trending">
         {% for song in data.trending %}
-        <div class="song-card" onclick="playFromServer({{ loop.index0 }})">
+        <div class="song-card" onclick="playFromServer({{ loop.index0 }})"
+             data-song-id="{{ song.id }}"
+             data-song-title="{{ song.title | replace('"', '\"') }}"
+             data-song-artist="{{ song.artist | replace('"', '\"') }}"
+             data-song-image="{{ song.image }}"
+             data-song-url="{{ song.url }}">
             <div class="song-thumb">
                 <img src="{{ song.image }}"
                      alt="{{ song.title }}"
@@ -431,7 +459,7 @@
     </div>
     <div class="songs-scroll-row" id="section-because-liked" style="display:none;"></div>
 
-    <!-- ── Recommended / Usuals ── -->
+    <!-- ── Recommended ── -->
     <div class="section-head">
         <div class="section-title">🎧 {{ _("Recommended") }}</div>
     </div>
@@ -463,14 +491,14 @@
 
 {% block extra_js %}
 <script>
-// ── Embed ALL server-side song data into JS ──────────────────────────────────
+// ── Embed ALL server-side song data into JS ──────────────────
 const SERVER_SONGS = [
     ...{{ data.trending | tojson }},
     ...{{ data.charts | tojson }},
     ...{{ data.new_releases | tojson }}
 ];
 
-// ── Greeting by time of day ───────────────────────────────────────────────────
+// ── Greeting by time ────────────────────────────────────────
 (function() {
     const h = new Date().getHours();
     const greet = h < 12 ? '{{ _("Morning") }}' : h < 17 ? '{{ _("Afternoon") }}' : '{{ _("Evening") }}';
@@ -478,7 +506,7 @@ const SERVER_SONGS = [
     if (el) el.textContent = greet;
 })();
 
-// ── Language filter state ─────────────────────────────────────────────────────
+// ── Language filter ─────────────────────────────────────────
 let currentLang = 'all';
 
 function langParam(lang) {
@@ -494,7 +522,7 @@ function setLang(lang, btn) {
     loadArtists();
 }
 
-// ── Play from server-rendered list ───────────────────────────────────────────
+// ── Play from server-rendered list ──────────────────────────
 function playFromServer(index) {
     if (!SERVER_SONGS || !SERVER_SONGS.length) return;
     const song = SERVER_SONGS[index];
@@ -506,7 +534,7 @@ function playFromServer(index) {
     playSong(song.id, song);
 }
 
-// ── Skeleton helpers ──────────────────────────────────────────────────────────
+// ── Skeleton helpers ────────────────────────────────────────
 function renderSkeletonSongs(n) {
     return Array.from({length: n}, () => `
         <div class="skeleton-card">
@@ -524,7 +552,7 @@ function renderSkeletonArtists(n) {
         </div>`).join('');
 }
 
-// ── Render helpers ────────────────────────────────────────────────────────────
+// ── Render helpers ──────────────────────────────────────────
 function escHtml(str) {
     if (!str) return '';
     return String(str)
@@ -571,12 +599,9 @@ function renderArtistCard(artist) {
     </div>`;
 }
 
-// ── Attach click handlers to dynamically rendered cards ───────────────────────
-// Uses data attributes instead of inline onclick — safe across SPA swaps
+// ── Attach click handlers to dynamically rendered cards ──────
 function attachDynamicCardHandlers(container) {
     if (!container) container = document;
-
-    // Song cards rendered by renderSongCard()
     container.querySelectorAll('.song-card[data-song-id]').forEach(card => {
         card.addEventListener('click', function() {
             const songData = this.dataset.song;
@@ -587,8 +612,6 @@ function attachDynamicCardHandlers(container) {
             } catch(e) { console.warn('Song parse error', e); }
         });
     });
-
-    // Artist cards rendered by renderArtistCard()
     container.querySelectorAll('.song-card[data-artist-url]').forEach(card => {
         card.addEventListener('click', function() {
             const url = this.dataset.artistUrl;
@@ -598,7 +621,7 @@ function attachDynamicCardHandlers(container) {
     });
 }
 
-// ── Dynamic section loaders ───────────────────────────────────────────────────
+// ── Dynamic section loaders ─────────────────────────────────
 async function loadArtists() {
     const container = document.getElementById('section-artists');
     if (!container) return;
@@ -613,7 +636,6 @@ async function loadArtists() {
             container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
         }
     } catch (e) {
-        console.warn('Artists load failed', e);
         container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
     }
 }
@@ -678,7 +700,7 @@ async function loadRecommended() {
     }
 }
 
-// ── Expose for SPA re-init (called by spa-nav.js after swap to /home) ─────────
+// ── Expose for SPA re-init ──────────────────────────────────
 function initPageLoaders() {
     currentLang = 'all';
     document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
@@ -693,8 +715,7 @@ function initPageLoaders() {
     }
 }
 
-// ── On initial hard page load ─────────────────────────────────────────────────
-// Use a flag so the spa:navigated listener never double-fires on first load
+// ── On initial load ──────────────────────────────────────────
 if (!window.__homePageLoaded) {
     window.__homePageLoaded = true;
     initPageLoaders();
