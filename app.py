@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response
 
 # ═══════════════════════════════════════════════════════════════
-# CONFIG IMPORTS
+# CONFIG
 # ═══════════════════════════════════════════════════════════════
 from config import get_search_url, get_trending_url, get_song_url, API_BASE_URL
 
 # ═══════════════════════════════════════════════════════════════
-# OPTIONAL IMPORTS (graceful fallback if files missing)
+# OPTIONAL IMPORTS
 # ═══════════════════════════════════════════════════════════════
 try:
     from oauth import init_oauth, get_google_user, oauth, get_google_redirect_uri
@@ -43,17 +43,14 @@ except ImportError:
     profile_bp = None
 
 # ═══════════════════════════════════════════════════════════════
-# FLASK APP SETUP
+# FLASK APP
 # ═══════════════════════════════════════════════════════════════
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Trust proxy headers for HTTPS on Koyeb/Cloudflare
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-to-something-random-abc123_2026')
-
-# Session cookies for HTTPS (Koyeb)
 app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
@@ -61,19 +58,15 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=60*60*24*365,
 )
 
-# i18n
 if I18N_AVAILABLE and register_lang_helpers:
     register_lang_helpers(app)
 
-# OAuth
 if OAUTH_AVAILABLE and init_oauth:
     init_oauth(app)
 
-# Blueprints
 if PROFILE_ROUTES_AVAILABLE and profile_bp:
     app.register_blueprint(profile_bp)
 
-# Database init
 if DB_AVAILABLE and db and hasattr(db, 'init_db'):
     db.init_db()
 
@@ -89,11 +82,10 @@ HEADERS = {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# HELPER FUNCTIONS
+# HELPERS
 # ═══════════════════════════════════════════════════════════════
 
 def get_user_id():
-    """Return logged-in user's ID, or a guest ID."""
     if 'user_id' in session:
         return session['user_id']
     if 'guest_id' not in session:
@@ -104,7 +96,6 @@ def is_logged_in():
     return bool(session.get('logged_in'))
 
 def _call(url, timeout=12):
-    """Make GET request to music API."""
     try:
         r = requests.get(url, headers=HEADERS, timeout=timeout)
         if r.status_code == 200:
@@ -114,7 +105,6 @@ def _call(url, timeout=12):
     return None
 
 def _extract_audio_url(data):
-    """Extract audio URL from various API response shapes."""
     if not data:
         return ""
     URL_KEYS = ["url", "downloadUrl", "download_url", "media_url",
@@ -154,7 +144,6 @@ def _extract_audio_url(data):
     return ""
 
 def _normalize_song(data):
-    """Normalize a song object from any API response shape."""
     if not data:
         return None
 
@@ -196,7 +185,6 @@ def _normalize_song(data):
     }
 
 def fetch_songs(query, limit=20):
-    """Search for songs."""
     data = _call(get_search_url(query, limit))
     if isinstance(data, list) and data:
         return data
@@ -208,7 +196,6 @@ def fetch_songs(query, limit=20):
     return []
 
 def fetch_trending(limit=20):
-    """Fetch trending songs."""
     data = _call(get_trending_url(limit))
     if isinstance(data, list) and data:
         return data
@@ -220,7 +207,6 @@ def fetch_trending(limit=20):
     return []
 
 def _build_homepage_data(raw_trending=None):
-    """Build homepage data dict from trending songs."""
     if raw_trending is None:
         raw_trending = fetch_trending(40)
     trending_songs = []
@@ -238,7 +224,7 @@ def _build_homepage_data(raw_trending=None):
     }
 
 # ═══════════════════════════════════════════════════════════════
-# LANGUAGE SWITCH
+# LANGUAGE
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/switch-language/<lang>')
@@ -275,6 +261,10 @@ def home():
         selected_languages=selected_languages
     )
 
+@app.route('/desktop')
+def desktop():
+    return render_template('desktop.html')
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '').strip()
@@ -308,15 +298,7 @@ def player(song_id):
     return render_template('player.html', song=song, title=song.get("title", "Player"))
 
 # ═══════════════════════════════════════════════════════════════
-# DESKTOP VIEW
-# ═══════════════════════════════════════════════════════════════
-
-@app.route('/desktop')
-def desktop():
-    return render_template('windows.html')
-
-# ═══════════════════════════════════════════════════════════════
-# AUTH / OAUTH ROUTES
+# AUTH
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/login/google')
@@ -368,7 +350,6 @@ def authorize_google():
             }
             db._save("users", users)
     else:
-        # Fallback without database
         user_id = str(uuid.uuid4())[:8]
 
     session['user_id'] = user_id
@@ -387,7 +368,6 @@ def logout():
 
 @app.route('/api/me')
 def api_me():
-    """Return current logged-in user info."""
     if not session.get('logged_in'):
         return jsonify({"logged_in": False})
     return jsonify({
