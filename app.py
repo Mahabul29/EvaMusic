@@ -235,6 +235,28 @@ def _build_homepage_data(raw_trending=None):
         "personalized": False
     }
 
+def _build_taste_summary():
+    selected_languages = session.get('selected_languages', ['hindi', 'english'])
+    taste = {
+        'top_artists': [],
+        'top_languages': [(l.title(), 1) for l in selected_languages],
+        'top_genres': [],
+        'top_moods': [('Chill', 1)],
+        'metrics_collected': 0
+    }
+    if DB_AVAILABLE and db and hasattr(db, 'get_user_taste'):
+        try:
+            user_taste = db.get_user_taste(get_user_id())
+            if user_taste:
+                taste['top_artists'] = user_taste.get('top_artists', [])
+                taste['top_languages'] = user_taste.get('top_languages', taste['top_languages'])
+                taste['top_genres'] = user_taste.get('top_genres', [])
+                taste['top_moods'] = user_taste.get('top_moods', taste['top_moods'])
+                taste['metrics_collected'] = user_taste.get('metrics_collected', 0)
+        except Exception:
+            pass
+    return taste
+
 # ═══════════════════════════════════════════════════════════════
 # LANGUAGE
 # ═══════════════════════════════════════════════════════════════
@@ -257,19 +279,13 @@ def switch_language(lang):
 @app.route('/')
 @app.route('/home')
 def home():
-    # Auto-switch to desktop for PC users
-    if is_desktop():
+    # Auto-switch to desktop for PC users (unless ?mobile=1 is set)
+    if is_desktop() and not request.args.get('mobile'):
         return redirect('/desktop')
 
     homepage_data = _build_homepage_data()
     selected_languages = session.get('selected_languages', ['hindi', 'english'])
-    taste_summary = {
-        'top_artists': [],
-        'top_languages': [(l.title(), 1) for l in selected_languages],
-        'top_genres': [],
-        'top_moods': [('Chill', 1)],
-        'metrics_collected': 0
-    }
+    taste_summary = _build_taste_summary()
     return render_template(
         'home.html',
         data=homepage_data,
@@ -504,23 +520,80 @@ def api_favorites():
     return jsonify(normalized)
 
 @app.route('/api/artists')
-def api_fallback_artists():
+def api_artists():
+    """Return taste-based artists from user play history."""
+    if DB_AVAILABLE and db and hasattr(db, 'get_user_taste'):
+        try:
+            taste = db.get_user_taste(get_user_id())
+            artists = taste.get('top_artists', []) if taste else []
+            if artists:
+                return jsonify([{"name": a[0], "play_count": a[1]} for a in artists])
+        except Exception:
+            pass
     return jsonify([])
 
 @app.route('/api/suggestions')
-def api_fallback_suggestions():
-    raw_trending = fetch_trending(10)
-    songs = []
-    if raw_trending:
+def api_suggestions():
+    """Return personalized suggestions or trending fallback."""
+    user_id = get_user_id()
+    suggestions = []
+    if DB_AVAILABLE and db and hasattr(db, 'get_user_taste'):
+        try:
+            taste = db.get_user_taste(user_id)
+            if taste and taste.get('top_artists'):
+                for artist_tuple in taste['top_artists'][:3]:
+                    artist_name = artist_tuple[0] if isinstance(artist_tuple, (list, tuple)) else artist_tuple
+                    raw = fetch_songs(artist_name, 5)
+                    for item in raw:
+                        norm = _normalize_song(item)
+                        if norm and norm.get("url"):
+                            suggestions.append(norm)
+                    if len(suggestions) >= 10:
+                        break
+        except Exception:
+            pass
+    if not suggestions:
+        raw_trending = fetch_trending(10)
         for item in raw_trending:
             norm = _normalize_song(item)
             if norm and norm.get("url"):
-                songs.append(norm)
-    return jsonify(songs)
+                suggestions.append(norm)
+    return jsonify(suggestions[:10])
 
 @app.route('/api/usuals')
-def api_fallback_usuals():
+def api_usuals():
+    """Return frequently played songs."""
+    if DB_AVAILABLE and db and hasattr(db, 'get_recently_played'):
+        try:
+            history = db.get_recently_played(get_user_id())
+            from collections import Counter
+            song_counts = Counter()
+            song_map = {}
+            for h in history:
+                sid = h.get('song_id')
+                if sid:
+                    song_counts[sid] += 1
+                    song_map[sid] = h
+            usuals = []
+            for sid, count in song_counts.most_common(20):
+                if count >= 2:
+                    h = song_map[sid]
+                    usuals.append({
+                        "id": sid,
+                        "title": h.get('title', 'Unknown'),
+                        "artist": h.get('artist', 'Unknown'),
+                        "image": h.get('image_url', '/static/images/default-album.png'),
+                        "url": h.get('url', ''),
+                        "play_count": count
+                    })
+            return jsonify(usuals)
+        except Exception:
+            pass
     return jsonify([])
+
+@app.route('/api/taste')
+def api_taste():
+    return jsonify(_build_taste_summary())
 
 @app.route('/api/languages', methods=['POST'])
 def save_languages():
