@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ movie.title }} - EvaLinks</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1e40af">
+  <link rel="stylesheet" href="/static/css/detail.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light">
+      <span id="themeIcon">🌙</span>
+    </button>
+
+    <!-- Movie Title -->
+    <h1 class="movie-title">{{ movie.title }}</h1>
+    <div class="divider"></div>
+
+    <!-- Countdown Overlay -->
+    <div class="countdown-overlay" id="countdownOverlay">
+      <div class="countdown-box">
+        <div class="countdown-spinner"></div>
+        <p class="countdown-text">Preparing your download links...</p>
+        <div class="countdown-timer" id="countdownTimer">3</div>
+      </div>
+    </div>
+
+    <!-- Download Links Container -->
+    <div class="links-container" id="linksContainer">
+      {% for quality, links in movie.qualities.items() %}
+      <div class="quality-card" data-quality="{{ quality }}">
+        <div class="quality-header">
+          <span class="quality-label">{{ quality }}</span>
+          <span class="quality-size">{{ links[0].size }}</span>
+        </div>
+        <div class="links-row">
+          {% for link in links %}
+          <a href="{{ link.url }}" class="download-btn" target="_blank" rel="noopener">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {{ link.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Report Box -->
+    <div class="report-box">
+      <svg class="report-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p>If any download link is broken or not working, please report it via Telegram.<br>New links will be updated shortly.</p>
+    </div>
+  </div>
+
+  <script src="/static/js/detail.js"></script>
+</body>
+</html>
