@@ -1,0 +1,797 @@
+{% extends 'base.html' %}
+
+{% block title %}EvaMusic — {{ _("Home") }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page Layout ── */
+.home-page { padding: 0 0 16px; }
+
+/* ── Top Header ── */
+.home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 16px 12px;
+}
+.home-greeting {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+.home-greeting span { color: var(--accent-color); }
+.home-header-actions { display: flex; gap: 10px; }
+.header-icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.header-icon-btn:active { background: var(--hover-bg); }
+
+/* ── Domain Banner ── */
+.domain-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 16px 16px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(29,185,84,0.15) 0%, rgba(29,185,84,0.05) 100%);
+    border: 1px solid rgba(29,185,84,0.3);
+    border-radius: 14px;
+    text-decoration: none;
+    color: var(--text-color);
+}
+.domain-banner i:first-child {
+    font-size: 18px;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+.domain-banner span {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.domain-banner span strong {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+.domain-banner i:last-child {
+    font-size: 13px;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+/* ── Language Filter Pills ── */
+.lang-filter {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.lang-filter::-webkit-scrollbar { display: none; }
+.lang-pill {
+    flex-shrink: 0;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.lang-pill.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #000;
+    font-weight: 700;
+}
+
+/* ── Section Headers ── */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px 12px;
+}
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+.section-see-all {
+    font-size: 13px;
+    color: var(--accent-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* ── Horizontal Scroll Row ── */
+.songs-scroll-row {
+    display: flex;
+    gap: 14px;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.songs-scroll-row::-webkit-scrollbar { display: none; }
+
+/* ── Song Card ── */
+.song-card {
+    flex: 0 0 auto;
+    width: 145px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.song-thumb {
+    width: 145px;
+    height: 145px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--card-bg);
+    margin-bottom: 8px;
+}
+.song-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.song-thumb .play-overlay {
+    position: absolute;
+    bottom: 8px; right: 8px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: none;
+    color: #000;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.2s;
+    pointer-events: none;
+}
+.song-card:active .play-overlay {
+    opacity: 1;
+    transform: translateY(0);
+}
+.song-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-card-artist {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+/* ── List Song Row ── */
+.song-list { padding: 0 16px; }
+.song-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.song-row:last-child { border-bottom: none; }
+.song-row-num {
+    width: 22px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+.song-row-thumb {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+.song-row-info { flex: 1; min-width: 0; }
+.song-row-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-row-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.song-row-play {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(29,185,84,0.15);
+    border: none;
+    color: var(--accent-color);
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.song-row-play:active { background: var(--accent-color); color: #000; }
+
+/* ── Skeleton Loaders ── */
+.skeleton {
+    background: linear-gradient(90deg, var(--card-bg) 25%, var(--hover-bg) 50%, var(--card-bg) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 8px;
+}
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton-card { flex: 0 0 auto; width: 145px; }
+.skeleton-thumb { width: 145px; height: 145px; border-radius: 12px; margin-bottom: 8px; }
+.skeleton-line { height: 12px; border-radius: 6px; margin-bottom: 6px; }
+.skeleton-line.short { width: 70%; }
+
+.skeleton-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.skeleton-row-thumb { width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0; }
+.skeleton-row-info { flex: 1; }
+
+/* ── Empty State ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    gap: 10px;
+    width: 100%;
+}
+.empty-state i { font-size: 36px; opacity: 0.3; }
+.empty-state p { font-size: 14px; text-align: center; }
+
+/* ── Quick Play Banner ── */
+.quick-play-banner {
+    margin: 0 16px 8px;
+    background: linear-gradient(135deg, #1a3a2a 0%, #0d2418 100%);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid rgba(29,185,84,0.2);
+}
+.quick-play-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: #000;
+    flex-shrink: 0;
+}
+.quick-play-text { flex: 1; min-width: 0; }
+.quick-play-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.quick-play-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.quick-play-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.quick-play-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: none;
+    color: #000;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+.quick-play-btn:active { transform: scale(0.92); }
+
+/* ── Desktop View Link ── */
+.desktop-link {
+    display: none;
+    padding: 12px 16px;
+    text-align: center;
+    background: var(--card-bg);
+    margin: 8px 16px;
+    border-radius: 12px;
+    color: var(--accent-color);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+@media (min-width: 1024px) {
+    .desktop-link { display: block; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-page">
+
+    <!-- Desktop View Link -->
+    <a href="/desktop" class="desktop-link">
+        <i class="fas fa-desktop" style="margin-right:8px;"></i>Switch to Desktop View
+    </a>
+
+    <!-- Header -->
+    <div class="home-header">
+        <div class="home-greeting">
+            {{ _("Good") }} <span id="greetingTime">{{ _("Evening") }}</span> 👋
+        </div>
+        <div class="home-header-actions">
+            <a href="/search" class="header-icon-btn" title="{{ _("Search") }}">
+                <i class="fas fa-search"></i>
+            </a>
+            <a href="/settings" class="header-icon-btn" title="{{ _("Settings") }}">
+                <i class="fas fa-cog"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- ── Domain Banner ── -->
+    <a href="https://evamusic.com" target="_blank" rel="noopener" class="domain-banner">
+        <i class="fas fa-globe"></i>
+        <span>{{ _("Join Our Domain") }} — <strong>EvaMusic.com</strong></span>
+        <i class="fas fa-arrow-right"></i>
+    </a>
+
+    <!-- Quick Resume -->
+    {% if data.trending %}
+    <div class="quick-play-banner" onclick="playFromServer(0)" id="quickPlayBanner">
+        <div class="quick-play-icon"><i class="fas fa-bolt"></i></div>
+        <div class="quick-play-text">
+            <div class="quick-play-label">{{ _("Quick Play") }}</div>
+            <div class="quick-play-title" id="quickPlayTitle">{{ data.trending[0].title }}</div>
+            <div class="quick-play-sub">{{ data.trending[0].artist }}</div>
+        </div>
+        <button class="quick-play-btn" onclick="event.stopPropagation(); playFromServer(0)">
+            <i class="fas fa-play"></i>
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- ── Trending Now ── -->
+    <div class="section-head">
+        <div class="section-title">🔥 {{ _("Trending Now") }}</div>
+    </div>
+    {% if data.trending %}
+    <div class="songs-scroll-row" id="section-trending">
+        {% for song in data.trending %}
+        <div class="song-card" onclick="playFromServer({{ loop.index0 }})"
+             data-song-id="{{ song.id }}"
+             data-song-title="{{ song.title | replace('"', '\"') }}"
+             data-song-artist="{{ song.artist | replace('"', '\"') }}"
+             data-song-image="{{ song.image }}"
+             data-song-url="{{ song.url }}">
+            <div class="song-thumb">
+                <img src="{{ song.image }}"
+                     alt="{{ song.title }}"
+                     loading="lazy"
+                     onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="song-card-title">{{ song.title }}</div>
+            <div class="song-card-artist">{{ song.artist }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="songs-scroll-row" id="section-trending">
+        {% for i in range(6) %}
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line" style="width:90%"></div>
+            <div class="skeleton skeleton-line short"></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ── Charts ── -->
+    {% if data.charts %}
+    <div class="section-head">
+        <div class="section-title">🎵 {{ _("Top Charts") }}</div>
+    </div>
+    <div class="song-list" id="section-charts">
+        {% for song in data.charts[:8] %}
+        <div class="song-row" onclick="playFromServer({{ loop.index0 + 12 }})">
+            <div class="song-row-num">{{ loop.index }}</div>
+            <img class="song-row-thumb"
+                 src="{{ song.image }}"
+                 alt="{{ song.title }}"
+                 loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+            <div class="song-row-info">
+                <div class="song-row-title">{{ song.title }}</div>
+                <div class="song-row-artist">{{ song.artist }}</div>
+            </div>
+            <button class="song-row-play" onclick="event.stopPropagation(); playFromServer({{ loop.index0 + 12 }})">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ── New Releases ── -->
+    {% if data.new_releases %}
+    <div class="section-head">
+        <div class="section-title">✨ {{ _("New Releases") }}</div>
+    </div>
+    <div class="songs-scroll-row" id="section-new-releases">
+        {% for song in data.new_releases %}
+        <div class="song-card" onclick="playFromServer({{ loop.index0 + 24 }})">
+            <div class="song-thumb">
+                <img src="{{ song.image }}"
+                     alt="{{ song.title }}"
+                     loading="lazy"
+                     onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="song-card-title">{{ song.title }}</div>
+            <div class="song-card-artist">{{ song.artist }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ── Because You Liked ── -->
+    <div class="section-head" id="becauseYouLikedHead" style="display:none;">
+        <div class="section-title">💚 {{ _("Because You Liked") }}</div>
+    </div>
+    <div class="songs-scroll-row" id="section-because-liked" style="display:none;"></div>
+
+    <!-- ── Recommended ── -->
+    <div class="section-head">
+        <div class="section-title">🎧 {{ _("Recommended") }}</div>
+    </div>
+    <div class="songs-scroll-row" id="section-recommended">
+        {% for i in range(5) %}
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line" style="width:90%"></div>
+            <div class="skeleton skeleton-line short"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ── Artists ── -->
+    <div class="section-head">
+        <div class="section-title">🎤 {{ _("Artists") }}</div>
+    </div>
+    <div class="songs-scroll-row" id="section-artists">
+        {% for i in range(5) %}
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb" style="border-radius:50%;"></div>
+            <div class="skeleton skeleton-line" style="width:80%;margin:8px auto 0;"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ── My Favourite Songs ── -->
+    <div class="section-head">
+        <div class="section-title">❤️ {{ _("My Favourite Songs") }}</div>
+    </div>
+    <div class="songs-scroll-row" id="section-favourites">
+        {% for i in range(5) %}
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line" style="width:90%"></div>
+            <div class="skeleton skeleton-line short"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div><!-- end home-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Embed ALL server-side song data into JS ──────────────────
+const SERVER_SONGS = [
+    ...{{ data.trending | tojson }},
+    ...{{ data.charts | tojson }},
+    ...{{ data.new_releases | tojson }}
+];
+
+// ── Greeting by time ────────────────────────────────────────
+(function() {
+    const h = new Date().getHours();
+    const greet = h < 12 ? '{{ _("Morning") }}' : h < 17 ? '{{ _("Afternoon") }}' : '{{ _("Evening") }}';
+    const el = document.getElementById('greetingTime');
+    if (el) el.textContent = greet;
+})();
+
+// ── Language filter ─────────────────────────────────────────
+let currentLang = 'all';
+
+function langParam(lang) {
+    return lang && lang !== 'all' ? `?lang=${lang}` : '?lang=';
+}
+
+function setLang(lang, btn) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    loadBecauseYouLiked();
+    loadRecommended();
+    loadArtists();
+}
+
+// ── Play from server-rendered list ──────────────────────────
+function playFromServer(index) {
+    if (!SERVER_SONGS || !SERVER_SONGS.length) return;
+    const song = SERVER_SONGS[index];
+    if (!song) return;
+    if (window.player) {
+        window.player.queue = SERVER_SONGS;
+        window.player.currentIndex = index;
+    }
+    playSong(song.id, song);
+}
+
+// ── Skeleton helpers ────────────────────────────────────────
+function renderSkeletonSongs(n) {
+    return Array.from({length: n}, () => `
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line" style="width:90%"></div>
+            <div class="skeleton skeleton-line short"></div>
+        </div>`).join('');
+}
+
+function renderSkeletonArtists(n) {
+    return Array.from({length: n}, () => `
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-thumb" style="border-radius:50%;"></div>
+            <div class="skeleton skeleton-line" style="width:80%;margin:8px auto 0;"></div>
+        </div>`).join('');
+}
+
+// ── Render helpers ──────────────────────────────────────────
+function escHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
+function renderSongCard(song) {
+    const id     = song.id     || song.song_id || '';
+    const title  = song.title  || song.name    || '{{ _("Unknown") }}';
+    const artist = song.artist || song.primaryArtists || '';
+    const img    = song.image  || song.image_url || song.thumbnail || '/static/images/default-album.png';
+    return `
+    <div class="song-card"
+         data-song-id="${escHtml(id)}"
+         data-song-title="${escHtml(title)}"
+         data-song-artist="${escHtml(artist)}"
+         data-song-image="${escHtml(img)}"
+         data-song-url="${escHtml(song.url||'')}" 
+         data-song='${escHtml(JSON.stringify(song))}'>
+        <div class="song-thumb">
+            <img src="${escHtml(img)}" alt="${escHtml(title)}" loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/images/default-album.png'">
+            <div class="play-overlay"><i class="fas fa-play"></i></div>
+        </div>
+        <div class="song-card-title">${escHtml(title)}</div>
+        <div class="song-card-artist">${escHtml(artist)}</div>
+    </div>`;
+}
+
+function renderArtistCard(artist) {
+    const name = artist.name || artist.title || '{{ _("Unknown") }}';
+    const img  = artist.image || artist.image_url || '/static/images/default-album.png';
+    const url  = `/artist/${encodeURIComponent(name)}`;
+    return `
+    <div class="song-card" data-artist-url="${escHtml(url)}">
+        <div class="song-thumb" style="border-radius:50%;">
+            <img src="${escHtml(img)}" alt="${escHtml(name)}" loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/images/default-album.png'"
+                 style="border-radius:50%;">
+        </div>
+        <div class="song-card-title" style="text-align:center;">${escHtml(name)}</div>
+    </div>`;
+}
+
+// ── Attach click handlers to dynamically rendered cards ──────
+function attachDynamicCardHandlers(container) {
+    if (!container) container = document;
+    container.querySelectorAll('.song-card[data-song-id]').forEach(card => {
+        card.addEventListener('click', function() {
+            const songData = this.dataset.song;
+            if (!songData) return;
+            try {
+                const song = JSON.parse(songData);
+                if (typeof playSong === 'function') playSong(song.id || song.song_id, song);
+            } catch(e) { console.warn('Song parse error', e); }
+        });
+    });
+    container.querySelectorAll('.song-card[data-artist-url]').forEach(card => {
+        card.addEventListener('click', function() {
+            const url = this.dataset.artistUrl;
+            if (url && window._spaNavigateTo) window._spaNavigateTo(url);
+            else if (url) window.location.href = url;
+        });
+    });
+}
+
+// ── Dynamic section loaders ─────────────────────────────────
+async function loadArtists() {
+    const container = document.getElementById('section-artists');
+    if (!container) return;
+    container.innerHTML = renderSkeletonArtists(6);
+    try {
+        const res  = await fetch(`/api/artists${langParam(currentLang)}&limit=10`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(renderArtistCard).join('');
+            attachDynamicCardHandlers(container);
+        } else {
+            container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-users"></i><p>{{ _("No artists found") }}</p></div>`;
+    }
+}
+
+// ── Shuffle helper (Fisher–Yates) ───────────────────────────
+function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+async function loadFavouriteSongs() {
+    const container = document.getElementById('section-favourites');
+    if (!container) return;
+    container.innerHTML = renderSkeletonSongs(5);
+    try {
+        const res  = await fetch('/api/favorites');
+        const data = await res.json();
+        if (data && data.length > 0) {
+            container.innerHTML = shuffleArray(data).map(renderSongCard).join('');
+            attachDynamicCardHandlers(container);
+        } else {
+            container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-heart"></i><p>{{ _("No favourite songs yet") }}</p></div>`;
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-heart"></i><p>{{ _("No favourite songs yet") }}</p></div>`;
+    }
+}
+
+async function loadBecauseYouLiked() {
+    const container = document.getElementById('section-because-liked');
+    const head      = document.getElementById('becauseYouLikedHead');
+    if (!container || !head) return;
+
+    try {
+        const res  = await fetch(`/api/suggestions${langParam(currentLang)}&limit=8`);
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+            head.style.display      = 'flex';
+            container.style.display = 'flex';
+            container.innerHTML     = data.map(renderSongCard).join('');
+            attachDynamicCardHandlers(container);
+        } else {
+            const res2  = await fetch(`/api/trending${langParam(currentLang)}&limit=8`);
+            const data2 = await res2.json();
+            if (data2 && data2.length > 0) {
+                head.style.display = 'flex';
+                container.style.display = 'flex';
+                head.querySelector('.section-title').textContent = '🎵 {{ _("Recommended For You") }}';
+                container.innerHTML = data2.map(renderSongCard).join('');
+                attachDynamicCardHandlers(container);
+            } else {
+                head.style.display      = 'none';
+                container.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        head.style.display      = 'none';
+        container.style.display = 'none';
+    }
+}
+
+async function loadRecommended() {
+    const container = document.getElementById('section-recommended');
+    if (!container) return;
+    container.innerHTML = renderSkeletonSongs(5);
+    try {
+        const res  = await fetch(`/api/usuals${langParam(currentLang)}&limit=10`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(renderSongCard).join('');
+            attachDynamicCardHandlers(container);
+        } else {
+            const res2  = await fetch(`/api/trending${langParam(currentLang)}&limit=10`);
+            const data2 = await res2.json();
+            if (data2 && data2.length > 0) {
+                container.innerHTML = data2.map(renderSongCard).join('');
+                attachDynamicCardHandlers(container);
+            } else {
+                container.innerHTML = `<div class="empty-state" style="width:100%;"><i class="fas fa-music"></i><p>{{ _("Start listening to build your Usuals!") }}</p></div>`;
+            }
+        }
+    } catch (e) {
+        console.warn('Recommendations load failed', e);
+        container.innerHTML = renderSkeletonSongs(5);
+    }
+}
+
+// ── Expose for SPA re-init ──────────────────────────────────
+function initPageLoaders() {
+    currentLang = 'all';
+    document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+    const allPill = document.querySelector('.lang-pill[data-lang="all"]');
+    if (allPill) allPill.classList.add('active');
+    loadBecauseYouLiked();
+    loadRecommended();
+    loadArtists();
+    loadFavouriteSongs();
+    if (window.player && SERVER_SONGS.length) {
+        window.player.queue = SERVER_SONGS;
+        window.player.refreshQueueFromDOM();
+    }
+}
+
+// ── On initial load ──────────────────────────────────────────
+if (!window.__homePageLoaded) {
+    window.__homePageLoaded = true;
+    initPageLoaders();
+}
+</script>
+{% endblock %}
