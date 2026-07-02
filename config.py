@@ -34,8 +34,8 @@ TRENDING_URL = f"{API_BASE_URL}/api/trending"
 SONG_URL     = f"{API_BASE_URL}/api/song"    # append /<song_id>
 
 
-def get_search_url(query: str, limit: int = 20) -> str:
-    return f"{SEARCH_URL}?{urlencode({'q': query, 'limit': limit})}"
+def get_search_url(query: str, limit: int = 20, page: int = 0) -> str:
+    return f"{SEARCH_URL}?{urlencode({'q': query, 'limit': limit, 'page': page})}"
 
 
 def get_trending_url(limit: int = 20) -> str:
