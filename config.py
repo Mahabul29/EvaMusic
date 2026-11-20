@@ -21,7 +21,7 @@ WEB_BASE_URL = os.environ.get(
 # ═══════════════════════════════════════════════════════════════
 API_BASE_URL = os.environ.get(
     "API_BASE_URL",
-    "http://sheer-lilas-66655t-83ea94e0.koyeb.app"
+    "https://shnwazdev-jiosaavn-apii.vercel.app"
 ).rstrip("/")
 
 
@@ -29,9 +29,29 @@ API_BASE_URL = os.environ.get(
 # API Endpoint Helpers
 # ═══════════════════════════════════════════════════════════════
 
+# Two API styles are supported (same as the CastFlix app):
+#   NEW  (saavn.dev / sumitkolhe jiosaavn-api): /api/search/songs, /api/trending/songs, /api/songs/<id>
+#   OLD  (original EvaMusic API):               /api/search,       /api/trending,       /api/song/<id>
+# The NEW style is tried first, then the OLD one.
 SEARCH_URL   = f"{API_BASE_URL}/api/search"
 TRENDING_URL = f"{API_BASE_URL}/api/trending"
 SONG_URL     = f"{API_BASE_URL}/api/song"    # append /<song_id>
+
+SEARCH_URL_NEW   = f"{API_BASE_URL}/api/search/songs"
+TRENDING_URL_NEW = f"{API_BASE_URL}/api/trending/songs"
+SONG_URL_NEW     = f"{API_BASE_URL}/api/songs"   # append /<song_id>
+
+
+def get_search_url_new(query: str, limit: int = 20, page: int = 0) -> str:
+    return f"{SEARCH_URL_NEW}?{urlencode({'query': query, 'limit': limit, 'page': page})}"
+
+
+def get_trending_url_new(limit: int = 20) -> str:
+    return f"{TRENDING_URL_NEW}?{urlencode({'limit': limit})}"
+
+
+def get_song_url_new(song_id: str) -> str:
+    return f"{SONG_URL_NEW}/{song_id}"
 
 
 def get_search_url(query: str, limit: int = 20, page: int = 0) -> str:
